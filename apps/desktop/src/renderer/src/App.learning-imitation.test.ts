@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { expectSourceToContain } from "../../test-utils/sourceText";
+import { nextTick, ref, shallowRef } from "vue";
+import { watchFeatureErrors } from "./composables/workspaceFeatureErrors";
+import type { WorkspaceFeatureHostCoordinatorOptions } from "./composables/workspaceFeatureHostTypes";
 import source from "./WorkspaceShell.vue?raw";
 import featureModulesSource from "./components/WorkspaceFeatureModules.vue?raw";
 import featureHostCoordinatorSource from "./composables/useWorkspaceFeatureHostCoordinator.ts?raw";
@@ -53,16 +55,36 @@ describe("App learning-imitation integration", () => {
     expect(source).toContain("() => subagentAuthoringFeature.dispose()");
   });
 
-  it("surfaces rejected learning and subagent calls as floating messages", () => {
-    expectSourceToContain(
-      featureHostSource,
-      "() => options.features.learningImitation.controller.value?.error.value ?? null"
+  it("surfaces rejected feature calls as floating messages and stops after disposal", async () => {
+    const names = [
+      "learningImitation",
+      "subagentAuthoring",
+      "shortBookAnalysis",
+      "longBookAnalysis",
+      "revisionAnalysis"
+    ] as const;
+    const features = Object.fromEntries(
+      names.map((name) => [
+        name,
+        { controller: shallowRef({ error: ref<string | null>(null) }) }
+      ])
     );
-    expectSourceToContain(
-      featureHostSource,
-      "() => options.features.subagentAuthoring.controller.value?.error.value ?? null"
+    const errors: string[] = [];
+    const stop = watchFeatureErrors(
+      {
+        features,
+        notifications: { error: (message: string) => errors.push(message) }
+      } as unknown as WorkspaceFeatureHostCoordinatorOptions,
+      () => true
     );
-    expect(featureHostSource).toContain("options.notifications.error(message)");
+    for (const name of names)
+      features[name]!.controller.value.error.value = `${name} failed`;
+    await nextTick();
+    expect(errors).toEqual(names.map((name) => `${name} failed`));
+    stop();
+    features.learningImitation!.controller.value.error.value = "late failure";
+    await nextTick();
+    expect(errors).toHaveLength(names.length);
     expect(source).toContain("notifications: uiMessage");
   });
 });

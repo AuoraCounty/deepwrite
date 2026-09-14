@@ -1,5 +1,8 @@
+import { expectSourceToContain } from "../../../test-utils/sourceText";
 import { describe, expect, it } from "vitest";
-import lazyComponentsSource from "./lazyAppComponents.ts?raw";
+import asyncComponentsSource from "./lazyAppComponents.ts?raw";
+import featureImportsSource from "./lazyFeatureImports.ts?raw";
+const lazyComponentsSource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import typesSource from "./WorkspaceFeatureModules.types.ts?raw";
 import source from "./WorkspaceFeatureModules.vue?raw";
 
@@ -37,7 +40,8 @@ describe("WorkspaceFeatureModules boundary", () => {
     expect(source).not.toContain(
       'from "../extras/cloud-backup/CloudBackupPage.vue"'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./WorkspaceFeatureModules.vue")'
     );
   });

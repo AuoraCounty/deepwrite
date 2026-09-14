@@ -368,6 +368,7 @@ export interface DeepWriteApi {
       stageId?: LearningImitationStageId
     ): Promise<LearningImitationSettings>;
   };
+  revisionAnalysis: import("./revision-analysis").RevisionAnalysisApi;
   shortBookAnalysis: import("./short-book-analysis").ShortBookAnalysisApi;
   longBookAnalysis: {
     chooseSource(

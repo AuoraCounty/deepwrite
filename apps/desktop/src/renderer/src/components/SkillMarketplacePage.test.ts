@@ -8,7 +8,9 @@ import appSource from "../WorkspaceShell.vue?raw";
 import featureModulesSource from "./WorkspaceFeatureModules.vue?raw";
 import featureHostCoordinatorSource from "../composables/useWorkspaceFeatureHostCoordinator.ts?raw";
 import featureHostModuleSource from "../composables/workspaceFeatureHostModule.ts?raw";
-import sidebarSource from "./LeftSidebar.vue?raw";
+import sidebarViewSource from "./LeftSidebar.vue?raw";
+import sidebarCatalogSource from "./sidebarMoreFeatures.ts?raw";
+const sidebarSource = `${sidebarViewSource}\n${sidebarCatalogSource}`;
 
 const featureHostSource = `${featureHostCoordinatorSource}\n${featureHostModuleSource}`;
 

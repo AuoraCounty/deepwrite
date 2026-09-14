@@ -1,3 +1,4 @@
+import { isRevisionAnalysisToolDetails } from "./revision-analysis";
 import { isShortAnalysisToolDetails } from "./short-book-analysis";
 import { isLongBookAnalysisToolDetails } from "./long-book-analysis/tools";
 import type { AgentRunInput, AgentRuntimeEvent } from "./runtime-types";
@@ -9,6 +10,21 @@ export function analysisToolEvents(
   runtime: AgentRuntimeRef
 ): AgentRuntimeEvent[] | null {
   const events: AgentRuntimeEvent[] = [];
+  if (isRevisionAnalysisToolDetails(details)) {
+    return [
+      {
+        type: "revision_analysis.result_updated",
+        sessionId: input.sessionId,
+        runId: input.runId,
+        payload: {
+          toolCallId,
+          jobId: details.jobId,
+          result: details.result,
+          runtime
+        }
+      }
+    ];
+  }
   if (isShortAnalysisToolDetails(details)) {
     events.push({
       type: "short_book_analysis.result_updated",

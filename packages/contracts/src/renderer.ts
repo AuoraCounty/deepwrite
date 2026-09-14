@@ -377,3 +377,8 @@ export {
 export { conversationHistoryJsonBytes } from "./conversation-history-json-size";
 
 export type * from "./conversation-export";
+
+export * from "./revision-analysis";
+
+export * from "./revision-analysis-defaults";
+export * from "./revision-analysis-budget";

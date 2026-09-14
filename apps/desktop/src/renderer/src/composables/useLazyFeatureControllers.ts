@@ -123,7 +123,7 @@ export function useLazyLongBookAnalysisController(options: {
 }): LazyLongBookAnalysisController {
   return useLazyModelFeature("Long book analysis", async () => {
     const module = await (options.loadModule?.() ??
-      import("../extras/long-book-analysis/useLongBookAnalysis"));
+      (await import("../extras/long-book-analysis/loader")).loadController());
     return module.useLongBookAnalysis({ api: options.api });
   });
 }

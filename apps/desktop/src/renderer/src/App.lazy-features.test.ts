@@ -4,29 +4,36 @@ import source from "./WorkspaceShell.vue?raw";
 import learningSource from "./components/LearningImitationDialog.vue?raw";
 import dialogLayerSource from "./components/WorkspaceDialogLayer.vue?raw";
 import featureModulesSource from "./components/WorkspaceFeatureModules.vue?raw";
-import lazyComponentsSource from "./components/lazyAppComponents.ts?raw";
+import asyncComponentsSource from "./components/lazyAppComponents.ts?raw";
+import featureImportsSource from "./components/lazyFeatureImports.ts?raw";
+const lazyComponentsSource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import featureHostSource from "./composables/useWorkspaceFeatureHostCoordinator.ts?raw";
 
 describe("App lazy feature mounting", () => {
   it("keeps only the default writing surface in the eager component imports", () => {
     expect(source).toContain('from "./components/lazyAppComponents"');
-    expect(lazyComponentsSource).toContain("defineAsyncComponent");
+    expectSourceToContain(lazyComponentsSource, "defineAsyncComponent");
     expect(lazyComponentsSource).toContain(
       '() => import("./SettingsPage.vue")'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./LongWorkspaceModule.vue")'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./AgentTeamCatalogFeature.vue")'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("../extras/cloud-backup/CloudBackupPage.vue")'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./ModelSettingsFeature.vue")'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./WorkspaceDirectoryFeature.vue")'
     );
     expect(source).not.toContain(

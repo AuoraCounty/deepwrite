@@ -18,6 +18,7 @@ export function usageModuleForPrompt(
   }
   if (context.learningImitation) return "learning-imitation";
   if (context.longBookAnalysis) return "long-book-analysis";
+  if (context.revisionAnalysis) return "revision-analysis";
   if (context.shortBookAnalysis) return "short-book-analysis";
   if (context.subagentAuthoring) return "subagent-authoring";
   return "unknown";

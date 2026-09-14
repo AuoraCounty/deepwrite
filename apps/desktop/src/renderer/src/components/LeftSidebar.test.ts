@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { expectSourceToContain } from "../../../test-utils/sourceText";
+import moreFeaturesSource from "./sidebarMoreFeatures.ts?raw";
 import sidebarSource from "./LeftSidebar.vue?raw";
 import profileSource from "./SidebarProfileMenu.vue?raw";
-const source = `${sidebarSource}\n${profileSource}`;
+const source = `${sidebarSource}\n${profileSource}\n${moreFeaturesSource}`;
 
 describe("LeftSidebar account controls", () => {
   it("separates the account menu from the settings-page button", () => {
@@ -65,14 +66,11 @@ describe("LeftSidebar account controls", () => {
   });
 
   it("moves learning imitation into more features and keeps its state feedback", () => {
-    const primaryFeatures = source.slice(
-      source.indexOf("const navItems"),
-      source.indexOf("const moreFeatures")
+    const primaryFeatures = sidebarSource.slice(
+      sidebarSource.indexOf("const navItems"),
+      sidebarSource.indexOf("function activateMoreFeature")
     );
-    const moreFeatures = source.slice(
-      source.indexOf("const moreFeatures"),
-      source.indexOf("function activateMoreFeature")
-    );
+    const moreFeatures = moreFeaturesSource;
 
     expect(primaryFeatures).not.toContain('label: "短篇学习仿写"');
     expectSourceToContain(

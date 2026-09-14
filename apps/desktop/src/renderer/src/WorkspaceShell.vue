@@ -188,6 +188,10 @@ const learningImitationRunning = learningImitationFeature.isBusy;
 const {
   longBookAnalysisFeature,
   shortBookAnalysisFeature,
+  revisionAnalysisFeature,
+  revisionAnalysisRunning,
+  configureAnalysisModels,
+  disposeAnalysisFeatures,
   longBookAnalysisRunning,
   shortBookAnalysisRunning
 } = useBookAnalysisFeatures(() => window.deepwrite);
@@ -512,6 +516,7 @@ const featureHost = useWorkspaceFeatureHostCoordinator({
     learningImitation: learningImitationFeature,
     longBookAnalysis: longBookAnalysisFeature,
     shortBookAnalysis: shortBookAnalysisFeature,
+    revisionAnalysis: revisionAnalysisFeature,
     subagentAuthoring: subagentAuthoringFeature
   },
   actions: {
@@ -1413,14 +1418,7 @@ const {
       settings.models,
       settings.defaultModelId
     );
-    shortBookAnalysisFeature.setConfiguredModels(
-      settings.models,
-      settings.defaultModelId
-    );
-    longBookAnalysisFeature.setConfiguredModels(
-      settings.models,
-      settings.defaultModelId
-    );
+    configureAnalysisModels(settings.models, settings.defaultModelId);
     applyModelSettingsToConversations(settings);
   }
 });
@@ -2308,6 +2306,7 @@ function startWorkspaceSystemEvents(): () => void {
     learningImitation: learningImitationFeature,
     longBookAnalysis: longBookAnalysisFeature,
     shortBookAnalysis: shortBookAnalysisFeature,
+    revisionAnalysis: revisionAnalysisFeature,
     subagentAuthoring: subagentAuthoringFeature,
     stageLongPlotDesignEditProposal,
     stageLongWorldbuildingEditProposal,
@@ -2439,8 +2438,7 @@ const workspaceLifecycle = useWorkspaceLifecycleCoordinator({
         flush: conversationPersistenceEnabled
       }),
     () => learningImitationFeature.dispose(),
-    () => longBookAnalysisFeature.dispose(),
-    () => shortBookAnalysisFeature.dispose(),
+    () => disposeAnalysisFeatures(),
     () => subagentAuthoringFeature.dispose()
   ],
   onError(error, operation) {
@@ -2520,6 +2518,7 @@ onBeforeUnmount(() => {
       :selected-id="selectedResourceId"
       :imitation-running="learningImitationRunning"
       :long-book-analysis-running="longBookAnalysisRunning"
+      :revision-analysis-running="revisionAnalysisRunning"
       :short-book-analysis-running="shortBookAnalysisRunning"
       :library-entry-clipboard-domain="libraryEntryClipboardDomain"
       :active-primary-feature="

@@ -1,3 +1,4 @@
+import { buildRevisionAnalysisTools } from "./revision-analysis";
 import { buildShortBookAnalysisTools } from "./short-book-analysis";
 import type {
   AgentMessage,
@@ -54,6 +55,8 @@ export function buildRunTools(
   input: AgentRunInput,
   options: BuildRunToolsOptions
 ): AgentTool[] {
+  if (input.workspaceContext?.revisionAnalysis)
+    return buildRevisionAnalysisTools(input.workspaceContext.revisionAnalysis);
   if (input.workspaceContext?.styleComparison) return [];
   const {
     model,

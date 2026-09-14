@@ -9,6 +9,7 @@ const props = defineProps<{
   liveOutput: string;
   error: string | null;
   footerText?: string;
+  accessibleLabel?: string;
 }>();
 
 const displayEntries = computed(() =>
@@ -51,7 +52,10 @@ onMounted(() => void scrollToLatest());
 </script>
 
 <template>
-  <section class="analysis-process-panel" aria-label="拆书执行过程">
+  <section
+    class="analysis-process-panel"
+    :aria-label="accessibleLabel ?? '拆书执行过程'"
+  >
     <header>
       <div>
         <strong>执行过程</strong>

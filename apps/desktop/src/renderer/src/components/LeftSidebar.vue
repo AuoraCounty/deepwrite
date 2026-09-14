@@ -5,13 +5,13 @@ import type {
   CatalogResourceNodeActionPayload,
   CatalogLibraryEntryDragPayload,
   DialogMode,
-  IconName,
   LongBookResourceNodeActionPayload,
   LongTreeItemAction,
   ResourceSectionActionPayload,
   ResourceTreeNode,
   ResourceTreeSection
 } from "../types/workspace";
+import { moreFeatures } from "./sidebarMoreFeatures";
 import AppIcon from "./AppIcon.vue";
 import SidebarResourceList from "./SidebarResourceList.vue";
 import SidebarProfileMenu from "./SidebarProfileMenu.vue";
@@ -23,6 +23,7 @@ const props = defineProps<{
   imitationRunning?: boolean;
   longBookAnalysisRunning?: boolean;
   shortBookAnalysisRunning?: boolean;
+  revisionAnalysisRunning?: boolean;
   libraryEntryClipboardDomain?: "skill" | "material" | undefined;
   activePrimaryFeature:
     | PrimaryFeatureId
@@ -105,81 +106,12 @@ const navItems: Array<{
 ];
 
 const moreExpanded = ref(false);
-const moreFeatures: Array<{
-  id:
-    | "imitation"
-    | "long-book-analysis"
-    | "short-book-analysis"
-    | "style-comparison"
-    | "skill-marketplace"
-    | "cloud-backup"
-    | "device-sync"
-    | "zhuque-detection"
-    | "runtime";
-  label: string;
-  description: string;
-  icon: IconName;
-}> = [
-  {
-    id: "imitation",
-    label: "短篇学习仿写",
-    description: "学习范文并生成同类短篇",
-    icon: "wand"
-  },
-  {
-    id: "short-book-analysis",
-    label: "短篇拆书分析",
-    description: "整篇分析，支持最多 10 本联合提炼",
-    icon: "book"
-  },
-  {
-    id: "long-book-analysis",
-    label: "长篇拆书分析",
-    description: "分批提炼长篇剧情、人物与文风",
-    icon: "book"
-  },
-  {
-    id: "style-comparison",
-    label: "文风比对",
-    description: "比较两份文本的文风与相似度",
-    icon: "file"
-  },
-  {
-    id: "skill-marketplace",
-    label: "技能广场",
-    description: "发现、安装与发布写作技能",
-    icon: "globe"
-  },
-  {
-    id: "device-sync",
-    label: "双端同步",
-    description: "使用自己的网盘接续写作",
-    icon: "archive"
-  },
-  {
-    id: "cloud-backup",
-    label: "云端备份",
-    description: "备份创作空间和资料",
-    icon: "archive"
-  },
-  {
-    id: "zhuque-detection",
-    label: "朱雀检测",
-    description: "检测文本中的 AI 生成内容",
-    icon: "globe"
-  },
-  {
-    id: "runtime",
-    label: "运行设置",
-    description: "智能体与工具边界",
-    icon: "model"
-  }
-];
 
 function activateMoreFeature(
   id:
     | "imitation"
     | "long-book-analysis"
+    | "revision-analysis"
     | "short-book-analysis"
     | "style-comparison"
     | "skill-marketplace"
@@ -188,6 +120,10 @@ function activateMoreFeature(
     | "zhuque-detection"
     | "runtime"
 ): void {
+  if (id === "revision-analysis") {
+    emit("openDialog", "revision-analysis");
+    return;
+  }
   if (id === "style-comparison") {
     emit("openDialog", "style-comparison");
     return;
@@ -336,6 +272,8 @@ function activateNav(id: "create-book" | PrimaryFeatureId): void {
             </span>
             <span
               v-if="
+                (feature.id === 'revision-analysis' &&
+                  props.revisionAnalysisRunning) ||
                 (feature.id === 'short-book-analysis' &&
                   props.shortBookAnalysisRunning) ||
                 (feature.id === 'imitation' && props.imitationRunning) ||
@@ -346,9 +284,11 @@ function activateNav(id: "create-book" | PrimaryFeatureId): void {
               :title="
                 feature.id === 'imitation'
                   ? '学习仿写正在后台运行'
-                  : feature.id === 'short-book-analysis'
-                    ? '短篇拆书正在后台运行'
-                    : '长篇拆书正在后台运行'
+                  : feature.id === 'revision-analysis'
+                    ? '修改分析正在后台运行'
+                    : feature.id === 'short-book-analysis'
+                      ? '短篇拆书正在后台运行'
+                      : '长篇拆书正在后台运行'
               "
             >
               <i aria-hidden="true" />后台中

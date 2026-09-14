@@ -63,3 +63,9 @@ export * from "./device-sync-commands";
 export * from "./conversation-history";
 
 export * from "./conversation-export";
+
+export * from "./revision-analysis";
+export * from "./revision-analysis-events";
+
+export * from "./revision-analysis-defaults";
+export * from "./revision-analysis-budget";

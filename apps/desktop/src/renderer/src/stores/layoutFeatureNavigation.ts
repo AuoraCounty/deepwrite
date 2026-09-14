@@ -6,6 +6,7 @@ export type WorkspaceMainView =
   | "models"
   | "imitation"
   | "long-book-analysis"
+  | "revision-analysis"
   | "short-book-analysis"
   | "style-comparison"
   | "agent-team"
@@ -19,6 +20,7 @@ export type PrimaryFeature =
   | "models"
   | "imitation"
   | "long-book-analysis"
+  | "revision-analysis"
   | "short-book-analysis"
   | "style-comparison"
   | "chat-assistant"
@@ -43,6 +45,7 @@ export function primaryFeatureForView(
     case "models":
     case "imitation":
     case "long-book-analysis":
+    case "revision-analysis":
     case "short-book-analysis":
     case "style-comparison":
       return view;

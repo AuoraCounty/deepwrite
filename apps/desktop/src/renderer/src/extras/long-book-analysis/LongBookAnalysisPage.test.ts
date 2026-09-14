@@ -1,3 +1,4 @@
+import { expectSourceToContain } from "../../../../test-utils/sourceText";
 import { describe, expect, it } from "vitest";
 import pageSource from "./LongBookAnalysisPage.vue?raw";
 import processPanelSource from "./AnalysisProcessPanel.vue?raw";
@@ -5,9 +6,13 @@ import processTrackerSource from "./analysis-process.ts?raw";
 import resultPanelSource from "./AnalysisResultPanel.vue?raw";
 import sourceControlsSource from "./AnalysisSourceControls.vue?raw";
 import presetManagerSource from "./PresetManager.vue?raw";
-import sidebarSource from "../../components/LeftSidebar.vue?raw";
+import sidebarViewSource from "../../components/LeftSidebar.vue?raw";
+import sidebarCatalogSource from "../../components/sidebarMoreFeatures.ts?raw";
+const sidebarSource = `${sidebarViewSource}\n${sidebarCatalogSource}`;
 import moduleSource from "../../components/WorkspaceFeatureModules.vue?raw";
-import lazySource from "../../components/lazyAppComponents.ts?raw";
+import asyncComponentsSource from "../../components/lazyAppComponents.ts?raw";
+import featureImportsSource from "../../components/lazyFeatureImports.ts?raw";
+const lazySource = `${asyncComponentsSource}\n${featureImportsSource}`;
 
 describe("long-book analysis feature wiring", () => {
   it("is a preset-driven page without a conversation composer", () => {
@@ -42,8 +47,9 @@ describe("long-book analysis feature wiring", () => {
   it("uses a lazy more-features entry with background status", () => {
     expect(sidebarSource).toContain('id: "long-book-analysis"');
     expect(sidebarSource).toContain("props.longBookAnalysisRunning");
-    expect(lazySource).toContain(
-      'import("../extras/long-book-analysis/LongBookAnalysisPage.vue")'
+    expectSourceToContain(
+      lazySource,
+      'import("../extras/long-book-analysis/loader")'
     );
     expect(moduleSource).toContain("module.kind === 'long-book-analysis'");
     expect(moduleSource).toContain('class="long-book-analysis-main-view"');

@@ -1,5 +1,5 @@
+import { assertAnalysisRunBudget } from "./analysis-run-budget";
 import { analysisFauxResponses } from "./analysis-faux";
-import { assertShortAnalysisBudget } from "@deepwrite/contracts";
 import { buildRunTools } from "./run-tools";
 import { libraryManagementParentPrompt } from "./library-management-runtime";
 
@@ -404,15 +404,7 @@ export class PiAgentRuntimeAdapter implements AgentRuntime {
       }
     }
 
-    if (
-      input.workspaceContext?.shortBookAnalysis &&
-      input.shortBookAnalysisProfile
-    )
-      assertShortAnalysisBudget(
-        input.workspaceContext.shortBookAnalysis,
-        input.shortBookAnalysisProfile,
-        model
-      );
+    assertAnalysisRunBudget(input, model);
     const shortWorkspace = input.workspaceContext?.shortWorkspace;
     const scriptWorkspace = input.workspaceContext?.scriptWorkspace;
     const imageAttachments =

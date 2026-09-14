@@ -5,6 +5,7 @@ type AnalysisEvent = Extract<
   AgentRuntimeEvent,
   {
     type:
+      | "revision_analysis.result_updated"
       | "short_book_analysis.result_updated"
       | "long_book_analysis.note_updated"
       | "long_book_analysis.result_updated";
@@ -19,6 +20,12 @@ export function analysisEventEnvelope(
     sessionId: event.sessionId,
     runId: event.runId
   };
+  if (event.type === "revision_analysis.result_updated")
+    return createEnvelope(
+      event.type,
+      { sessionId: event.sessionId, runId: event.runId, ...event.payload },
+      { id: createId("evt"), context }
+    );
   if (event.type === "short_book_analysis.result_updated")
     return createEnvelope(
       event.type,

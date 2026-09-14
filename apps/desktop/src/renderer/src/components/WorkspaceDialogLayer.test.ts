@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { expectSourceToContain } from "../../../test-utils/sourceText";
-import lazyComponentsSource from "./lazyAppComponents.ts?raw";
+import asyncComponentsSource from "./lazyAppComponents.ts?raw";
+import featureImportsSource from "./lazyFeatureImports.ts?raw";
+const lazyComponentsSource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import { WORKSPACE_DIALOG_KINDS } from "./WorkspaceDialogLayer.types";
 import typesSource from "./WorkspaceDialogLayer.types.ts?raw";
 import source from "./WorkspaceDialogLayer.vue?raw";
@@ -67,7 +69,8 @@ describe("WorkspaceDialogLayer boundary", () => {
   });
 
   it("keeps the layer and every concrete dialog behind lazy boundaries", () => {
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./WorkspaceDialogLayer.vue")'
     );
     expect(source).toContain('from "./lazyAppComponents"');

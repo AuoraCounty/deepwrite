@@ -1,3 +1,4 @@
+import { revisionAnalysisSystemPrompt } from "./revision-analysis";
 import { shortAnalysisSystemPrompt } from "./short-book-analysis";
 import {
   renderLearningImitationSystemPrompt,
@@ -140,6 +141,10 @@ export function buildEffectiveSystemPrompt(
   basePrompt: string,
   input: AgentRunInput
 ): string {
+  if (input.workspaceContext?.revisionAnalysis)
+    return revisionAnalysisSystemPrompt(
+      input.workspaceContext.revisionAnalysis
+    );
   if (input.workspaceContext?.styleComparison)
     return STYLE_COMPARISON_SYSTEM_PROMPT;
   if (input.mode === "chat-assistant") {

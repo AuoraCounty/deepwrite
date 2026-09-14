@@ -1,9 +1,14 @@
 import type { DeepWriteApi } from "@deepwrite/contracts/renderer";
 export function createBookAnalysisTestApi(): Pick<
   DeepWriteApi,
-  "shortBookAnalysis" | "longBookAnalysis"
+  "revisionAnalysis" | "shortBookAnalysis" | "longBookAnalysis"
 > {
   return {
+    revisionAnalysis: {
+      list: async () => ({ systemPrompt: "测试方法" }),
+      save: async (input) => input,
+      reset: async () => ({ systemPrompt: "测试方法" })
+    },
     shortBookAnalysis: {
       chooseSources: async () => null,
       addText: async () => {

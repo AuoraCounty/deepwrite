@@ -1,5 +1,6 @@
+import { watchFeatureErrors } from "./workspaceFeatureErrors";
 import type { MarketplaceSession } from "@deepwrite/contracts";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import type { DialogMode } from "../types/workspace";
 import type {
   ActiveFeature,
@@ -63,34 +64,7 @@ export function useWorkspaceFeatureHostCoordinator(
     )
   );
 
-  const stopLearningErrorWatch = watch(
-    () =>
-      options.features.learningImitation.controller.value?.error.value ?? null,
-    (message) => {
-      if (active && message) options.notifications.error(message);
-    }
-  );
-  const stopAuthoringErrorWatch = watch(
-    () =>
-      options.features.subagentAuthoring.controller.value?.error.value ?? null,
-    (message) => {
-      if (active && message) options.notifications.error(message);
-    }
-  );
-  const stopShortBookAnalysisErrorWatch = watch(
-    () =>
-      options.features.shortBookAnalysis.controller.value?.error.value ?? null,
-    (message) => {
-      if (active && message) options.notifications.error(message);
-    }
-  );
-  const stopLongBookAnalysisErrorWatch = watch(
-    () =>
-      options.features.longBookAnalysis.controller.value?.error.value ?? null,
-    (message) => {
-      if (active && message) options.notifications.error(message);
-    }
-  );
+  const stopFeatureErrors = watchFeatureErrors(options, () => active);
 
   function beginNavigation(): number {
     return ++navigationGeneration;
@@ -135,24 +109,29 @@ export function useWorkspaceFeatureHostCoordinator(
     if (
       mode === "imitation" ||
       mode === "long-book-analysis" ||
+      mode === "revision-analysis" ||
       mode === "short-book-analysis"
     ) {
       try {
-        await (mode === "imitation"
-          ? options.features.learningImitation.ensureLoaded()
-          : mode === "short-book-analysis"
-            ? options.features.shortBookAnalysis.ensureLoaded()
-            : options.features.longBookAnalysis.ensureLoaded());
+        await (mode === "revision-analysis"
+          ? options.features.revisionAnalysis.ensureLoaded()
+          : mode === "imitation"
+            ? options.features.learningImitation.ensureLoaded()
+            : mode === "short-book-analysis"
+              ? options.features.shortBookAnalysis.ensureLoaded()
+              : options.features.longBookAnalysis.ensureLoaded());
       } catch (error: unknown) {
         if (navigationIsCurrent(generation)) {
           options.notifications.error(
             errorMessage(
               error,
-              mode === "imitation"
-                ? "加载学习仿写模块失败。"
-                : mode === "short-book-analysis"
-                  ? "加载短篇拆书模块失败。"
-                  : "加载长篇拆书模块失败。"
+              mode === "revision-analysis"
+                ? "加载修改分析模块失败。"
+                : mode === "imitation"
+                  ? "加载学习仿写模块失败。"
+                  : mode === "short-book-analysis"
+                    ? "加载短篇拆书模块失败。"
+                    : "加载长篇拆书模块失败。"
             )
           );
         }
@@ -168,6 +147,7 @@ export function useWorkspaceFeatureHostCoordinator(
       (mode === "models" ||
         mode === "imitation" ||
         mode === "long-book-analysis" ||
+        mode === "revision-analysis" ||
         mode === "short-book-analysis" ||
         mode === "style-comparison") &&
       !settingsStore.modelSettings &&
@@ -374,6 +354,7 @@ export function useWorkspaceFeatureHostCoordinator(
   function dispose(): void {
     if (!active) return;
     active = false;
+    stopFeatureErrors();
     navigationGeneration += 1;
     marketplaceRevision += 1;
     marketplaceRequestGeneration += 1;
@@ -382,10 +363,6 @@ export function useWorkspaceFeatureHostCoordinator(
       directoryChoosePending = false;
       settingsStore.workspaceDirectoryLoading = false;
     }
-    stopLearningErrorWatch();
-    stopAuthoringErrorWatch();
-    stopLongBookAnalysisErrorWatch();
-    stopShortBookAnalysisErrorWatch();
   }
 
   return {

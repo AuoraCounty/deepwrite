@@ -1,3 +1,4 @@
+import { expectSourceToContain } from "../../test-utils/sourceText";
 import { describe, expect, it } from "vitest";
 import shellSource from "./WorkspaceShell.vue?raw";
 import historyActionsSource from "./features/chat-assistant/useChatAssistantHistoryActions.ts?raw";
@@ -5,7 +6,9 @@ import scrollSource from "./composables/useConversationScrollFollow.ts?raw";
 import messageListSource from "./components/ConversationMessageList.vue?raw";
 import processingTimelineSource from "./components/ConversationProcessingTimeline.vue?raw";
 import sidebarSource from "./components/LeftSidebar.vue?raw";
-import lazySource from "./components/lazyAppComponents.ts?raw";
+import asyncComponentsSource from "./components/lazyAppComponents.ts?raw";
+import featureImportsSource from "./components/lazyFeatureImports.ts?raw";
+const lazySource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import composerSource from "./features/chat-assistant/ChatAssistantComposer.vue?raw";
 import homeSource from "./features/chat-assistant/ChatAssistantHome.vue?raw";
 import overlaySource from "./features/chat-assistant/ChatAssistantOverlay.vue?raw";
@@ -31,7 +34,8 @@ describe("independent chat assistant feature", () => {
   });
 
   it("lazy-loads a teleported floating surface with minimize and history controls", () => {
-    expect(lazySource).toContain(
+    expectSourceToContain(
+      lazySource,
       '() => import("../features/chat-assistant/ChatAssistantOverlay.vue")'
     );
     expect(shellSource).toContain('<Teleport to="body">');

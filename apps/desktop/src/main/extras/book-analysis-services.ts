@@ -1,3 +1,5 @@
+import { assertRevisionAnalysisBudget } from "@deepwrite/contracts";
+import { RevisionAnalysisConfigStore } from "./revision-analysis/config-store";
 import type {
   AgentProviderRuntimeConfig,
   CommandEnvelope,
@@ -13,6 +15,7 @@ import {
 import { resolveShortAnalysisProfile } from "./short-book-analysis/run-profile";
 /** Main owns preset resolution; source snapshot writes are delegated to Core. */
 export function createBookAnalysisServices(userDataPath: string) {
+  const revision = new RevisionAnalysisConfigStore(userDataPath);
   const long = new LongBookAnalysisConfigStore(userDataPath);
   const short = new ShortBookAnalysisConfigStore(userDataPath);
   return {
@@ -21,6 +24,7 @@ export function createBookAnalysisServices(userDataPath: string) {
       command: CommandEnvelope
     ) {
       return (
+        (await revision.handle(command)) ??
         (await handleShortBookAnalysisCommands(
           { ...context, configStore: () => short },
           command
@@ -35,6 +39,10 @@ export function createBookAnalysisServices(userDataPath: string) {
       context: WorkspaceRuntimeContext | undefined,
       model: AgentProviderRuntimeConfig | undefined
     ) {
+      if (context?.revisionAnalysis) {
+        if (!model) throw new Error("请选择可用模型。");
+        assertRevisionAnalysisBudget(context.revisionAnalysis, model);
+      }
       const shortBookAnalysisProfile = await resolveShortAnalysisProfile(
         context?.shortBookAnalysis,
         short,

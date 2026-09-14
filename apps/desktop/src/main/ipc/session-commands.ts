@@ -1,3 +1,4 @@
+import { assertRevisionAnalysisBudget } from "@deepwrite/contracts";
 import { resolveShortAnalysisProfile } from "../extras/short-book-analysis/run-profile";
 import { acquireConversationOperation } from "./conversation-operation-guard";
 import { resolveAgentTeamRuntime } from "../agent-team-run-mode";
@@ -211,6 +212,11 @@ export async function handleSessionCommands(
             .requireLearningImitationConfigStore()
             .resolve(learningImitation.stageId)
         : undefined;
+      if (command.payload.workspaceContext?.revisionAnalysis && runtimeConfig)
+        assertRevisionAnalysisBudget(
+          command.payload.workspaceContext.revisionAnalysis,
+          runtimeConfig
+        );
       const shortBookAnalysisProfile = command.payload.workspaceContext
         ?.shortBookAnalysis
         ? await resolveShortAnalysisProfile(

@@ -1,12 +1,4 @@
-import {
-  chooseLongBookAnalysisSource,
-  listLongBookAnalysisSources,
-  loadLongBookAnalysisSource,
-  listLongBookAnalysisPresets,
-  saveLongBookAnalysisPresets,
-  resetLongBookAnalysisPresets
-} from "./long-book-analysis-api";
-import { shortBookAnalysisApi } from "./short-book-analysis-api";
+import { analysisApis } from "./analysis-apis";
 import { conversationExport } from "./conversation-export-api";
 import { cloudBackup } from "./cloud-backup-api";
 import { deviceSync } from "./device-sync-api";
@@ -1320,19 +1312,7 @@ const api: DeepWriteApi = {
     save: saveLearningImitationSettings,
     reset: resetLearningImitationSettings
   },
-  shortBookAnalysis: shortBookAnalysisApi,
-  longBookAnalysis: {
-    chooseSource: chooseLongBookAnalysisSource,
-    sources: {
-      list: listLongBookAnalysisSources,
-      load: loadLongBookAnalysisSource
-    },
-    presets: {
-      list: listLongBookAnalysisPresets,
-      save: saveLongBookAnalysisPresets,
-      reset: resetLongBookAnalysisPresets
-    }
-  },
+  ...analysisApis,
   workspaceDirectory: {
     list: listWorkspaceDirectory,
     choose: chooseWorkspaceDirectory

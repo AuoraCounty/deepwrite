@@ -140,6 +140,10 @@ function createHarness(overrides: HarnessOverrides = {}) {
         controller: learningController,
         ensureLoaded: ensureLearningLoaded
       },
+      revisionAnalysis: {
+        controller: shallowRef(null),
+        ensureLoaded: vi.fn(async () => {})
+      },
       shortBookAnalysis: {
         controller: shallowRef(null),
         ensureLoaded: vi.fn(async () => {})
@@ -221,6 +225,7 @@ describe("useWorkspaceFeatureHostCoordinator", () => {
       "models",
       "imitation",
       "style-comparison",
+      "revision-analysis",
       "agent-team",
       "marketplace",
       "cloud-backup",

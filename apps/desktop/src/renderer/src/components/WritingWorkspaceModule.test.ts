@@ -1,6 +1,9 @@
+import { expectSourceToContain } from "../../../test-utils/sourceText";
 import { describe, expect, it } from "vitest";
 import appSource from "../WorkspaceShell.vue?raw";
-import lazyComponentsSource from "./lazyAppComponents.ts?raw";
+import asyncComponentsSource from "./lazyAppComponents.ts?raw";
+import featureImportsSource from "./lazyFeatureImports.ts?raw";
+const lazyComponentsSource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import source from "./WritingWorkspaceModule.vue?raw";
 
 describe("WritingWorkspaceModule boundary", () => {
@@ -12,7 +15,8 @@ describe("WritingWorkspaceModule boundary", () => {
     expect(source).not.toContain(
       'import AgentConversation from "./AgentConversation.vue"'
     );
-    expect(lazyComponentsSource).toContain(
+    expectSourceToContain(
+      lazyComponentsSource,
       '() => import("./AgentConversation.vue")'
     );
     expect(source).toContain("<RightEditorPane");

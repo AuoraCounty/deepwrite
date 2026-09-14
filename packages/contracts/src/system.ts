@@ -8,6 +8,11 @@ import {
   ShortBookAnalysisResultEventSchema,
   type ShortBookAnalysisResultEvent
 } from "./short-book-analysis-events";
+import { RevisionAnalysisCommandSchemas } from "./revision-analysis-commands";
+import {
+  RevisionAnalysisResultEventSchema,
+  type RevisionAnalysisResultEvent
+} from "./revision-analysis-events";
 import { ShortBookAnalysisCommandSchemas } from "./short-book-analysis-commands";
 import { CatalogQueryMaterialsCommandEnvelopeSchema } from "./material-query";
 import {
@@ -307,6 +312,7 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("type", [
   LearningImitationSettingsListCommandEnvelopeSchema,
   LearningImitationSettingsSaveCommandEnvelopeSchema,
   LearningImitationSettingsResetCommandEnvelopeSchema,
+  ...RevisionAnalysisCommandSchemas,
   ...ShortBookAnalysisCommandSchemas,
   LongBookAnalysisChooseSourceCommandEnvelopeSchema,
   LongBookAnalysisListSourcesCommandEnvelopeSchema,
@@ -416,6 +422,7 @@ export const SystemEventEnvelopeSchema = z.discriminatedUnion("type", [
   SubagentActivityEventEnvelopeSchema,
   SubagentCompletedEventEnvelopeSchema,
   LearningImitationResultUpdatedEventEnvelopeSchema,
+  RevisionAnalysisResultEventSchema,
   ShortBookAnalysisResultEventSchema,
   LongBookAnalysisNoteUpdatedEventEnvelopeSchema,
   LongBookAnalysisResultUpdatedEventEnvelopeSchema,
@@ -445,6 +452,7 @@ export type SystemWorkerRestartingEventEnvelope = Envelope<
   "system.worker_restarting"
 >;
 export type SystemEventEnvelope =
+  | RevisionAnalysisResultEvent
   | ShortBookAnalysisResultEvent
   | z.infer<typeof RendererStateFlushRequestedEventEnvelopeSchema>
   | SystemReadyEventEnvelope

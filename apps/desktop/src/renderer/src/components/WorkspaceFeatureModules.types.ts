@@ -136,6 +136,14 @@ export interface ZhuqueDetectionFeatureModule {
 
 export type WorkspaceFeatureModule =
   | {
+      kind: "revision-analysis";
+      controller:
+        | import("../extras/revision-analysis/useRevisionAnalysis").RevisionAnalysisController
+        | null;
+      models: readonly ModelConfig[];
+      catalogSnapshot: CatalogSnapshot | null;
+    }
+  | {
       kind: "short-book-analysis";
       controller:
         | import("../extras/short-book-analysis/useShortBookAnalysis").ShortBookAnalysisController
