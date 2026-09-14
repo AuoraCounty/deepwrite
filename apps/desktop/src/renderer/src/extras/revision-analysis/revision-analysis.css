@@ -35,6 +35,7 @@
 .revision-inputs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 18px;
 }
 .revision-analysis-page label {
@@ -60,6 +61,7 @@
   resize: vertical;
 }
 .revision-analysis-page .revision-inputs textarea {
+  height: 520px;
   min-height: 260px;
 }
 .revision-analysis-page textarea:focus,
