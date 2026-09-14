@@ -8,6 +8,7 @@ import SyncConnectionForm from "./SyncConnectionForm.vue";
 import SyncConflictCard from "./SyncConflictCard.vue";
 import SyncStatusCard from "./SyncStatusCard.vue";
 import SyncChangesPanel from "./SyncChangesPanel.vue";
+import SyncContentPanel from "./SyncContentPanel.vue";
 import { uiMessage } from "../../ui-feedback";
 import "./device-sync.css";
 const props = defineProps<{
@@ -40,10 +41,6 @@ async function connectPhone() {
   } catch {
     uiMessage.error("无法生成接入码，请在手机上手动配置。");
   }
-}
-function changeIncluded(key: string, event: Event) {
-  if (event.target instanceof HTMLInputElement)
-    void toggle(key, event.target.checked);
 }
 async function toggle(key: string, included: boolean) {
   const config = status.value?.config;
@@ -132,34 +129,12 @@ async function restore() {
           "
         />
       </template>
-      <section v-if="tab === 'content'" class="sync-card">
-        <h2>同步内容</h2>
-        <p>关闭只暂停本机同步，不删除任何内容。作品绑定的资料库也需要加入。</p>
-        <label
-          v-for="item in status.items"
-          :key="item.key"
-          class="sync-list-row"
-          ><span
-            >{{ item.title
-            }}<small>{{
-              !item.included
-                ? "已暂停同步"
-                : item.dirty && item.remoteDirty
-                  ? "两端都有修改"
-                  : item.dirty
-                    ? "待上传到远端"
-                    : item.remoteDirty
-                      ? "待下载到本机"
-                      : "已同步"
-            }}</small></span
-          ><input
-            type="checkbox"
-            :checked="item.included"
-            :disabled="pending"
-            :aria-label="`同步 ${item.title}`"
-            @change="changeIncluded(item.key, $event)"
-        /></label>
-      </section>
+      <SyncContentPanel
+        v-if="tab === 'content'"
+        :items="status.items"
+        :pending="pending"
+        @toggle="toggle"
+      />
       <section v-if="tab === 'devices'" class="sync-card">
         <h2>已连接的设备</h2>
         <p>
