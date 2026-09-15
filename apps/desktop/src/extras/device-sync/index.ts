@@ -1,3 +1,4 @@
+import { createInitializationWorkspace } from "./initialization-workspace";
 import { createHash, randomUUID } from "node:crypto";
 import { BrowserWindow, ipcMain } from "electron";
 import {
@@ -40,24 +41,30 @@ export function createDesktopDeviceSync(
     if (result.status !== "accepted") throw new Error(result.error.message);
     return result.payload;
   };
+  const metadata = new DesktopSyncMetadataStore(root);
+  const initialization = createInitializationWorkspace(root, metadata, {
+    ...options,
+    request
+  });
   return new DeviceSyncService({
     runtime: {
       id: randomUUID,
       now: () => new Date().toISOString(),
       hash: (value) => createHash("sha256").update(value, "utf8").digest("hex")
     },
-    metadata: new DesktopSyncMetadataStore(root),
+    metadata,
     credentials: new DesktopSyncCredentialStore(root),
     transport: (config, password) =>
       new WebDavSyncTransport(config, password, electronDavFetch),
     workspace: {
+      initialization: initialization.initialization,
       list: async () =>
         DeviceSyncInventorySchema.parse(await request({ operation: "list" })),
       validate: async (item) => {
         await request({ operation: "validate", item });
       },
       recover: async () => {
-        await request({ operation: "recover" });
+        await initialization.recover();
       },
       apply: async (key, expected, next) => {
         if (options.busy())
@@ -88,7 +95,12 @@ export function registerDeviceSyncIpc(
       const input = DeviceSyncRequestEnvelopeSchema.parse(raw);
       const api = service();
       if (!api) throw new Error("同步尚未初始化。");
-      if (["sync", "restore"].includes(input.payload.operation) && busy())
+      if (
+        ["sync", "restore", "preview-initialization", "initialize"].includes(
+          input.payload.operation
+        ) &&
+        busy()
+      )
         throw new Error("作品正在生成或保存，请完成后再同步。");
       return {
         ok: true,

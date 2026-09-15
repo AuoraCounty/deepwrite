@@ -1,3 +1,8 @@
+import {
+  SYNC_INITIALIZATION_ERRORS,
+  syncInitializationPreviewSchema
+} from "./initialization";
+import { syncIdSchema } from "./schemas";
 import { z } from "zod";
 import {
   syncIssueSchema,
@@ -17,6 +22,15 @@ export const syncAdoptionSchema = z
   })
   .strict();
 export const syncRequestSchema = z.discriminatedUnion("operation", [
+  z
+    .object({
+      operation: z.literal("preview-initialization"),
+      deviceId: syncIdSchema
+    })
+    .strict(),
+  z
+    .object({ operation: z.literal("initialize"), token: syncIdSchema })
+    .strict(),
   z.object({ operation: z.literal("status") }).strict(),
   z.object({ operation: z.literal("check") }).strict(),
   z
@@ -115,6 +129,12 @@ export const syncStatusSchema = z
   })
   .strict();
 export const syncResponseSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("initialization-preview"),
+      preview: syncInitializationPreviewSchema
+    })
+    .strict(),
   z.object({ kind: z.literal("status"), status: syncStatusSchema }).strict(),
   z
     .object({ kind: z.literal("spaces"), spaces: z.array(syncSpaceSchema) })
@@ -130,6 +150,16 @@ export async function dispatchSyncRequest(
 ): Promise<SyncResponse> {
   const request = syncRequestSchema.parse(raw);
   switch (request.operation) {
+    case "preview-initialization":
+      return {
+        kind: "initialization-preview",
+        preview: await api.previewInitialization(request.deviceId)
+      };
+    case "initialize":
+      return {
+        kind: "status",
+        status: await api.initializeFromRemote(request.token)
+      };
     case "status":
       return { kind: "status", status: await api.status() };
     case "check":
@@ -168,6 +198,8 @@ export async function dispatchSyncRequest(
 export function syncErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "";
   const allowed = [
+    ...SYNC_INITIALIZATION_ERRORS,
+    "请先选择本机工作目录。",
     "网盘账号或应用密码不正确。",
     "没有访问该同步目录的权限。",
     "服务器不支持所需的 WebDAV 操作。",

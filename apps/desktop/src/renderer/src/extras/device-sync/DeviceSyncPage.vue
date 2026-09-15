@@ -8,6 +8,7 @@ import SyncConnectionForm from "./SyncConnectionForm.vue";
 import SyncConflictCard from "./SyncConflictCard.vue";
 import SyncStatusCard from "./SyncStatusCard.vue";
 import SyncChangesPanel from "./SyncChangesPanel.vue";
+import SyncInitializationPanel from "./SyncInitializationPanel.vue";
 import SyncContentPanel from "./SyncContentPanel.vue";
 import { uiMessage } from "../../ui-feedback";
 import "./device-sync.css";
@@ -15,10 +16,8 @@ const props = defineProps<{
   prepareSync(): Promise<boolean>;
   refreshSync(): Promise<void>;
 }>();
-const { status, pending, run } = useDeviceSync(
-  props.refreshSync,
-  props.prepareSync
-);
+const { status, pending, initialLoading, loadInitialStatus, run } =
+  useDeviceSync(props.refreshSync, props.prepareSync);
 const tab = ref("overview");
 const qr = ref("");
 const restoring = ref<Omit<SyncHistory, "item"> | null>(null);
@@ -27,6 +26,7 @@ const tabs = [
   { id: "content", label: "同步范围" },
   { id: "devices", label: "设备" },
   { id: "history", label: "历史与恢复" },
+  { id: "initialization", label: "从远端初始化" },
   { id: "connection", label: "连接设置" }
 ];
 async function connectPhone() {
@@ -85,8 +85,25 @@ async function restore() {
       <AppIcon name="arrow-left" />
       <span>返回同步首页</span>
     </button>
+    <section
+      v-if="!status"
+      class="sync-card"
+      :aria-busy="initialLoading"
+      aria-label="读取同步状态"
+    >
+      <p role="status">
+        {{ initialLoading ? "正在读取同步状态…" : "同步状态尚未载入。" }}
+      </p>
+      <button
+        v-if="!initialLoading"
+        class="sync-button secondary"
+        @click="loadInitialStatus"
+      >
+        重新读取
+      </button>
+    </section>
     <SyncConnectionForm
-      v-if="!status?.config?.spaceId || tab === 'connection'"
+      v-else-if="!status.config?.spaceId || tab === 'connection'"
       :config="status?.config ?? null"
       :pending="pending"
       :request="run"
@@ -105,6 +122,20 @@ async function restore() {
         </button>
       </nav>
       <template v-if="tab === 'overview'">
+        <section
+          v-if="status.issues.some((entry) => entry.reason === 'unsupported')"
+          class="sync-card"
+        >
+          <h2>本机作品无法参与同步？</h2>
+          <p>如果手机里有完整数据，可以下载校验后重新初始化本机。</p>
+          <button
+            class="sync-button secondary"
+            :disabled="pending"
+            @click="tab = 'initialization'"
+          >
+            从远端初始化
+          </button>
+        </section>
         <SyncChangesPanel
           :status="status"
           :pending="pending"
@@ -129,6 +160,12 @@ async function restore() {
           "
         />
       </template>
+      <SyncInitializationPanel
+        v-if="tab === 'initialization'"
+        :status="status"
+        :pending="pending"
+        :request="run"
+      />
       <SyncContentPanel
         v-if="tab === 'content'"
         :items="status.items"

@@ -1,3 +1,6 @@
+import { useCatalogIndexStore } from "../../stores/catalogIndexStore";
+import { createPinia, setActivePinia } from "pinia";
+import { useLongWorkspaceStore } from "../../stores/longWorkspaceStore";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 import type {
@@ -67,6 +70,71 @@ describe("device sync renderer bridge", () => {
       history: []
     };
   }
+
+  it("drops the old active long-book cache before reloading the initialized catalog", async () => {
+    setActivePinia(createPinia());
+    const store = useLongWorkspaceStore();
+    const clearCatalog = vi.spyOn(useCatalogIndexStore(), "clear");
+    store.activateBook("longbook_old");
+    const response: SyncResponse = {
+      kind: "status",
+      status: {
+        ...initialStatus(),
+        progress: {
+          phase: "complete",
+          title: "本机已初始化",
+          completed: 1,
+          total: 1
+        }
+      }
+    };
+    bridgeRequest.mockResolvedValueOnce(response);
+    const changed = vi.fn(async () => {
+      expect(store.activeBookId).toBeNull();
+    });
+    const sync = useDeviceSync(changed, async () => true);
+    await sync.run({ operation: "initialize", token: "preview_test" });
+    expect(changed).toHaveBeenCalledOnce();
+    expect(store.activeBookId).toBeNull();
+    expect(clearCatalog).toHaveBeenCalledOnce();
+  });
+
+  it.each(["preview-initialization", "initialize"] as const)(
+    "saves before %s and refreshes only after replacement",
+    async (operation) => {
+      const prepare = vi.fn(async () => true);
+      const changed = vi.fn(async () => undefined);
+      const sync = useDeviceSync(changed, prepare);
+      const input: SyncRequest =
+        operation === "initialize"
+          ? { operation, token: "preview_test" }
+          : { operation, deviceId: "phone_test" };
+      await sync.run(input);
+      expect(prepare).toHaveBeenCalledOnce();
+      expect(bridgeRequest).toHaveBeenCalledWith(input);
+      expect(changed).toHaveBeenCalledTimes(operation === "initialize" ? 1 : 0);
+    }
+  );
+
+  it.each(["preview-initialization", "initialize"] as const)(
+    "does not send %s while drafts cannot be saved",
+    async (operation) => {
+      const prepare = vi.fn(async () => false);
+      const changed = vi.fn(async () => undefined);
+      const sync = useDeviceSync(changed, prepare);
+      await sync.run(
+        operation === "initialize"
+          ? { operation, token: "preview_test" }
+          : { operation, deviceId: "phone_test" }
+      );
+      expect(
+        bridgeRequest.mock.calls.some(
+          ([input]) => input.operation === operation
+        )
+      ).toBe(false);
+      expect(changed).not.toHaveBeenCalled();
+    }
+  );
 
   it("previews first sync without saving or reloading local drafts", async () => {
     const prepare = vi.fn(async () => false);

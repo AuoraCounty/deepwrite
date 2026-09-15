@@ -1,4 +1,9 @@
 import {
+  applySyncInitialization,
+  prepareSyncInitialization,
+  type PreparedSyncInitialization
+} from "./initialization";
+import {
   type SyncAdoption,
   type SyncApi,
   type SyncConfig,
@@ -25,12 +30,14 @@ const IDLE: SyncProgress = { phase: "idle", completed: 0, total: 0, title: "" };
 
 export class DeviceSyncService implements SyncApi {
   private running = false;
+  private prepared: PreparedSyncInitialization | null = null;
   private controller: AbortController | null = null;
   private state: SyncRunState = { progress: IDLE, issues: [] };
   private initialization: Promise<void> | null = null;
   private lastStatus: SyncStatus | null = null;
   constructor(private readonly options: SyncServiceOptions) {}
   private async metadata(): Promise<SyncMetadata> {
+    await this.options.workspace.recover();
     this.initialization ??= loadSyncMetadata(this.options)
       .then(() => undefined)
       .catch((error: unknown) => {
@@ -156,6 +163,57 @@ export class DeviceSyncService implements SyncApi {
   }
   cancel(): void {
     this.controller?.abort();
+  }
+
+  async previewInitialization(deviceId: string) {
+    return this.exclusive(async () => {
+      this.prepared = null;
+      this.controller = new AbortController();
+      try {
+        await this.metadata();
+        this.prepared = await prepareSyncInitialization(
+          this.options,
+          this.state,
+          deviceId,
+          this.controller.signal
+        );
+        return this.prepared.preview;
+      } catch (error) {
+        this.state.progress = {
+          ...IDLE,
+          phase: this.controller.signal.aborted ? "cancelled" : "failed",
+          title: "初始化预览未完成，本机数据保持不变"
+        };
+        throw error;
+      } finally {
+        this.controller = null;
+      }
+    });
+  }
+  async initializeFromRemote(token: string): Promise<SyncStatus> {
+    return this.exclusive(async () => {
+      this.controller = new AbortController();
+      try {
+        await applySyncInitialization(
+          this.options,
+          this.state,
+          this.prepared,
+          token,
+          this.controller.signal
+        );
+      } catch (error) {
+        this.state.progress = {
+          ...IDLE,
+          phase: this.controller.signal.aborted ? "cancelled" : "failed",
+          title: "初始化未完成，请检查提示后重试"
+        };
+        throw error;
+      } finally {
+        this.controller = null;
+        this.prepared = null;
+      }
+      return this.status();
+    });
   }
 
   async sync(

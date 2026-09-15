@@ -1,3 +1,8 @@
+import { inspectDesktopInitialization } from "./device-sync-initialization-inspection";
+import {
+  recoverDesktopInitialization,
+  replaceDesktopInitialization
+} from "./device-sync-initialization";
 import {
   DeviceSyncInventorySchema,
   syncErrorMessage,
@@ -20,11 +25,18 @@ export function withDeviceSyncCommands(
   return (command: CommandEnvelope): Promise<CommandResult> => {
     const result = tail.then(async (): Promise<CommandResult> => {
       try {
+        await recoverDesktopInitialization(userDataPath);
         await workspace.recover();
         if (command.type !== "deviceSync.workspace") return handler(command);
         const input = command.payload;
         let payload: unknown = {};
         switch (input.operation) {
+          case "inspect-initialization":
+            payload = await inspectDesktopInitialization(userDataPath);
+            break;
+          case "replace-initialization":
+            await replaceDesktopInitialization(userDataPath, input);
+            break;
           case "list":
             payload = DeviceSyncInventorySchema.parse(await workspace.list());
             break;

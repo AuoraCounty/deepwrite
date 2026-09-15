@@ -1,4 +1,8 @@
 import type {
+  SyncInitializationPreview,
+  SyncInitializationWorkspacePort
+} from "./initialization";
+import type {
   SyncClock,
   SyncCommit,
   SyncConfig,
@@ -83,6 +87,7 @@ export interface SyncTransport {
   test(signal?: AbortSignal): Promise<void>;
 }
 export interface SyncWorkspacePort {
+  initialization?: SyncInitializationWorkspacePort;
   list(): Promise<{
     items: SyncItem[];
     issues: { key: string; title: string; message: string }[];
@@ -118,6 +123,8 @@ export interface SyncServiceOptions {
   transport(config: SyncConfig, password: string): SyncTransport;
 }
 export interface SyncApi {
+  previewInitialization(deviceId: string): Promise<SyncInitializationPreview>;
+  initializeFromRemote(token: string): Promise<SyncStatus>;
   status(): Promise<SyncStatus>;
   check(): Promise<SyncStatus>;
   connect(config: SyncConfig, password: string): Promise<SyncSpace[]>;

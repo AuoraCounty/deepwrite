@@ -45,6 +45,43 @@ describe("device sync preload boundary", () => {
     }
   );
 
+  it("validates initialization preview and confirmation at the preload boundary", async () => {
+    const preview = {
+      token: "preview_test",
+      deviceId: "phone_test",
+      deviceName: "测试手机",
+      remoteUpdatedAt: "2026-09-15T00:00:00.000Z",
+      remoteHash: "a".repeat(64),
+      itemCount: 3,
+      fileCount: 8,
+      localItemCount: 2,
+      expiresAt: "2026-09-15T00:10:00.000Z"
+    };
+    invoke.mockResolvedValue({
+      ok: true,
+      value: { kind: "initialization-preview", preview }
+    });
+    await expect(
+      deviceSync.request({
+        operation: "preview-initialization",
+        deviceId: "phone_test"
+      })
+    ).resolves.toEqual({ kind: "initialization-preview", preview });
+    invoke.mockResolvedValue({ ok: true, value: { kind: "cancelled" } });
+    await deviceSync.request({ operation: "initialize", token: preview.token });
+    expect(invoke).toHaveBeenLastCalledWith(
+      DEVICE_SYNC_IPC_CHANNEL,
+      expect.objectContaining({
+        payload: { operation: "initialize", token: preview.token }
+      })
+    );
+    invoke.mockClear();
+    await expect(
+      deviceSync.request({ operation: "initialize", token: "" })
+    ).rejects.toThrow();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it("rejects an empty adoption scope before sending IPC", async () => {
     await expect(
       deviceSync.request({

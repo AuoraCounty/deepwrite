@@ -13,6 +13,7 @@ export function useDeviceSync(
 ) {
   const status = ref<SyncStatus | null>(null);
   const pending = ref(false);
+  const initialLoading = ref(true);
   let timer: ReturnType<typeof setInterval> | undefined;
   let disposed = false;
   let epoch = 0;
@@ -39,22 +40,42 @@ export function useDeviceSync(
       status.value?.firstSyncConfirmed === false &&
       !input.confirmFirst;
     const changesWorkspace =
-      ["sync", "restore"].includes(input.operation) && !previewOnly;
+      ["sync", "restore", "initialize"].includes(input.operation) &&
+      !previewOnly;
     const mutation = input.operation !== "cancel";
     if (mutation) {
       epoch++;
       pending.value = true;
     }
     try {
-      if (changesWorkspace && !(await prepareSync())) {
+      if (
+        (changesWorkspace || input.operation === "preview-initialization") &&
+        !(await prepareSync())
+      ) {
         uiMessage.info("请先保存正文并处理保存冲突。");
         return null;
       }
       const response = await request(input);
+      if (
+        input.operation === "initialize" &&
+        response.kind === "status" &&
+        response.status.progress.phase === "complete"
+      ) {
+        const [{ useLongWorkspaceStore }, { useCatalogIndexStore }] =
+          await Promise.all([
+            import("../../stores/longWorkspaceStore"),
+            import("../../stores/catalogIndexStore")
+          ]);
+        useLongWorkspaceStore().clear();
+        useCatalogIndexStore().clear();
+      }
       if (changesWorkspace) await changed();
       if (input.operation === "restore")
         uiMessage.success("已恢复到本机，下次手动同步时上传。");
-      if (input.operation === "sync" && response.kind === "status") {
+      if (
+        ["sync", "initialize"].includes(input.operation) &&
+        response.kind === "status"
+      ) {
         if (response.status.progress.phase === "complete")
           uiMessage.success(response.status.progress.title);
         else if (response.status.progress.phase === "partial")
@@ -77,21 +98,27 @@ export function useDeviceSync(
         });
     }
   };
-  onMounted(() => {
-    void request({ operation: "status" })
-      .then((result) => {
-        if (
-          !disposed &&
-          result.kind === "status" &&
-          result.status.config?.spaceId
-        )
-          return run({ operation: "check" });
-      })
-      .catch((error: unknown) =>
+  async function loadInitialStatus(): Promise<void> {
+    initialLoading.value = true;
+    try {
+      const result = await request({ operation: "status" });
+      if (
+        !disposed &&
+        result.kind === "status" &&
+        result.status.config?.spaceId
+      )
+        void run({ operation: "check" });
+    } catch (error) {
+      if (!disposed)
         uiMessage.error(
           error instanceof Error ? error.message : "读取同步状态失败。"
-        )
-      );
+        );
+    } finally {
+      if (!disposed) initialLoading.value = false;
+    }
+  }
+  onMounted(() => {
+    void loadInitialStatus();
     timer = setInterval(() => {
       if (pending.value)
         void request({ operation: "status" }).catch(() => {
@@ -103,5 +130,5 @@ export function useDeviceSync(
     disposed = true;
     if (timer) clearInterval(timer);
   });
-  return { status, pending, run, request };
+  return { status, pending, initialLoading, loadInitialStatus, run, request };
 }
