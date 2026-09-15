@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import AppIcon from "../../components/AppIcon.vue";
 import PopupSelect from "../../components/PopupSelect.vue";
 import { uiMessage } from "../../ui-feedback";
@@ -12,6 +12,27 @@ const pasteTitle = ref("");
 const pasteText = ref("");
 const historyId = ref("");
 const disabled = computed(() => c.isBusy.value || c.loading.value);
+watch([c.savedSources, c.drafts], ([sources, drafts]) => {
+  if (
+    !sources.some((source) => source.id === historyId.value) ||
+    !drafts.some((source) => source.id === historyId.value)
+  )
+    historyId.value = "";
+});
+function deleteSource(id: string) {
+  const source = c.savedSources.value.find((book) => book.id === id);
+  if (disabled.value || !source) return;
+  if (
+    !window.confirm(
+      `确认彻底删除短篇“${source.title}”吗？\n将删除工作目录中的来源备份，并从当前列表去除，无法撤销。原始文件及已保存到资料库的分析结果不受影响。`
+    )
+  )
+    return;
+  return act(async () => {
+    await c.deleteSource(id);
+    uiMessage.success("短篇及来源备份已彻底删除。");
+  });
+}
 async function act(action: () => unknown) {
   try {
     await action();
@@ -40,7 +61,9 @@ onMounted(() => void act(() => c.loadSources()));
           c.savedSources.value.map((b) => ({
             value: b.id,
             label: b.title,
-            description: `${b.characterCount.toLocaleString()} 字`
+            description: `${b.characterCount.toLocaleString()} 字`,
+            actionIcon: 'trash',
+            actionLabel: `彻底删除 ${b.title}`
           }))
         "
         :placeholder="
@@ -54,6 +77,7 @@ onMounted(() => void act(() => c.loadSources()));
         :disabled="disabled || !c.savedSources.value.length"
         :menu-min-width="320"
         @change="(id) => act(() => c.loadSource(String(id)))"
+        @option-action="(id) => deleteSource(String(id))"
         ><template #prefix><AppIcon name="book" :size="15" /></template
       ></PopupSelect>
     </div>

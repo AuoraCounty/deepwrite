@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
 import {
   SystemEventEnvelopeSchema,
+  parseSkillMarkdown,
   type DeepWriteApi,
   type ModelConfig,
   type SessionPromptCommandPayload
@@ -96,7 +97,7 @@ describe("revision analysis runtime to persisted skill", () => {
           .entries
       ).toHaveLength(0);
       c.result.value!.body += "\n用户确认：避免用动作替代所有必要说明。";
-      await c.persistSkill(library, "draft");
+      await c.persistSkill(library);
       const reopened = new FolderCatalogStore({ userDataPath: root });
       const saved = (await reopened.snapshot()).skills.find(
         (l) => l.id === library.id
@@ -104,7 +105,12 @@ describe("revision analysis runtime to persisted skill", () => {
       expect(saved.entries).toHaveLength(1);
       expect(saved.entries[0]).toMatchObject({
         stageId: "draft",
-        title: c.result.value!.title,
+        title: c.result.value!.title
+      });
+      expect(parseSkillMarkdown(saved.entries[0]!.body)).toEqual({
+        valid: true,
+        name: c.result.value!.title,
+        description: c.result.value!.description,
         body: c.result.value!.body
       });
       const book = await reopened.createShortBook({

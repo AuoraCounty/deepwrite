@@ -71,7 +71,8 @@ const api = {
           characterCount: text.length
         }))
       }),
-      load: async (id: string) => sources.find((s) => s.id === id)
+      load: async (id: string) => sources.find((s) => s.id === id),
+      delete: async (id: string) => id
     },
     addText: async (input: { title: string; text: string }) => ({
       ...sources[0],
@@ -170,6 +171,79 @@ async function run() {
       c.activeId.value === "book-2",
     "Saved source loads directly from header"
   );
+  const nativeConfirm = window.confirm;
+  try {
+    window.confirm = () => {
+      throw new Error("Removal must not ask for confirmation");
+    };
+    c.toggleBook("book-2");
+    document
+      .querySelector<HTMLButtonElement>(
+        `[aria-label="去除 ${sources[2]!.title}"]`
+      )!
+      .click();
+    await frame();
+    check(
+      !c.drafts.value.some((book) => book.id === "book-2") &&
+        !c.selectedIds.value.includes("book-2"),
+      "Removal clears current draft and selection"
+    );
+    check(
+      c.savedSources.value.some((book) => book.id === "book-2"),
+      "Removal retains saved source"
+    );
+    const openHistory = async () => {
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="已保存短篇"]')!
+        .click();
+      await frame();
+    };
+    await openHistory();
+    Array.from(document.querySelectorAll<HTMLButtonElement>('[role="option"]'))
+      .find((el) => el.textContent?.includes(sources[2]!.title))!
+      .click();
+    await frame();
+    check(
+      c.drafts.value.some((book) => book.id === "book-2"),
+      "Removed source can be selected again immediately"
+    );
+    window.confirm = () => false;
+    const deleteButton = () =>
+      document.querySelector<HTMLButtonElement>(
+        `[aria-label="彻底删除 ${sources[2]!.title}"]`
+      )!;
+    await openHistory();
+    deleteButton().click();
+    await frame();
+    check(
+      c.drafts.value.some((book) => book.id === "book-2"),
+      "Cancel retains source"
+    );
+    window.confirm = () => true;
+    await openHistory();
+    deleteButton().click();
+    await frame();
+    check(
+      !c.drafts.value.some((book) => book.id === "book-2"),
+      "Delete removes source from current list"
+    );
+    check(
+      !c.savedSources.value.some((book) => book.id === "book-2"),
+      "Delete removes saved source option"
+    );
+    check(
+      c.activeId.value === "pasted",
+      "Delete switches editor to remaining source"
+    );
+    check(
+      document
+        .querySelector('[aria-label="已保存短篇"]')
+        ?.textContent?.includes("选择已导入短篇"),
+      "History selection clears after deletion"
+    );
+  } finally {
+    window.confirm = nativeConfirm;
+  }
   c.drafts.value = [...sources];
   c.activeId.value = "book-0";
   for (let i = 0; i < 10; i++) c.toggleBook(`book-${i}`);
@@ -193,6 +267,12 @@ async function run() {
   check(
     request?.workspaceContext?.shortBookAnalysis?.books.length === 10,
     "Ten complete texts submitted"
+  );
+  check(
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>(".short-book-remove")
+    ).every((el) => el.disabled),
+    "Removal is disabled during analysis"
   );
   visible.value = false;
   await frame();
@@ -239,7 +319,7 @@ async function run() {
   await frame();
   button("取消").click();
   await frame();
-  return { passed: true, checks: 10 };
+  return { passed: true, checks: 20 };
 }
 async function show(
   scheme: "light" | "dark",

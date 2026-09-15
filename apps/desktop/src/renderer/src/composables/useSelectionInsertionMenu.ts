@@ -1,79 +1,34 @@
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount } from "vue";
 import type { EditorTextReference } from "../types/conversation";
-
-interface SelectionInsertionAction {
-  reference: EditorTextReference;
-  left: number;
-  top: number;
-}
-
-const SELECTION_MENU_WIDTH = 142;
-const SELECTION_MENU_HEIGHT = 42;
-const VIEWPORT_MARGIN = 8;
+import {
+  registerTextMenuExtension,
+  type TextMenuHistory
+} from "./nativeTextContextMenu";
 
 export function useSelectionInsertionMenu(options: {
   insert(reference: EditorTextReference): void;
 }) {
-  const selectionAction = ref<SelectionInsertionAction | null>(null);
+  let release: (() => void) | undefined;
 
   function closeSelectionAction(): void {
-    selectionAction.value = null;
+    release?.();
+    release = undefined;
   }
 
   function openSelectionAction(
-    reference: EditorTextReference,
-    event: MouseEvent
+    reference: EditorTextReference | undefined,
+    event: MouseEvent,
+    history?: TextMenuHistory,
+    valid: () => boolean = () => true
   ): void {
-    selectionAction.value = {
-      reference,
-      left: Math.max(
-        VIEWPORT_MARGIN,
-        Math.min(
-          globalThis.innerWidth - SELECTION_MENU_WIDTH - VIEWPORT_MARGIN,
-          event.clientX + VIEWPORT_MARGIN
-        )
-      ),
-      top: Math.max(
-        VIEWPORT_MARGIN,
-        Math.min(
-          globalThis.innerHeight - SELECTION_MENU_HEIGHT - VIEWPORT_MARGIN,
-          event.clientY + VIEWPORT_MARGIN
-        )
-      )
-    };
-  }
-
-  function insertSelectedText(): void {
-    const reference = selectionAction.value?.reference;
-    if (!reference) return;
-    options.insert(reference);
     closeSelectionAction();
+    release = registerTextMenuExtension(event, {
+      valid,
+      history,
+      ...(reference ? { insert: () => options.insert(reference) } : {})
+    });
   }
 
-  function handleWindowPointerDown(event: PointerEvent): void {
-    const target = event.target;
-    if (target instanceof Element && target.closest(".editor-selection-menu")) {
-      return;
-    }
-    closeSelectionAction();
-  }
-
-  onMounted(() => {
-    globalThis.addEventListener("pointerdown", handleWindowPointerDown, true);
-  });
-
-  onBeforeUnmount(() => {
-    globalThis.removeEventListener(
-      "pointerdown",
-      handleWindowPointerDown,
-      true
-    );
-  });
-
-  return {
-    selectionAction,
-    closeSelectionAction,
-    openSelectionAction,
-    insertSelectedText
-  };
+  onBeforeUnmount(closeSelectionAction);
+  return { closeSelectionAction, openSelectionAction };
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { expectSourceToContain } from "../../../test-utils/sourceText";
 import appSource from "../WorkspaceShell.vue?raw";
 import source from "./RightEditorPane.vue?raw";
-import selectionMenuSource from "./EditorSelectionMenu.vue?raw";
+import selectionMenuSource from "../../../main/text-context-menu-items.ts?raw";
 import writingWorkspaceSource from "./WritingWorkspaceModule.vue?raw";
 import persistenceSource from "../composables/useCatalogDocumentPersistence.ts?raw";
 import resourceSource from "../composables/useWorkspaceResourceCoordinator.ts?raw";
@@ -255,12 +255,10 @@ describe("RightEditorPane expert draft navigation", () => {
   });
 
   it("offers one insert action only after right-clicking a selected editor range", () => {
-    expect(selectionMenuSource).toContain('aria-label="正文选区操作"');
     expect(selectionMenuSource).toContain("插入输入框");
-    expect(selectionMenuSource.match(/role="menuitem"/g)).toHaveLength(1);
     expect(source).toContain('@contextmenu="handleEditorContextMenu"');
     expect(source).toContain('@contextmenu="handlePreviewContextMenu"');
-    expect(selectionInsertionSource).toContain("event.preventDefault()");
+    expect(selectionInsertionSource).not.toContain("event.preventDefault()");
     expect(selectionInsertionSource).toContain(
       "function handlePreviewContextMenu"
     );
@@ -286,7 +284,7 @@ describe("RightEditorPane expert draft navigation", () => {
     expect(source).toContain(
       'props.document.domain === "material" ||\n      props.document.domain === "skill"'
     );
-    expect(source).toContain("<EditorSelectionMenu");
+    expect(source).not.toContain("<EditorSelectionMenu");
   });
 
   it("provides working text undo, redo, find, and replace controls", () => {

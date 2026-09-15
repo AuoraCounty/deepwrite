@@ -5,19 +5,16 @@ import { useConversationWindowPins } from "../composables/conversation-window/us
 import { useConversationMessageEditing } from "../composables/useConversationMessageEditing";
 import { provideConversationDisclosureState } from "../composables/conversationDisclosureState";
 import type { LongWorkspaceIndexSnapshot } from "@deepwrite/contracts";
-import { randomHex8 } from "@deepwrite/shared";
 import type { LongWorkspaceProposalItem } from "../composables/useLongWorkspaceProposals";
-import { useSelectionInsertionMenu } from "../composables/useSelectionInsertionMenu";
+import { useConversationSelectionInsertion } from "../composables/useConversationSelectionInsertion";
 import type { AgentWelcomeContent } from "../data/agentWelcome";
 import type {
   ChatMessage,
   ConversationMessageRewriteRequest,
   EditorTextReference
 } from "../types/conversation";
-import { createConversationTextReference } from "../utils/editorTextReferences";
 import AppIcon from "./AppIcon.vue";
 import ConversationMessageItem from "./ConversationMessageItem.vue";
-import EditorSelectionMenu from "./EditorSelectionMenu.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -99,54 +96,11 @@ function setConversationScroller(element: unknown): void {
   scroller.value = element instanceof HTMLElement ? element : undefined;
   props.setScroller(element);
 }
-const {
-  selectionAction,
-  closeSelectionAction,
-  openSelectionAction,
-  insertSelectedText
-} = useSelectionInsertionMenu({
+const { handleConversationContextMenu } = useConversationSelectionInsertion({
+  messages: () => props.messages,
+  conversationSessionId: () => props.conversationSessionId,
   insert: (reference) => emit("insertSelection", reference)
 });
-
-function handleConversationContextMenu(event: MouseEvent): void {
-  const target = event.target;
-  const list = event.currentTarget;
-  if (!(target instanceof Element) || !(list instanceof HTMLElement)) return;
-  const response = target.closest<HTMLElement>(
-    "[data-assistant-response-message-id]"
-  );
-  const selection = globalThis.getSelection?.();
-  if (
-    !response ||
-    !list.contains(response) ||
-    !selection ||
-    selection.isCollapsed ||
-    selection.rangeCount !== 1 ||
-    !response.contains(selection.getRangeAt(0).commonAncestorContainer)
-  ) {
-    closeSelectionAction();
-    return;
-  }
-
-  const messageId = response.dataset.assistantResponseMessageId;
-  const sessionId = props.conversationSessionId;
-  if (!messageId || !sessionId) return;
-  const responseNumber =
-    props.messages
-      .filter(({ role }) => role === "assistant")
-      .findIndex(({ id }) => id === messageId) + 1;
-  if (responseNumber < 1) return;
-  const reference = createConversationTextReference({
-    id: randomHex8(),
-    sessionId,
-    messageId,
-    messageLabel: `智能体回复 ${responseNumber}`,
-    text: selection.toString()
-  });
-  if (!reference) return;
-  openSelectionAction(reference, event);
-  event.preventDefault();
-}
 </script>
 
 <template>
@@ -219,12 +173,6 @@ function handleConversationContextMenu(event: MouseEvent): void {
       </article>
     </div>
   </section>
-  <EditorSelectionMenu
-    v-if="selectionAction"
-    :left="selectionAction.left"
-    :top="selectionAction.top"
-    @insert="insertSelectedText"
-  />
 </template>
 
 <style scoped>

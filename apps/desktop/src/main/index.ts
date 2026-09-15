@@ -10,7 +10,7 @@ import { createRendererStateFlushCoordinator } from "./renderer-state-flush";
 import { createGracefulShutdown } from "./graceful-shutdown";
 import { guardConversationWindowClose } from "./conversation-window-close";
 import { createCloudBackupFeature } from "../extras/cloud-backup/create-service";
-import { loadWindowRenderer } from "./window-renderer";
+import { createDesktopWindow } from "./create-desktop-window";
 import {
   createDesktopDeviceSync,
   registerDeviceSyncIpc
@@ -27,8 +27,7 @@ import {
   dialog,
   ipcMain,
   nativeImage,
-  nativeTheme,
-  shell
+  nativeTheme
 } from "electron";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -156,10 +155,7 @@ import { LearningImitationConfigStore } from "./learning-imitation-config-store"
 import { LibraryAgentConfigStore } from "./library-agent-config-store";
 import { LongAgentConfigStore } from "./long-agent-config-store";
 import { resolveModelRunSettings } from "./model-run-settings";
-import {
-  applyNativeAppearanceChrome,
-  resolveNativeBackgroundColor
-} from "./native-appearance-chrome";
+import { applyNativeAppearanceChrome } from "./native-appearance-chrome";
 import { exportShortManuscript } from "./short-manuscript-export";
 import { exportLongManuscript } from "./long-manuscript-export";
 import { UtilityCommandTimeoutError, UtilitySupervisor } from "./supervisor";
@@ -502,114 +498,9 @@ const supervisor = new UtilitySupervisor({
     authorizeMainInternalCommand(context, activeRuns)
 });
 
-function isSafeExternalUrl(rawUrl: string): boolean {
-  try {
-    return new URL(rawUrl).protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-const ZHUQUE_DETECTION_ORIGIN = "https://matrix.tencent.com";
-
-function isAllowedZhuqueDetectionUrl(rawUrl: string): boolean {
-  try {
-    return new URL(rawUrl).origin === ZHUQUE_DETECTION_ORIGIN;
-  } catch {
-    return false;
-  }
-}
-
 function createMainWindow(): BrowserWindow {
-  const isDarwin = process.platform === "darwin";
-  const window = new BrowserWindow({
-    width: 1560,
-    height: 940,
-    minWidth: 1120,
-    minHeight: 700,
-    show: false,
-    backgroundColor: resolveNativeBackgroundColor(cachedAppearanceSettings),
-    title: "DeepWrite",
-    icon: join(__dirname, "../../build/icon.png"),
-    ...(isDarwin
-      ? {
-          titleBarStyle: "hiddenInset" as const,
-          trafficLightPosition: { x: 14, y: 10 }
-        }
-      : {}),
-    webPreferences: {
-      preload: join(__dirname, "../preload/index.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-      webviewTag: true
-    }
-  });
+  const window = createDesktopWindow(cachedAppearanceSettings);
   const windowWebContentsId = window.webContents.id;
-
-  applyNativeAppearanceChrome(cachedAppearanceSettings, [window]);
-
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    if (isSafeExternalUrl(url)) {
-      void shell.openExternal(url);
-    }
-    return { action: "deny" };
-  });
-
-  window.webContents.on(
-    "will-attach-webview",
-    (event, webPreferences, params) => {
-      if (
-        typeof params.src !== "string" ||
-        !isAllowedZhuqueDetectionUrl(params.src)
-      ) {
-        event.preventDefault();
-        return;
-      }
-      delete webPreferences.preload;
-      webPreferences.nodeIntegration = false;
-      webPreferences.contextIsolation = true;
-      webPreferences.sandbox = true;
-    }
-  );
-
-  window.webContents.on("did-attach-webview", (_event, guestContents) => {
-    guestContents.setWindowOpenHandler(({ url }) => {
-      if (isSafeExternalUrl(url)) {
-        void shell.openExternal(url);
-      }
-      return { action: "deny" };
-    });
-    guestContents.on("will-navigate", (event, url) => {
-      if (isAllowedZhuqueDetectionUrl(url)) return;
-      event.preventDefault();
-      if (isSafeExternalUrl(url)) {
-        void shell.openExternal(url);
-      }
-    });
-  });
-
-  window.webContents.on("will-navigate", (event, url) => {
-    if (url === window.webContents.getURL()) {
-      return;
-    }
-    event.preventDefault();
-    if (isSafeExternalUrl(url)) {
-      void shell.openExternal(url);
-    }
-  });
-
-  if (process.env.DEEPWRITE_SMOKE !== "1") {
-    window.once("ready-to-show", () => window.show());
-  }
-
-  void loadWindowRenderer(
-    window,
-    join(__dirname, "../renderer/index.html"),
-    process.env.ELECTRON_RENDERER_URL
-  ).catch((error: unknown) => console.error("加载工作台失败", error));
-
   window.webContents.once("did-finish-load", () => void announceReady(window));
   window.on("close", (event) => {
     if (cachedGeneralSettings.showInMenuBar && !quitting && !shutdownComplete) {

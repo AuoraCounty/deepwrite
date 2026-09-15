@@ -29,6 +29,10 @@ export const ShortBookAnalysisCommandSchemas = [
     payload: z.object({ sourceId: Id })
   }),
   EnvelopeBaseSchema.extend({
+    type: z.literal("shortBookAnalysis.deleteSource"),
+    payload: z.object({ sourceId: Id })
+  }),
+  EnvelopeBaseSchema.extend({
     type: z.literal("shortBookAnalysisSettings.list"),
     payload: z.object({})
   }),
@@ -45,6 +49,13 @@ export const ShortBookAnalysisCommandSchemas = [
     payload: z.object({
       workspaceDirectory: z.string().min(1),
       sources: ShortBookAnalysisSourcesSchema.min(1)
+    })
+  }),
+  EnvelopeBaseSchema.extend({
+    type: z.literal("shortBookAnalysis.deleteStoredSource"),
+    payload: z.object({
+      workspaceDirectory: z.string().min(1),
+      sourceId: Id
     })
   }),
   EnvelopeBaseSchema.extend({

@@ -1,3 +1,4 @@
+import type { TextContextMenuPreloadApi } from "./text-context-menu";
 import type { ConversationExportApi } from "./conversation-export";
 import type { LongPreloadApi } from "./long-preload-api";
 import type { BuiltinSubagentSettings } from "./builtin-subagents";
@@ -162,7 +163,7 @@ import type {
   ChatAssistantProjectRef
 } from "./chat-assistant";
 
-export interface DeepWriteApi {
+export interface DeepWriteApi extends TextContextMenuPreloadApi {
   system: {
     health(): Promise<SystemHealthPayload>;
   };

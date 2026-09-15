@@ -71,6 +71,7 @@ export interface ShortBookAnalysisApi {
   sources: {
     list(): Promise<z.infer<typeof ShortBookAnalysisCatalogSchema>>;
     load(sourceId: string): Promise<ShortBookAnalysisSource>;
+    delete(sourceId: string): Promise<ShortBookAnalysisSource["id"]>;
   };
   presets: {
     list(): Promise<ShortBookAnalysisSettings>;

@@ -36,7 +36,6 @@ import {
 import AppIcon from "./AppIcon.vue";
 import DocumentMetaRow from "./DocumentMetaRow.vue";
 import EditorSearchHighlight from "./EditorSearchHighlight.vue";
-import EditorSelectionMenu from "./EditorSelectionMenu.vue";
 import LongCharacterNavigation from "./LongCharacterNavigation.vue";
 import LongContinuityLedgerNavigation from "./LongContinuityLedgerNavigation.vue";
 import LongEditorDeleteDialogs from "./LongEditorDeleteDialogs.vue";
@@ -1087,12 +1086,16 @@ const currentReferenceDocumentId = computed(
   () => currentSelectionFile.value?.file.id ?? activeEditorScrollMemoryKey.value
 );
 const {
-  selectionAction,
   closeSelectionAction,
   handleEditorContextMenu,
-  handlePreviewContextMenu,
-  insertSelectedText
+  handlePreviewContextMenu
 } = useEditorSelectionInsertion({
+  history: {
+    canUndo: () => canUndo.value,
+    canRedo: () => canRedo.value,
+    undo: () => undo(),
+    redo: () => redo()
+  },
   source: () => {
     const selection = props.selection;
     if (!selection || !canUseTextTools.value) return undefined;
@@ -2741,12 +2744,6 @@ onBeforeUnmount(() => {
       @close-navigation-delete="closeNavigationDelete"
       @navigation-delete-keydown="handleNavigationDeleteKeydown"
       @confirm-navigation-delete="confirmNavigationDelete"
-    />
-    <EditorSelectionMenu
-      v-if="selectionAction"
-      :left="selectionAction.left"
-      :top="selectionAction.top"
-      @insert="insertSelectedText"
     />
   </section>
 </template>

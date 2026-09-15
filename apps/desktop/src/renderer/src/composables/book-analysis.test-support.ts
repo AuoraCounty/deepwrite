@@ -16,6 +16,7 @@ export function createBookAnalysisTestApi(): Pick<
       },
       sources: {
         list: async () => ({ sources: [] }),
+        delete: async (sourceId) => sourceId,
         load: async () => {
           throw new Error("not used");
         }

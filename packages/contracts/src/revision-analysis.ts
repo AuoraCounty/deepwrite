@@ -42,10 +42,17 @@ export const RevisionAnalysisInputSchema = z
   });
 export const RevisionAnalysisRuntimeContextSchema =
   RevisionAnalysisInputSchema.safeExtend({ jobId: z.string().min(1).max(120) });
-export const RevisionAnalysisResultSchema = z.object({
-  report: z.string().trim().min(1).max(200_000),
+export const RevisionAnalysisSkillDraftSchema = z.object({
   title: z.string().trim().min(1).max(256),
-  body: z.string().trim().min(1).max(200_000)
+  description: z.string().trim().min(1).max(4_000),
+  content: z.string().trim().min(1).max(200_000)
+});
+export const RevisionAnalysisResultSchema = z.object({
+  // A draft can arrive before the assistant's report text.
+  report: z.string().trim().max(200_000),
+  title: RevisionAnalysisSkillDraftSchema.shape.title,
+  description: RevisionAnalysisSkillDraftSchema.shape.description,
+  body: RevisionAnalysisSkillDraftSchema.shape.content
 });
 export type RevisionChange = z.infer<typeof RevisionChangeSchema>;
 export type RevisionAnalysisInput = z.infer<typeof RevisionAnalysisInputSchema>;

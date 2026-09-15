@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import moduleSource from "./LongWorkspaceModule.vue?raw";
 import editorSource from "./LongWorkspaceEditor.vue?raw";
 import manuscriptSource from "./LongManuscriptEditor.vue?raw";
-import menuSource from "./EditorSelectionMenu.vue?raw";
+import menuSource from "../../../main/text-context-menu-items.ts?raw";
 import pendingReferencesSource from "../composables/usePendingEditorReferences.ts?raw";
 
 describe("long editor selection insertion", () => {
@@ -22,7 +22,7 @@ describe("long editor selection insertion", () => {
     expect(manuscriptSource).toContain(
       "@contextmenu=\"emit('previewContextmenu', $event)\""
     );
-    expect(editorSource).toContain("<EditorSelectionMenu");
+    expect(editorSource).not.toContain("<EditorSelectionMenu");
     expect(menuSource).toContain("插入输入框");
     expect(editorSource).toContain('emit("insertSelection", reference)');
   });

@@ -51,7 +51,6 @@ import AppIcon from "./AppIcon.vue";
 import EditorDocumentMetadata from "./EditorDocumentMetadata.vue";
 import EditorEntrySearchRow from "./EditorEntrySearchRow.vue";
 import EditorSearchHighlight from "./EditorSearchHighlight.vue";
-import EditorSelectionMenu from "./EditorSelectionMenu.vue";
 import MarkdownContent from "./MarkdownContent.vue";
 
 const props = defineProps<{
@@ -107,12 +106,16 @@ const nonWhitespaceCharacterCount = ref(
 );
 const dirty = ref(props.draftState?.dirty ?? false);
 const {
-  selectionAction,
   closeSelectionAction,
   handleEditorContextMenu,
-  handlePreviewContextMenu,
-  insertSelectedText
+  handlePreviewContextMenu
 } = useEditorSelectionInsertion({
+  history: {
+    canUndo: () => canUndo.value,
+    canRedo: () => canRedo.value,
+    undo: () => undo(),
+    redo: () => redo()
+  },
   source: () => ({
     resourceId: props.resourceId,
     document: {
@@ -193,7 +196,7 @@ watch(activeScrollMemoryKey, (nextScrollMemoryKey, previousScrollMemoryKey) => {
   );
   dirty.value = props.draftState?.dirty ?? false;
   const nextViewMode = resetToDefault();
-  selectionAction.value = null;
+  closeSelectionAction();
   findPanelOpen.value = false;
   searchQuery.value = "";
   replacementText.value = "";
@@ -1197,11 +1200,4 @@ onBeforeUnmount(() => {
       </button>
     </footer>
   </aside>
-
-  <EditorSelectionMenu
-    v-if="selectionAction"
-    :left="selectionAction.left"
-    :top="selectionAction.top"
-    @insert="insertSelectedText"
-  />
 </template>

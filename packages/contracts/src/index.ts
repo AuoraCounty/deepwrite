@@ -69,3 +69,5 @@ export * from "./revision-analysis-events";
 
 export * from "./revision-analysis-defaults";
 export * from "./revision-analysis-budget";
+
+export * from "./text-context-menu";

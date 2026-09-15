@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEnvelope as envelope,
+  CommandEnvelopeSchema,
   ShortBookAnalysisSourceSchema,
   ShortBookAnalysisCatalogSchema,
   type CommandEnvelope
@@ -45,6 +46,91 @@ afterEach(async () => {
   );
 });
 describe("short analysis source import and Core snapshots", () => {
+  it("deletes only the requested snapshot and keeps original files and other sources", async () => {
+    const { path, ctx, dialog } = await setup();
+    const original = join(path, "story.md");
+    await writeFile(original, "完整正文");
+    dialog.showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [original]
+    });
+    const imported = await handleShortBookAnalysisCommands(
+      ctx,
+      createEnvelope("shortBookAnalysis.chooseSources", {})
+    );
+    if (imported?.status !== "accepted") throw new Error("Import failed");
+    const [source] = imported.payload as { id: string }[];
+    await handleShortBookAnalysisCommands(
+      ctx,
+      createEnvelope("shortBookAnalysis.addText", {
+        title: "保留",
+        text: "另一篇正文"
+      })
+    );
+    const deletion = createEnvelope("shortBookAnalysis.deleteSource", {
+      sourceId: source!.id
+    });
+    const deleted = await handleShortBookAnalysisCommands(ctx, deletion);
+    expect(deleted?.status === "accepted" && deleted.payload).toBe(source!.id);
+    expect((await handleShortBookAnalysisCommands(ctx, deletion))?.status).toBe(
+      "accepted"
+    );
+    expect(await readFile(original, "utf8")).toBe("完整正文");
+    await expect(
+      readFile(join(path, "short-book-analysis-sources", `${source!.id}.json`))
+    ).rejects.toMatchObject({ code: "ENOENT" });
+    const catalog = await handleShortBookAnalysisCommands(
+      ctx,
+      createEnvelope("shortBookAnalysis.listSources", {})
+    );
+    if (catalog?.status !== "accepted") throw new Error("List failed");
+    expect(
+      ShortBookAnalysisCatalogSchema.parse(catalog.payload).sources.map(
+        (book) => book.title
+      )
+    ).toEqual(["保留"]);
+    expect(
+      (
+        await handleShortBookAnalysisCommands(
+          ctx,
+          createEnvelope("shortBookAnalysis.loadSource", {
+            sourceId: source!.id
+          })
+        )
+      )?.status
+    ).toBe("rejected");
+  });
+  it("rejects direct internal deletion and invalid source identifiers", async () => {
+    const { ctx, path, core } = await setup();
+    expect(
+      (
+        await handleShortBookAnalysisCommands(
+          ctx,
+          createEnvelope("shortBookAnalysis.deleteStoredSource", {
+            workspaceDirectory: path,
+            sourceId: "book-1"
+          })
+        )
+      )?.status
+    ).toBe("rejected");
+    for (const sourceId of ["../outside", "/outside", "", "book/1"]) {
+      expect(
+        CommandEnvelopeSchema.safeParse(
+          createEnvelope("shortBookAnalysis.deleteSource", { sourceId })
+        ).success
+      ).toBe(false);
+      expect(
+        (
+          await core(
+            createEnvelope("shortBookAnalysis.deleteStoredSource", {
+              workspaceDirectory: path,
+              sourceId
+            })
+          )
+        ).status
+      ).toBe("rejected");
+    }
+  });
   it("imports whole TXT and Markdown, retains headings and never changes originals", async () => {
     const { path, ctx, dialog } = await setup();
     const txt = join(path, "story.txt");

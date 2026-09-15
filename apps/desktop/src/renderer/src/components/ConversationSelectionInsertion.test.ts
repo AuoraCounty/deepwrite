@@ -1,8 +1,9 @@
+import selectionSource from "../composables/useConversationSelectionInsertion.ts?raw";
 import { describe, expect, it } from "vitest";
 import conversationSource from "./AgentConversation.vue?raw";
 import itemSource from "./ConversationMessageItem.vue?raw";
 import listSource from "./ConversationMessageList.vue?raw";
-import menuSource from "./EditorSelectionMenu.vue?raw";
+import menuSource from "../../../main/text-context-menu-items.ts?raw";
 import referenceCoordinatorSource from "../composables/useConversationTextReferences.ts?raw";
 
 describe("assistant response selection insertion", () => {
@@ -14,12 +15,12 @@ describe("assistant response selection insertion", () => {
     expect(listSource).toContain(
       '@contextmenu="handleConversationContextMenu"'
     );
-    expect(listSource).toContain('"[data-assistant-response-message-id]"');
-    expect(listSource).toContain(
+    expect(selectionSource).toContain('"[data-assistant-response-message-id]"');
+    expect(selectionSource).toContain(
       "response.contains(selection.getRangeAt(0).commonAncestorContainer)"
     );
-    expect(listSource).toContain("createConversationTextReference({");
-    expect(listSource).toContain("<EditorSelectionMenu");
+    expect(selectionSource).toContain("createConversationTextReference({");
+    expect(listSource).not.toContain("<EditorSelectionMenu");
     expect(menuSource).toContain("插入输入框");
   });
 

@@ -19,6 +19,7 @@ const model = {
 const result = {
   report: "修改报告",
   title: "修改方向",
+  description: "根据修改前后的差异学习可复用的修改规则。",
   body: "适用场景与执行规则"
 };
 const library = {
@@ -77,6 +78,59 @@ function finish(
   f.c.handleEvent(event("agent.message_completed", request));
 }
 describe("revision analysis controller", () => {
+  it.each(["before", "after", "none"])(
+    "accepts a three-field draft with report text %s the tool call",
+    async (order) => {
+      const f = fixture();
+      await nextTick();
+      f.c.start();
+      await nextTick();
+      const request = f.prompt.mock.calls[0]![0];
+      const report = "# 修改报告\n\n差异 1：删去重复解释。";
+      if (order === "before") {
+        f.c.handleEvent(
+          event("agent.message_delta", request, { delta: report })
+        );
+      }
+      f.c.handleEvent(
+        event("revision_analysis.result_updated", request, {
+          jobId: "obsolete-job",
+          result: { ...result, report: "错误报告" }
+        })
+      );
+      f.c.handleEvent(
+        event("revision_analysis.result_updated", request, {
+          jobId: request.workspaceContext!.revisionAnalysis!.jobId,
+          result: { ...result, report: "" }
+        })
+      );
+      if (order === "before") {
+        f.c.handleEvent(
+          event("agent.message_delta", request, { delta: "草稿已生成。" })
+        );
+      }
+      f.c.handleEvent(
+        event("agent.message_completed", request, {
+          content:
+            order === "after"
+              ? report
+              : order === "before"
+                ? "草稿已生成。"
+                : ""
+        })
+      );
+      expect(f.c.status.value).toBe("completed");
+      expect(f.c.error.value).toBeNull();
+      expect(f.c.result.value).toEqual({
+        ...result,
+        report: order === "none" ? "" : report
+      });
+      expect(f.createLibraryEntry).not.toHaveBeenCalled();
+      await f.c.persistSkill(library);
+      expect(f.createLibraryEntry).toHaveBeenCalledOnce();
+      f.c.dispose();
+    }
+  );
   it("freezes evidence, permits empty reasons and retains result until next success", async () => {
     const f = fixture();
     await nextTick();
@@ -132,7 +186,7 @@ describe("revision analysis controller", () => {
     f.c.handleEvent(
       event("agent.message_completed", f.prompt.mock.calls[0]![0])
     );
-    expect(f.c.error.value).toContain("结构化结果");
+    expect(f.c.error.value).toContain("新建技能草稿");
     f.c.retry();
     await nextTick();
     f.c.handleEvent({
@@ -151,27 +205,63 @@ describe("revision analysis controller", () => {
     finish(f);
     f.c.result.value!.body = "编辑后的技能";
     f.createLibraryEntry.mockRejectedValueOnce(new Error("版本冲突"));
-    await expect(f.c.persistSkill(library, "draft")).rejects.toThrow(
-      "版本冲突"
-    );
+    await expect(f.c.persistSkill(library)).rejects.toThrow("版本冲突");
     expect(f.c.result.value!.body).toBe("编辑后的技能");
     expect(f.c.savedKey.value).toBe("");
-    await f.c.persistSkill(library, "draft");
-    await f.c.persistSkill(library, "draft");
+    await f.c.persistSkill(library);
+    await f.c.persistSkill(library);
     expect(f.createLibraryEntry).toHaveBeenCalledTimes(2);
     expect(f.createLibraryEntry.mock.calls[1]).toEqual([
       {
         domain: "skill",
         libraryId: "skills",
         title: "修改方向",
-        content: "编辑后的技能",
-        stageId: "draft",
+        content: `---\nname: 修改方向\ndescription: ${result.description}\n---\n\n编辑后的技能`,
         baseProjectRevision: 3
       }
     ]);
     await expect(
-      f.c.persistSkill({ ...library, isBuiltin: true }, "draft")
+      f.c.persistSkill({ ...library, isBuiltin: true })
     ).rejects.toThrow("非内置");
+    f.c.result.value!.description = "用于修订时检查人物动作与情绪表达。";
+    expect(f.c.savedKey.value).not.toBe(f.c.skillKey());
+    await f.c.persistSkill(library);
+    expect(f.createLibraryEntry).toHaveBeenCalledTimes(3);
+    expect(f.createLibraryEntry).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        content: `---\nname: 修改方向\ndescription: ${f.c.result.value!.description}\n---\n\n编辑后的技能`
+      })
+    );
+    f.c.dispose();
+  });
+  it("updates existing skill metadata without duplicating its header or changing the draft", async () => {
+    const f = fixture();
+    const body =
+      "---\nname: 旧标题\ndescription: 旧描述\n---\n\n# 执行规则\n保持事实。";
+    f.c.result.value = {
+      ...result,
+      body,
+      description: "适用于修订。\n保留事实。"
+    };
+    await f.c.persistSkill(library);
+    expect(f.createLibraryEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content:
+          "---\nname: 修改方向\ndescription: 适用于修订。 保留事实。\n---\n\n# 执行规则\n保持事实。"
+      })
+    );
+    expect(f.c.result.value.body).toBe(body);
+    f.c.dispose();
+  });
+  it("does not save incomplete descriptions or malformed skill headers", async () => {
+    const f = fixture();
+    f.c.result.value = { ...result, description: " " };
+    await expect(f.c.persistSkill(library)).rejects.toThrow();
+    f.c.result.value = { ...result, body: "---\nname: 未闭合头部" };
+    await expect(f.c.persistSkill(library)).rejects.toThrow("结束分隔符");
+    expect(f.createLibraryEntry).not.toHaveBeenCalled();
+    expect(f.c.saving.value).toBe(false);
+    expect(f.c.savedKey.value).toBe("");
     f.c.dispose();
   });
   it("loads, saves and restores the method without persisting source documents", async () => {

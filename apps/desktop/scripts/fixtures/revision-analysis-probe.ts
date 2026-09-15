@@ -143,14 +143,15 @@ async function run() {
   await frame();
   check(c.isBusy.value, "切页不应停止任务");
   event("agent.message_delta", {
-    delta: "已阅读完整前后正文，正在提炼修改方向。"
+    delta:
+      "# 修改分析报告\n\n## 修改概览\n从直接解释情绪，转向可观察的动作与有余味的细节。\n\n## 差异 1\n用户明确希望用动作代替解释。修改后通过捏住信角表现情绪，同时压缩直述信息。\n\n## 差异 2\n新增未关严的抽屉。推断：为结尾保留悬念，具体意图尚未说明。\n\n## 修改方向\n优先寻找能承载情绪的动作；只在读者需要补足理解时保留解释。"
   });
   event("revision_analysis.result_updated", {
     jobId: request.workspaceContext!.revisionAnalysis!.jobId,
     result: {
-      report:
-        "# 修改分析报告\n\n## 修改概览\n从直接解释情绪，转向可观察的动作与有余味的细节。\n\n## 差异 1\n用户明确希望用动作代替解释。修改后通过捏住信角表现情绪，同时压缩直述信息。\n\n## 差异 2\n新增未关严的抽屉。推断：为结尾保留悬念，具体意图尚未说明。\n\n## 修改方向\n优先寻找能承载情绪的动作；只在读者需要补足理解时保留解释。",
+      report: "",
       title: "以动作承载情绪的修改方法",
+      description: "用于修订情绪描写较直白的场景，以符合人物的动作承载情绪。",
       body: "# 以动作承载情绪\n\n## 适用场景\n情绪描写较直白的短篇场景。\n\n## 执行步骤\n1. 找出直接解释情绪的句子。\n2. 选择与当下处境一致的微动作。\n3. 删除动作已经表达的信息。\n\n## 检查清单\n- 动作是否符合人物？\n- 是否保留必要的因果线索？\n- 是否避免所有场景一律删解释？"
     }
   });
@@ -158,6 +159,7 @@ async function run() {
   visible.value = true;
   await frame();
   check(c.result.value && !c.isStale.value, "返回页面应显示新结果");
+  check(c.result.value.report.includes("差异 1"), "应保留工具调用前输出的报告");
   c.result.value.body += "\n- 保留用户补充的具体限制。";
   // Exercise actual PopupSelect and save button.
   const select = document.querySelector<HTMLButtonElement>(

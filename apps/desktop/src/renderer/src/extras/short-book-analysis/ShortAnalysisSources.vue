@@ -34,6 +34,12 @@ function save() {
       c.updateBook(editing.value.id, { title: title.value, text: text.value });
   });
 }
+function removeBook(id: string) {
+  return act(() => {
+    c.removeBook(id);
+    uiMessage.success("已从当前列表去除，可从上方重新添加。");
+  });
+}
 </script>
 <template>
   <section v-if="c.drafts.value.length" class="analysis-card short-source-card">
@@ -69,9 +75,23 @@ function save() {
                   c.selectedIds.value.length >= c.selectionLimit.value)
               "
               @change="act(() => c.toggleBook(book.id))"
-            /><button :disabled="disabled" @click="c.activeId.value = book.id">
+            /><button
+              class="short-book-open"
+              :disabled="disabled"
+              @click="c.activeId.value = book.id"
+            >
               <strong>{{ book.title }}</strong
               ><small>{{ book.text.length.toLocaleString() }} 字</small>
+            </button>
+            <button
+              type="button"
+              class="short-book-remove"
+              :aria-label="`去除 ${book.title}`"
+              title="从当前列表去除，保留已导入短篇"
+              :disabled="disabled"
+              @click="removeBook(book.id)"
+            >
+              去除
             </button>
           </li>
         </ul>

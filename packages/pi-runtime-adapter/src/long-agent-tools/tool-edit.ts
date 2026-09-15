@@ -7,6 +7,10 @@ import {
   WRITING_EDIT_OVERWRITE_DESCRIPTION,
   WRITING_EDIT_OVERWRITE_RECOVERY
 } from "../writing-edit-guidance";
+import {
+  resolveWritingEditSummary,
+  WRITING_EDIT_SUMMARY_DESCRIPTION
+} from "../writing-edit-summary";
 import { defineTool, textResult } from "./shared";
 import {
   chapterContextIdParameter,
@@ -15,8 +19,7 @@ import {
   editMetaParameter,
   entityIdParameter,
   explicitTrueParameter,
-  strictObject,
-  summaryParameter
+  strictObject
 } from "./schemas";
 import { characterMetadataOperations } from "./character-metadata";
 import { LONG_STAGE_ROOTS } from "./entity-registry";
@@ -136,12 +139,15 @@ export function buildEditTool(ctx: LongToolContext): AgentTool {
           description: WRITING_EDIT_OVERWRITE_DESCRIPTION
         })
       ),
-      summary: summaryParameter
+      summary: Type.Optional(
+        Type.String({
+          maxLength: 1_000,
+          description: WRITING_EDIT_SUMMARY_DESCRIPTION
+        })
+      )
     }),
     executionMode: "sequential",
     execute: async (toolCallId, params, signal) => {
-      const summary = params.summary.trim();
-      if (!summary) throw new Error("summary 必须非空。");
       const document =
         params.document ??
         (params.id.startsWith("character_") &&
@@ -182,6 +188,11 @@ export function buildEditTool(ctx: LongToolContext): AgentTool {
         }
       }
       requireSingleIntent({ ...params, target });
+      const summary = resolveWritingEditSummary(
+        params.summary,
+        target.title,
+        params
+      );
       const timestamp = new Date().toISOString();
 
       if (target.addressing === "field") {

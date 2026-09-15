@@ -3881,45 +3881,6 @@ html[data-theme="dark"] .document-editor:focus-visible {
   color: var(--text-secondary);
 }
 
-.editor-selection-menu {
-  position: fixed;
-  z-index: 120;
-  min-width: 134px;
-  padding: 5px;
-  border: 1px solid var(--theme-line, #dededb);
-  border-radius: 9px;
-  background: var(--surface-raised, #fbfbfa);
-  box-shadow:
-    0 12px 30px rgb(24 27 30 / 16%),
-    0 2px 7px rgb(24 27 30 / 8%);
-}
-
-.editor-selection-menu button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 32px;
-  gap: 7px;
-  padding: 6px 9px;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-primary, #303338);
-  font-size: 0.785714rem;
-  font-weight: 550;
-  text-align: left;
-  cursor: pointer;
-}
-
-.editor-selection-menu button:hover,
-.editor-selection-menu button:focus-visible {
-  outline: 0;
-  background: var(--surface-hover, #ececea);
-}
-
-.editor-selection-menu button > svg {
-  color: var(--accent, #419d8c);
-}
-
 .document-preview .markdown-content {
   white-space: normal;
 }

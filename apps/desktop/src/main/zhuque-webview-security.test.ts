@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+const source = readFileSync(
+  new URL("./create-desktop-window.ts", import.meta.url),
+  "utf8"
+);
 
 describe("Zhuque detection webview security", () => {
   it("enables only a constrained, sandboxed Tencent webview", () => {

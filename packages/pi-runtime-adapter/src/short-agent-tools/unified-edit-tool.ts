@@ -1,3 +1,7 @@
+import {
+  resolveWritingEditSummary,
+  WRITING_EDIT_SUMMARY_DESCRIPTION
+} from "../writing-edit-summary";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { isProvisionalExpertDraftSectionId } from "@deepwrite/contracts";
 import { Type } from "typebox";
@@ -24,8 +28,7 @@ import {
   writingContentParameter,
   writingDocumentParameter,
   writingEditMetaParameter,
-  writingKindParameter,
-  writingSummaryParameter
+  writingKindParameter
 } from "./tool-parameters";
 import {
   formShortContentProposal,
@@ -263,7 +266,12 @@ export function buildShortUnifiedEditTool(
             description: WRITING_EDIT_OVERWRITE_DESCRIPTION
           })
         ),
-        summary: writingSummaryParameter
+        summary: Type.Optional(
+          Type.String({
+            maxLength: 1_000,
+            description: WRITING_EDIT_SUMMARY_DESCRIPTION
+          })
+        )
       },
       { additionalProperties: false }
     ),
@@ -299,6 +307,11 @@ export function buildShortUnifiedEditTool(
       if (intentCount !== 1) {
         throw new Error("edit 必须且只能选择 content、replacements 或 meta。");
       }
+      const summary = resolveWritingEditSummary(
+        params.summary,
+        target.title,
+        params
+      );
       if (params.meta) {
         if (target.kind === "character_overview") {
           throw new Error("人物概览不支持 meta 修改。");
@@ -309,7 +322,7 @@ export function buildShortUnifiedEditTool(
             state,
             target,
             params.meta as EditMeta,
-            String(params.summary)
+            summary
           );
         }
         if (target.kind === "plot_stage") {
@@ -318,7 +331,7 @@ export function buildShortUnifiedEditTool(
             state,
             target,
             params.meta as EditMeta,
-            String(params.summary)
+            summary
           );
         }
         return draftMetaProposal(
@@ -326,7 +339,7 @@ export function buildShortUnifiedEditTool(
           state,
           target,
           params.meta as EditMeta,
-          String(params.summary)
+          summary
         );
       }
 
@@ -343,7 +356,7 @@ export function buildShortUnifiedEditTool(
           readState,
           target,
           String(params.content),
-          String(params.summary)
+          summary
         );
       }
 
@@ -357,7 +370,7 @@ export function buildShortUnifiedEditTool(
         readState,
         target,
         replaced.next,
-        String(params.summary)
+        summary
       );
     }
   });

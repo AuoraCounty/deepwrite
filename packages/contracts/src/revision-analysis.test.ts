@@ -3,6 +3,7 @@ import { assertRevisionAnalysisBudget } from "./revision-analysis-budget";
 import { describe, expect, it } from "vitest";
 import {
   RevisionAnalysisInputSchema,
+  RevisionAnalysisSkillDraftSchema,
   RevisionAnalysisResultSchema
 } from "./revision-analysis";
 import { WorkspaceRuntimeContextSchema } from "./session/runtime";
@@ -45,10 +46,54 @@ describe("revision analysis contracts", () => {
     expect(
       RevisionAnalysisResultSchema.safeParse({
         report: "",
-        title: "技能",
+        title: " ",
+        description: "用于修订文稿。",
         body: "规则"
       }).success
     ).toBe(false);
+  });
+  it("accepts a draft before a report and validates all three draft fields", () => {
+    const draft = {
+      title: "技能",
+      description: "用于修订",
+      content: "执行规则"
+    };
+    expect(RevisionAnalysisSkillDraftSchema.parse(draft)).toEqual(draft);
+    for (const field of ["title", "description", "content"]) {
+      expect(
+        RevisionAnalysisSkillDraftSchema.safeParse({ ...draft, [field]: " " })
+          .success
+      ).toBe(false);
+      expect(
+        RevisionAnalysisSkillDraftSchema.safeParse({
+          ...draft,
+          [field]: undefined
+        }).success
+      ).toBe(false);
+    }
+    expect(
+      RevisionAnalysisResultSchema.parse({
+        report: "",
+        title: draft.title,
+        description: draft.description,
+        body: draft.content
+      }).report
+    ).toBe("");
+  });
+  it("requires a nonempty skill description within the length limit", () => {
+    const draft = { report: "报告", title: "技能", body: "规则" };
+    for (const description of [undefined, " ", "字".repeat(4001)]) {
+      expect(
+        RevisionAnalysisResultSchema.safeParse({ ...draft, description })
+          .success
+      ).toBe(false);
+    }
+    expect(
+      RevisionAnalysisResultSchema.parse({
+        ...draft,
+        description: " 用于修订文稿。 "
+      }).description
+    ).toBe("用于修订文稿。");
   });
   it("is an isolated workspace mode and checks the whole payload budget", () => {
     const revisionAnalysis = { ...input, jobId: "job" };

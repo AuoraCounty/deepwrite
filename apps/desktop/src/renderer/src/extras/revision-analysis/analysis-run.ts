@@ -181,20 +181,28 @@ export function createRevisionAnalysisRun(api: () => DeepWriteApi) {
       );
     else if (event.type === "agent.thinking_delta")
       activity.value = "模型正在思考";
-    else if (event.type === "tool.call_requested") log("正在生成结构化结果");
+    else if (event.type === "tool.call_requested") log("正在新建技能草稿");
     else if (
       event.type === "revision_analysis.result_updated" &&
       event.payload.jobId === job?.context.jobId
     )
-      unit.result = event.payload.result;
+      unit.result = {
+        ...event.payload.result,
+        report: event.payload.result.report || liveOutput.value.trim()
+      };
     else if (event.type === "agent.error")
       fail(new Error(event.payload.message));
     else if (event.type === "agent.message_completed") {
       if (!unit.result) {
-        fail(new Error("模型未提交结构化结果，请重新分析。"));
+        fail(new Error("模型未调用工具新建技能草稿，请重试上次任务。"));
         return;
       }
-      result.value = unit.result;
+      result.value = {
+        ...unit.result,
+        report:
+          unit.result.report ||
+          (event.payload.content || liveOutput.value).trim().slice(0, 200000)
+      };
       if (job) {
         const { jobId, ...input } = job.context;
         void jobId;

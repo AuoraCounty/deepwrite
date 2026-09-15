@@ -1,10 +1,11 @@
 import { ref, type Ref } from "vue";
 import {
   RevisionAnalysisResultSchema,
+  parseSkillMarkdown,
+  updateSkillMarkdownMetadata,
   type DeepWriteApi,
   type RevisionAnalysisResult,
-  type SkillLibrary,
-  type SkillStageId
+  type SkillLibrary
 } from "@deepwrite/contracts/renderer";
 export function createRevisionSkillSave(
   api: () => DeepWriteApi,
@@ -12,25 +13,36 @@ export function createRevisionSkillSave(
 ) {
   const saving = ref(false),
     savedKey = ref("");
-  const key = () => JSON.stringify([result.value?.title, result.value?.body]);
+  const key = () =>
+    JSON.stringify([
+      result.value?.title,
+      result.value?.description,
+      result.value?.body
+    ]);
   return {
     saving,
     savedKey,
     skillKey: key,
-    async persistSkill(library: SkillLibrary, stageId: SkillStageId) {
+    async persistSkill(library: SkillLibrary) {
       if (saving.value) return false;
       if (library.isBuiltin) throw new Error("请选择可写的非内置技能库。");
       const draft = RevisionAnalysisResultSchema.parse(result.value);
       const currentKey = key();
       if (savedKey.value === currentKey) return false;
+      const skill = updateSkillMarkdownMetadata(draft.body, {
+        name: draft.title,
+        description: draft.description
+      });
+      if (!skill.updated) throw new Error(skill.message);
+      const parsed = parseSkillMarkdown(skill.content);
+      if (!parsed.valid) throw new Error(parsed.message);
       saving.value = true;
       try {
         await api().catalog.createLibraryEntry({
           domain: "skill",
           libraryId: library.id,
           title: draft.title,
-          content: draft.body,
-          stageId,
+          content: skill.content,
           ...(library.projectRevision !== undefined
             ? { baseProjectRevision: library.projectRevision }
             : {})

@@ -42,6 +42,10 @@ export const shortBookAnalysisApi: ShortBookAnalysisApi = {
     load: async (sourceId) =>
       ShortBookAnalysisSourceSchema.parse(
         await request("shortBookAnalysis.loadSource", { sourceId })
+      ),
+    delete: async (sourceId) =>
+      ShortBookAnalysisSourceSchema.shape.id.parse(
+        await request("shortBookAnalysis.deleteSource", { sourceId })
       )
   },
   presets: {

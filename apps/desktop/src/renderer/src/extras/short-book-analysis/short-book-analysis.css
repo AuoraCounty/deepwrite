@@ -43,7 +43,7 @@
 .short-book-list li.selected {
   background: var(--surface-selected);
 }
-.short-book-analysis-page .short-book-list button {
+.short-book-analysis-page .short-book-list .short-book-open {
   display: grid;
   justify-content: start;
   text-align: left;
@@ -53,6 +53,18 @@
   flex: 1;
   border-color: transparent;
   background: transparent;
+}
+.short-book-analysis-page .short-book-remove {
+  flex: none;
+  gap: 4px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  border-color: transparent;
+  background: transparent;
+}
+.short-book-analysis-page .short-book-remove:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--surface-hover);
 }
 .short-text-editor {
   padding: 12px;

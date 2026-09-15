@@ -114,6 +114,7 @@ onMounted(() => {
       <section class="analysis-setup-panel">
         <div class="revision-controls">
           <button
+            class="revision-text-button"
             :disabled="
               c.disabled.value ||
               !c.beforeText.value.trim() ||
@@ -133,6 +134,7 @@ onMounted(() => {
           </button>
           <button
             v-else
+            class="revision-text-button"
             :disabled="c.status.value === 'stopping'"
             @click="act(c.stop)"
           >
@@ -165,6 +167,7 @@ onMounted(() => {
           </label>
           <div class="revision-controls">
             <button
+              class="revision-text-button"
               :disabled="c.disabled.value"
               @click="
                 act(async () => {
@@ -175,6 +178,7 @@ onMounted(() => {
             >
               保存分析方法</button
             ><button
+              class="revision-text-button"
               :disabled="c.disabled.value"
               @click="
                 act(async () => {
@@ -188,16 +192,10 @@ onMounted(() => {
           </div>
         </details>
       </section>
-      <RevisionDiffList
-        :changes="c.changes.value"
-        :disabled="c.disabled.value"
-        :current="c.comparisonCurrent.value"
-        @reason="updateReason"
-      />
       <section class="analysis-setup-panel">
-        <label
-          >总体修改说明 <small>选填</small
-          ><textarea
+        <label>
+          <span>总体修改说明 <small>选填</small></span>
+          <textarea
             v-model="c.overallReason.value"
             :maxlength="REVISION_REASON_LIMIT"
             :disabled="c.disabled.value"
@@ -205,13 +203,23 @@ onMounted(() => {
           />
         </label>
       </section>
+      <RevisionDiffList
+        :changes="c.changes.value"
+        :disabled="c.disabled.value"
+        :current="c.comparisonCurrent.value"
+        @reason="updateReason"
+      />
       <section v-if="c.status.value !== 'idle'" class="analysis-setup-panel">
         <div class="revision-controls">
           <strong>{{ c.activity.value }}</strong
-          ><button @click="processOpen = !processOpen">
+          ><button
+            class="revision-text-button"
+            @click="processOpen = !processOpen"
+          >
             {{ processOpen ? "收起执行过程" : "查看执行过程" }}</button
           ><button
             v-if="c.canRetry.value"
+            class="revision-text-button"
             :disabled="c.disabled.value || c.saving.value"
             @click="act(c.retry)"
           >

@@ -46,6 +46,7 @@ export function withShortBookAnalysisSources(
   return async (command: CommandEnvelope): Promise<CommandResult> => {
     if (
       command.type !== "shortBookAnalysis.storeSources" &&
+      command.type !== "shortBookAnalysis.deleteStoredSource" &&
       command.type !== "shortBookAnalysis.querySources"
     )
       return handler(command);
@@ -68,6 +69,12 @@ export function withShortBookAnalysisSources(
           }
         }
         payload = command.payload.sources;
+      } else if (command.type === "shortBookAnalysis.deleteStoredSource") {
+        const sourceId = ShortBookAnalysisSourceSchema.shape.id.parse(
+          command.payload.sourceId
+        );
+        await rm(join(path, `${sourceId}.json`), { force: true });
+        payload = sourceId;
       } else if (command.payload.sourceId) {
         payload = await load(path, command.payload.sourceId);
       } else {

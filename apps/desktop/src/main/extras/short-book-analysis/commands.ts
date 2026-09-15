@@ -36,6 +36,7 @@ export async function handleShortBookAnalysisCommands(
       // Internal snapshot commands are never accepted directly from Renderer.
       if (
         command.type === "shortBookAnalysis.storeSources" ||
+        command.type === "shortBookAnalysis.deleteStoredSource" ||
         command.type === "shortBookAnalysis.querySources"
       )
         throw new Error("不允许直接调用内部来源命令。");
@@ -61,6 +62,14 @@ export async function handleShortBookAnalysisCommands(
                 ? { sourceId: command.payload.sourceId }
                 : {})
             },
+            { id: command.id, context: command.context }
+          )
+        );
+      } else if (command.type === "shortBookAnalysis.deleteSource") {
+        payload = await forward(
+          createEnvelope(
+            "shortBookAnalysis.deleteStoredSource",
+            { workspaceDirectory, sourceId: command.payload.sourceId },
             { id: command.id, context: command.context }
           )
         );

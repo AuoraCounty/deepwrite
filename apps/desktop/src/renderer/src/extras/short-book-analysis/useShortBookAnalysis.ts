@@ -85,6 +85,16 @@ export function useShortBookAnalysis(options: {
     activeId.value = sources[0]?.id ?? activeId.value;
     await loadSources();
   }
+  function removeDraft(id: string) {
+    const index = drafts.value.findIndex((book) => book.id === id);
+    if (index < 0) return;
+    run.clear();
+    drafts.value = drafts.value.filter((book) => book.id !== id);
+    selectedIds.value = selectedIds.value.filter((value) => value !== id);
+    if (activeId.value === id)
+      activeId.value =
+        drafts.value[Math.min(index, drafts.value.length - 1)]?.id ?? "";
+  }
   return {
     ...run,
     presets,
@@ -161,6 +171,24 @@ export function useShortBookAnalysis(options: {
       selectedIds.value = selected
         ? selectedIds.value.filter((value) => value !== id)
         : [...selectedIds.value, id];
+    },
+    removeBook(id: string) {
+      editable();
+      removeDraft(id);
+    },
+    async deleteSource(id: string) {
+      editable();
+      loading.value = true;
+      try {
+        await api().shortBookAnalysis.sources.delete(id);
+        if (disposed) return;
+        removeDraft(id);
+        savedSources.value = savedSources.value.filter(
+          (book) => book.id !== id
+        );
+      } finally {
+        loading.value = false;
+      }
     },
     updateBook(id: string, input: { title: string; text: string }) {
       editable();

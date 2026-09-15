@@ -1,3 +1,5 @@
+import { watch } from "vue";
+import type { TextMenuHistory } from "./nativeTextContextMenu";
 import { randomHex8 } from "@deepwrite/shared";
 import type { EditorTextReference } from "../types/conversation";
 import {
@@ -14,9 +16,23 @@ export interface EditorSelectionReferenceSource {
 
 export function useEditorSelectionInsertion(options: {
   source(): EditorSelectionReferenceSource | undefined;
+  history?: TextMenuHistory;
   insert(reference: EditorTextReference): void;
 }) {
   const menu = useSelectionInsertionMenu({ insert: options.insert });
+  watch(() => {
+    const source = options.source();
+    return [source?.resourceId, source?.document.id, source?.document.content];
+  }, menu.closeSelectionAction);
+
+  function sourceIsCurrent(source: EditorSelectionReferenceSource): boolean {
+    const current = options.source();
+    return (
+      current?.resourceId === source.resourceId &&
+      current.document.id === source.document.id &&
+      current.document.content === source.document.content
+    );
+  }
 
   function handleEditorContextMenu(event: MouseEvent): void {
     const input = event.currentTarget;
@@ -35,12 +51,12 @@ export function useEditorSelectionInsertion(options: {
       start,
       end
     });
-    if (!reference) {
-      menu.closeSelectionAction();
-      return;
-    }
-    menu.openSelectionAction(reference, event);
-    event.preventDefault();
+    menu.openSelectionAction(
+      reference ?? undefined,
+      event,
+      options.history,
+      () => sourceIsCurrent(source)
+    );
   }
 
   function handlePreviewContextMenu(event: MouseEvent): void {
@@ -68,8 +84,9 @@ export function useEditorSelectionInsertion(options: {
       menu.closeSelectionAction();
       return;
     }
-    menu.openSelectionAction(reference, event);
-    event.preventDefault();
+    menu.openSelectionAction(reference, event, undefined, () =>
+      sourceIsCurrent(source)
+    );
   }
 
   return {
