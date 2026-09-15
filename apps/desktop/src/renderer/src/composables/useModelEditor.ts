@@ -4,6 +4,7 @@ import {
   type BuiltInReasoningLevel,
   type ModelApi,
   type ModelConfigInput,
+  type RemoteModelListItem,
   type ReasoningLevel,
   type ThinkingLevelOptions,
   type ToolSchemaProfile
@@ -29,6 +30,7 @@ import { useRemoteModelListing } from "./useRemoteModelListing";
 export interface ModelEditorSavePayload {
   model: DraftModel;
   originalId?: string;
+  selectedModels?: RemoteModelListItem[];
 }
 
 export interface ModelEditorActions {
@@ -180,7 +182,15 @@ export function useModelEditor(
 
   function save(): void {
     if (
-      !editor.value.label.trim() ||
+      remoteListing.canSelectRemoteModel.value &&
+      !remoteListing.selectedRemoteModels.value.length
+    ) {
+      uiMessage.warning("请至少选择一个要保存的模型。");
+      return;
+    }
+    if (
+      (!remoteListing.canSelectRemoteModel.value &&
+        !editor.value.label.trim()) ||
       !editor.value.provider.trim() ||
       !editor.value.modelId.trim()
     ) {
@@ -243,7 +253,10 @@ export function useModelEditor(
         ),
         ...(apiKey?.trim() ? { apiKey: apiKey.trim() } : {})
       },
-      ...(originalId ? { originalId } : {})
+      ...(originalId ? { originalId } : {}),
+      ...(remoteListing.canSelectRemoteModel.value
+        ? { selectedModels: remoteListing.selectedRemoteModels.value }
+        : {})
     });
   }
 

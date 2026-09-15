@@ -4,7 +4,10 @@ import {
 } from "@deepwrite/contracts";
 import type { DeepWriteFreeModelCatalog } from "./deepwrite-free-model-config";
 
-export type DiskModelConfig = Omit<ModelConfigInput, "apiKey" | "clearApiKey">;
+export type DiskModelConfig = Omit<
+  ModelConfigInput,
+  "apiKey" | "clearApiKey" | "sourceApiKeyId"
+>;
 
 export interface DiskModelSettings {
   version: 2;
@@ -43,7 +46,12 @@ function normalizeIds(raw: unknown): string[] {
 }
 
 export function toDiskModel(model: ModelConfigInput): DiskModelConfig {
-  const { apiKey: _apiKey, clearApiKey: _clearApiKey, ...identity } = model;
+  const {
+    apiKey: _apiKey,
+    clearApiKey: _clearApiKey,
+    sourceApiKeyId: _sourceApiKeyId,
+    ...identity
+  } = model;
   return identity;
 }
 

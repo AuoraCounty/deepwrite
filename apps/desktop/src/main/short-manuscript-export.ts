@@ -139,7 +139,7 @@ function wordTextRuns(value: string): string {
 function wordParagraph(value: string, style?: "Title" | "Heading1"): string {
   const properties = style
     ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`
-    : '<w:pPr><w:spacing w:after="160" w:line="360" w:lineRule="auto"/><w:ind w:firstLineChars="200"/></w:pPr>';
+    : '<w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/><w:ind w:firstLineChars="200"/></w:pPr>';
   return `<w:p>${properties}<w:r>${wordTextRuns(value)}</w:r></w:p>`;
 }
 
@@ -152,7 +152,11 @@ export function buildDocx(input: ExportShortManuscriptInput): Buffer {
     wordParagraph(validated.title, "Title"),
     ...validated.sections.flatMap((section) => [
       wordParagraph(section.title, "Heading1"),
-      ...textBlocks(section.content).map((block) => wordParagraph(block))
+      // Preserve every source line, including blank lines and edge whitespace.
+      ...(section.content === ""
+        ? []
+        : normalizeText(section.content).split("\n")
+      ).map((line) => wordParagraph(line))
     ])
   ].join("");
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

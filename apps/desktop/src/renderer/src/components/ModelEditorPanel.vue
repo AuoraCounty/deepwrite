@@ -34,7 +34,9 @@ const {
   remoteModelOptions,
   listingRemoteModels,
   fetchHintDialog,
-  setFetchedModelId,
+  selectedRemoteModelIds,
+  setSelectedRemoteModels,
+  clearRemoteModels,
   fetchRemoteModels,
   applyProviderPreset,
   setModelApi,
@@ -85,13 +87,25 @@ watch(fetchHintDialog, (message) => {
           <PopupSelect
             v-if="canSelectRemoteModel"
             :model-value="editor.modelId"
+            multiple
+            :selected-values="selectedRemoteModelIds"
             :options="remoteModelOptions"
             accessible-label="选择模型 ID"
-            placeholder="请选择模型 ID"
+            placeholder="请选择要保存的模型"
             :menu-min-width="280"
             :disabled="listingRemoteModels"
-            @update:model-value="setFetchedModelId"
-          />
+            @update:selected-values="setSelectedRemoteModels"
+          >
+            <template #footer>
+              <button
+                class="remote-model-manual-button"
+                type="button"
+                @click="clearRemoteModels"
+              >
+                手动输入其他模型 ID
+              </button>
+            </template>
+          </PopupSelect>
           <input
             v-else
             v-model="editor.modelId"
@@ -260,7 +274,7 @@ watch(fetchHintDialog, (message) => {
         {{ testingModelId === editor.id ? "测试中…" : "测试当前填写" }}
       </button>
       <button class="dialog-primary-button" type="button" @click="save">
-        {{ saving ? "保存中…" : "应用并保存配置" }}
+        {{ saving ? "保存中…" : "批量应用并保存配置" }}
       </button>
     </div>
   </section>
@@ -302,3 +316,37 @@ watch(fetchHintDialog, (message) => {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.model-editor {
+  container-type: inline-size;
+}
+.model-editor .dialog-actions {
+  flex-wrap: wrap;
+}
+@container (max-width: 34rem) {
+  .model-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.model-editor .dialog-primary-button {
+  background: var(--neutral-solid);
+  color: var(--surface-main);
+}
+
+.remote-model-manual-button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: 0.928571rem;
+  cursor: pointer;
+}
+.remote-model-manual-button:hover,
+.remote-model-manual-button:focus-visible {
+  background: var(--surface-hover);
+}
+</style>

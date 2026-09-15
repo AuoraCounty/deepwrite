@@ -65,7 +65,7 @@ describe("ModelSettingsFeature DeepWrite free models", () => {
       'rows.push({ key: `editor:${model.id}`, type: "editor" })'
     );
     expect(source).toContain(
-      '<template v-for="row in modelConfigRows" :key="row.key">'
+      '<template v-for="row in group.rows" :key="row.key">'
     );
   });
 
@@ -202,7 +202,7 @@ describe("ModelSettingsFeature remote model ids", () => {
     expect(source).toContain('@click="fetchRemoteModels"');
     expect(source).toContain("window.deepwrite.models.listRemote({");
     expect(source).toContain('accessible-label="选择模型 ID"');
-    expect(source).toContain('label: "手动输入其他模型 ID"');
+    expect(source).toContain("手动输入其他模型 ID");
     expect(source).toContain("canSelectRemoteModel");
   });
 

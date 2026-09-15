@@ -12,7 +12,7 @@ import type { ThinkingLevel } from "@deepwrite/contracts/renderer";
 import { createId } from "@deepwrite/shared";
 import AppIcon from "./AppIcon.vue";
 
-type ConfigPage = "main" | "model" | "thinking" | "temperature";
+type ConfigPage = "main" | "thinking" | "temperature";
 type ConfigValue = string | number;
 
 interface ConfigOption {
@@ -22,7 +22,12 @@ interface ConfigOption {
 
 const props = defineProps<{
   selectedModelId: string;
-  modelOptions: Array<{ value: string; label: string }>;
+  modelOptions: Array<{
+    value: string;
+    label: string;
+    provider: string;
+    providerLabel: string;
+  }>;
   thinkingLevel: ThinkingLevel;
   thinkingOptions: Array<{ value: ThinkingLevel; label: string }>;
   temperature: number;
@@ -53,6 +58,29 @@ const selectedModelLabel = computed(
     props.modelOptions.find((option) => option.value === props.selectedModelId)
       ?.label ?? "选择模型"
 );
+const modelGroups = computed(() => {
+  const groups = new Map<
+    string,
+    {
+      provider: string;
+      label: string;
+      options: typeof props.modelOptions;
+    }
+  >();
+  for (const option of props.modelOptions) {
+    let group = groups.get(option.provider);
+    if (!group) {
+      group = {
+        provider: option.provider,
+        label: option.providerLabel,
+        options: []
+      };
+      groups.set(option.provider, group);
+    }
+    group.options.push(option);
+  }
+  return [...groups.values()];
+});
 const thinkingLabel = computed(
   () =>
     props.thinkingOptions.find((option) => option.value === props.thinkingLevel)
@@ -70,18 +98,15 @@ const activeParameterLabel = computed(() =>
     : thinkingLabel.value
 );
 const submenuTitle = computed(() => {
-  if (page.value === "model") return "模型";
   if (page.value === "thinking") return "思考等级";
   return "温度";
 });
 const submenuOptions = computed<ConfigOption[]>(() => {
-  if (page.value === "model") return props.modelOptions;
   if (page.value === "thinking") return props.thinkingOptions;
   if (page.value === "temperature") return props.temperatureOptions;
   return [];
 });
 const selectedSubmenuValue = computed<ConfigValue>(() => {
-  if (page.value === "model") return props.selectedModelId;
   if (page.value === "thinking") return props.thinkingLevel;
   return props.temperature;
 });
@@ -91,27 +116,33 @@ const webSearchTitle = computed(() => {
   return props.webSearchEnabled ? "关闭联网" : "开启联网";
 });
 
-function estimatedMenuHeight(): number {
-  if (page.value !== "main") {
-    return Math.min(318, 52 + submenuOptions.value.length * 42 + 12);
-  }
-  return 20 + (props.showsTemperature ? 4 : 3) * 46 + 9;
-}
-
 function positionMenu(): void {
   if (!open.value || !trigger.value) return;
   const rect = trigger.value.getBoundingClientRect();
   const viewportMargin = 8;
   const gap = 7;
   const width = Math.min(288, window.innerWidth - viewportMargin * 2);
-  const height = estimatedMenuHeight();
+  const models = menu.value?.querySelector<HTMLElement>(
+    ".conversation-model-config-models"
+  );
+  const footer = menu.value?.querySelector<HTMLElement>(
+    ".conversation-model-config-footer"
+  );
+  const submenu = menu.value?.querySelector<HTMLElement>(
+    ".conversation-model-config-submenu"
+  );
+  const height =
+    20 +
+    (models
+      ? models.scrollHeight + (footer?.offsetHeight ?? 0)
+      : (submenu?.scrollHeight ?? 0));
   const spaceBelow = window.innerHeight - rect.bottom - gap - viewportMargin;
   const spaceAbove = rect.top - gap - viewportMargin;
   const opensUpward =
     spaceBelow < Math.min(height, 190) && spaceAbove > spaceBelow;
   const maxHeight = Math.max(
     120,
-    Math.min(318, opensUpward ? spaceAbove : spaceBelow)
+    Math.min(440, opensUpward ? spaceAbove : spaceBelow)
   );
   const renderedHeight = Math.min(height, maxHeight);
   const left = Math.min(
@@ -159,7 +190,6 @@ function showMainPage(): void {
 }
 
 function selectOption(value: ConfigValue): void {
-  if (page.value === "model") emit("selectModel", String(value));
   if (page.value === "thinking") {
     emit("selectThinking", String(value) as ThinkingLevel);
   }
@@ -200,7 +230,9 @@ function handleDocumentPointerdown(event: PointerEvent): void {
   }
 }
 
-function handleViewportChange(): void {
+function handleViewportChange(event: Event): void {
+  if (event.target instanceof Node && menu.value?.contains(event.target))
+    return;
   if (open.value) positionMenu();
 }
 
@@ -275,52 +307,86 @@ onBeforeUnmount(() => {
           @keydown="handleMenuKeydown"
         >
           <div v-if="page === 'main'" class="conversation-model-config-main">
-            <button type="button" @click="showPage('model')">
-              <span>模型</span>
-              <span class="conversation-model-config-value">{{
-                selectedModelLabel
-              }}</span>
-              <AppIcon name="chevron" :size="16" />
-            </button>
-            <button type="button" @click="showPage('thinking')">
-              <span>思考等级</span>
-              <span class="conversation-model-config-value">{{
-                thinkingLabel
-              }}</span>
-              <AppIcon name="chevron" :size="16" />
-            </button>
-            <button
-              v-if="showsTemperature"
-              type="button"
-              @click="showPage('temperature')"
+            <div
+              class="conversation-model-config-models"
+              role="listbox"
+              aria-label="模型"
             >
-              <span>温度</span>
-              <span class="conversation-model-config-value">{{
-                temperatureLabel
-              }}</span>
-              <AppIcon name="chevron" :size="16" />
-            </button>
-            <div class="conversation-model-config-divider" />
-            <button
-              class="conversation-model-config-network"
-              type="button"
-              :disabled="responding || !webSearchAvailable"
-              :title="webSearchTitle"
-              aria-label="联网"
-              :aria-pressed="webSearchEnabled"
-              @click="emit('toggleWebSearch', !webSearchEnabled)"
-            >
-              <span>联网</span>
-              <span class="conversation-model-config-value">
-                {{ webSearchEnabled ? "开启" : "关闭" }}
-              </span>
-              <span
-                class="conversation-model-config-switch"
-                :class="{ 'is-active': webSearchEnabled }"
+              <div
+                v-for="group in modelGroups"
+                :key="group.provider"
+                class="conversation-model-config-provider"
+                role="group"
+                :aria-label="group.label"
               >
-                <span />
-              </span>
-            </button>
+                <div class="conversation-model-config-provider-label">
+                  {{ group.label }}
+                </div>
+                <div class="conversation-model-config-options">
+                  <button
+                    v-for="option in group.options"
+                    :key="option.value"
+                    type="button"
+                    role="option"
+                    :aria-selected="option.value === selectedModelId"
+                    :class="{ 'is-selected': option.value === selectedModelId }"
+                    @click="emit('selectModel', option.value)"
+                  >
+                    <span>{{ option.label }}</span>
+                    <AppIcon
+                      v-if="option.value === selectedModelId"
+                      name="check"
+                      :size="15"
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="conversation-model-config-footer">
+              <button
+                type="button"
+                aria-label="思考等级"
+                @click="showPage('thinking')"
+              >
+                <span>思考等级</span>
+                <span class="conversation-model-config-value">{{
+                  thinkingLabel
+                }}</span>
+                <AppIcon name="chevron" :size="16" />
+              </button>
+              <button
+                v-if="showsTemperature"
+                type="button"
+                @click="showPage('temperature')"
+              >
+                <span>温度</span>
+                <span class="conversation-model-config-value">{{
+                  temperatureLabel
+                }}</span>
+                <AppIcon name="chevron" :size="16" />
+              </button>
+              <div class="conversation-model-config-divider" />
+              <button
+                class="conversation-model-config-network"
+                type="button"
+                :disabled="responding || !webSearchAvailable"
+                :title="webSearchTitle"
+                aria-label="联网"
+                :aria-pressed="webSearchEnabled"
+                @click="emit('toggleWebSearch', !webSearchEnabled)"
+              >
+                <span>联网</span>
+                <span class="conversation-model-config-value">
+                  {{ webSearchEnabled ? "开启" : "关闭" }}
+                </span>
+                <span
+                  class="conversation-model-config-switch"
+                  :class="{ 'is-active': webSearchEnabled }"
+                >
+                  <span />
+                </span>
+              </button>
+            </div>
           </div>
 
           <div v-else class="conversation-model-config-submenu">

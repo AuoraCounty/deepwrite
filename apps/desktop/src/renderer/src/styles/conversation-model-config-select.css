@@ -67,6 +67,8 @@
 .conversation-model-config-menu {
   position: fixed;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 9px;
   border: 1px solid var(--theme-line, #dededb);
@@ -82,12 +84,41 @@
   backdrop-filter: blur(18px) saturate(1.15);
 }
 
-.conversation-model-config-main,
-.conversation-model-config-submenu {
-  display: grid;
+.conversation-model-config-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.conversation-model-config-main > button,
+.conversation-model-config-models {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.conversation-model-config-footer {
+  display: grid;
+  flex: 0 0 auto;
+  padding-top: 5px;
+  border-top: 1px solid var(--theme-line-soft);
+}
+
+.conversation-model-config-submenu {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.conversation-model-config-submenu header {
+  flex: 0 0 auto;
+}
+
+.conversation-model-config-submenu .conversation-model-config-options {
+  min-height: 0;
+}
+
+.conversation-model-config-footer > button,
 .conversation-model-config-options > button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 18px;
@@ -104,15 +135,15 @@
   cursor: pointer;
 }
 
-.conversation-model-config-main > button:hover:not(:disabled),
-.conversation-model-config-main > button:focus-visible,
+.conversation-model-config-footer > button:hover:not(:disabled),
+.conversation-model-config-footer > button:focus-visible,
 .conversation-model-config-options > button:hover,
 .conversation-model-config-options > button:focus-visible {
   outline: 0;
   background: var(--surface-hover, #ececea);
 }
 
-.conversation-model-config-main > button:disabled {
+.conversation-model-config-footer > button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
@@ -126,7 +157,7 @@
   white-space: nowrap;
 }
 
-.conversation-model-config-main > button > svg {
+.conversation-model-config-footer > button > svg {
   color: var(--text-tertiary, #8b8f94);
 }
 
@@ -136,7 +167,7 @@
   background: var(--theme-line-soft, #e8e8e4);
 }
 
-.conversation-model-config-main > .conversation-model-config-network {
+.conversation-model-config-footer > .conversation-model-config-network {
   grid-template-columns: minmax(0, 1fr) auto 34px;
 }
 
@@ -244,4 +275,28 @@
   box-shadow:
     0 20px 52px color-mix(in srgb, var(--theme-foreground) 38%, transparent),
     0 3px 12px color-mix(in srgb, var(--theme-foreground) 28%, transparent);
+}
+
+.conversation-model-config-provider + .conversation-model-config-provider {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--theme-line-soft);
+}
+
+.conversation-model-config-provider-label {
+  padding: 7px 11px 3px;
+  color: var(--text-secondary);
+  font-size: 0.785714rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.conversation-model-config-provider .conversation-model-config-options {
+  overflow: visible;
+  max-height: none;
+  padding-top: 0;
+}
+
+.conversation-model-config-options > button > span {
+  overflow-wrap: anywhere;
 }

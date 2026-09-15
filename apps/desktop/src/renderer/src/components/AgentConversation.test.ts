@@ -484,18 +484,14 @@ describe("AgentConversation edit proposal placement", () => {
     );
   });
 
-  it("combines model, thinking, temperature and web search in one popup", () => {
+  it("keeps model selection and fixed run settings in one popup", () => {
     expect(composerSource).toContain("<ConversationModelConfigSelect");
-    expect(composerSource).not.toContain("<ConversationThinkingSelect");
-    expect(composerSource).not.toContain('accessible-label="选择温度"');
-    expect(modelConfigSource).toContain("<span>模型</span>");
-    expect(modelConfigSource).toContain("<span>思考等级</span>");
-    expect(modelConfigSource).toContain("<span>温度</span>");
-    expect(modelConfigSource).toContain("activeParameterLabel");
-    expect(modelConfigSource).toContain("props.showsTemperature");
-    expect(modelConfigSource).toContain("`温度 ${temperatureLabel.value}`");
-    expect(modelConfigSource).toContain(": thinkingLabel.value");
-    expect(modelConfigSource).not.toContain("高级");
+    expect(composerSource).not.toContain("<ConversationRunSettings");
+    expect(modelConfigSource).toContain('aria-label="模型"');
+    expect(modelConfigSource).toContain(
+      'class="conversation-model-config-footer"'
+    );
+    expect(modelConfigSource).toContain('aria-label="思考等级"');
     expect(modelConfigSource).toContain('aria-label="联网"');
     expect(modelConfigSource).toContain(':aria-pressed="webSearchEnabled"');
     expect(modelConfigSource).toContain(

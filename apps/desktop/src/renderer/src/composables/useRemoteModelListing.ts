@@ -3,8 +3,6 @@ import type { RemoteModelListItem } from "@deepwrite/contracts";
 import { uiMessage } from "../ui-feedback";
 import type { DraftModel } from "../components/modelSettingsDraft";
 
-const MANUAL_MODEL_ID_VALUE = "__deepwrite-manual-model-id__";
-
 function missingCredentials(editor: DraftModel): string | null {
   const missingUrl = !editor.baseUrl.trim();
   const missingKey =
@@ -28,47 +26,55 @@ export function useRemoteModelListing(editor: Ref<DraftModel>) {
   const listingRemoteModels = ref(false);
   const fetchHintDialog = ref<string | null>(null);
 
+  const selectedRemoteModelIds = ref<string[]>([]);
+  let requestVersion = 0;
   const canSelectRemoteModel = computed(
     () => fetchedRemoteModels.value.length > 0
   );
-  const remoteModelOptions = computed(() => {
-    const current = editor.value.modelId.trim();
-    const options = fetchedRemoteModels.value.map((model) => ({
+  const selectedRemoteModels = computed(() =>
+    fetchedRemoteModels.value.filter((model) =>
+      selectedRemoteModelIds.value.includes(model.id)
+    )
+  );
+  const remoteModelOptions = computed(() =>
+    fetchedRemoteModels.value.map((model) => ({
       value: model.id,
-      label: model.label && model.label !== model.id ? model.label : model.id,
+      label: model.label || model.id,
       ...(model.label && model.label !== model.id
-        ? { description: model.id, title: model.id }
-        : { title: model.id })
-    }));
-    if (current && !options.some((option) => option.value === current)) {
-      options.unshift({ value: current, label: current, title: current });
-    }
-    options.push({
-      value: MANUAL_MODEL_ID_VALUE,
-      label: "手动输入其他模型 ID",
-      title: "返回手动填写"
-    });
-    return options;
-  });
+        ? { description: model.id }
+        : {}),
+      title: model.id
+    }))
+  );
+
+  function clearRemoteModels(): void {
+    requestVersion++;
+    fetchedRemoteModels.value = [];
+    selectedRemoteModelIds.value = [];
+    listingRemoteModels.value = false;
+  }
 
   watch(
     () => [
       editor.value.id,
       editor.value.provider,
       editor.value.api,
-      editor.value.baseUrl.trim()
+      editor.value.baseUrl.trim(),
+      editor.value.apiKey,
+      editor.value.clearApiKey
     ],
-    () => {
-      fetchedRemoteModels.value = [];
-    }
+    clearRemoteModels
   );
 
-  function setFetchedModelId(value: string | number): void {
-    if (String(value) === MANUAL_MODEL_ID_VALUE) {
-      fetchedRemoteModels.value = [];
-      return;
+  function setSelectedRemoteModels(values: (string | number)[]): void {
+    selectedRemoteModelIds.value = values.map(String);
+    const selected = selectedRemoteModels.value;
+    if (
+      selected.length &&
+      !selected.some((model) => model.id === editor.value.modelId)
+    ) {
+      editor.value.modelId = selected[0]!.id;
     }
-    editor.value.modelId = String(value);
   }
 
   async function fetchRemoteModels(): Promise<void> {
@@ -82,6 +88,7 @@ export function useRemoteModelListing(editor: Ref<DraftModel>) {
       uiMessage.error("当前环境无法拉取模型列表。");
       return;
     }
+    const version = ++requestVersion;
     listingRemoteModels.value = true;
     try {
       const result = await window.deepwrite.models.listRemote({
@@ -94,21 +101,27 @@ export function useRemoteModelListing(editor: Ref<DraftModel>) {
           : {}),
         ...(editor.value.clearApiKey ? { clearApiKey: true } : {})
       });
-      fetchedRemoteModels.value = result.models;
+      if (version !== requestVersion) return;
+      fetchedRemoteModels.value = [
+        ...new Map(result.models.map((model) => [model.id, model])).values()
+      ];
+      selectedRemoteModelIds.value = result.models.some(
+        (model) => model.id === editor.value.modelId
+      )
+        ? [editor.value.modelId]
+        : [];
       if (result.models.length === 0) {
         uiMessage.warning("当前接口没有返回可用模型。");
         return;
       }
-      if (!editor.value.modelId.trim()) {
-        editor.value.modelId = result.models[0]!.id;
-      }
       uiMessage.success(
-        `已拉取 ${result.models.length} 个可用模型，请选择模型 ID。`
+        `已拉取 ${result.models.length} 个可用模型，请勾选要保存的模型。`
       );
     } catch (error: unknown) {
+      if (version !== requestVersion) return;
       uiMessage.error(commandErrorMessage(error, "拉取模型列表失败。"));
     } finally {
-      listingRemoteModels.value = false;
+      if (version === requestVersion) listingRemoteModels.value = false;
     }
   }
 
@@ -117,7 +130,10 @@ export function useRemoteModelListing(editor: Ref<DraftModel>) {
     remoteModelOptions,
     listingRemoteModels,
     fetchHintDialog,
-    setFetchedModelId,
+    selectedRemoteModelIds,
+    selectedRemoteModels,
+    setSelectedRemoteModels,
+    clearRemoteModels,
     fetchRemoteModels
   };
 }

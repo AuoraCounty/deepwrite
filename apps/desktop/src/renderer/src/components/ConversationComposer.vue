@@ -57,7 +57,12 @@ const props = defineProps<{
   availableSkills: ComposerReferenceOption[];
   availableMaterials: ComposerReferenceOption[];
   editorReferences: EditorTextReference[];
-  modelOptions: Array<{ value: string; label: string }>;
+  modelOptions: Array<{
+    value: string;
+    label: string;
+    provider: string;
+    providerLabel: string;
+  }>;
   availableThinkingOptions: Array<{ value: ThinkingLevel; label: string }>;
   webSearchEnabled: boolean;
   webSearchAvailable: boolean;

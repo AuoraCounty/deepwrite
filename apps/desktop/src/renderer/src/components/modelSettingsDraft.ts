@@ -11,6 +11,7 @@ import {
 export interface DraftModel extends ModelConfig {
   apiKey?: string;
   clearApiKey?: boolean;
+  sourceApiKeyId?: string;
   customThinkingLevel?: string;
   originalId?: string;
 }
@@ -96,6 +97,7 @@ export function toModelInput(model: DraftModel): ModelConfigInput {
       : {}),
     ...(model.maxTokens !== undefined ? { maxTokens: model.maxTokens } : {}),
     ...(model.apiKey?.trim() ? { apiKey: model.apiKey.trim() } : {}),
-    ...(model.clearApiKey ? { clearApiKey: true } : {})
+    ...(model.clearApiKey ? { clearApiKey: true } : {}),
+    ...(model.sourceApiKeyId ? { sourceApiKeyId: model.sourceApiKeyId } : {})
   };
 }

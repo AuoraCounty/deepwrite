@@ -57,6 +57,68 @@ describe("short manuscript file builders", () => {
     expect(document).toContain("她打开了门。");
   });
 
+  it.each([
+    ["single newlines", "第一段。\n第二段。", ["第一段。", "第二段。"]],
+    ["one blank line", "第一段。\n\n第二段。", ["第一段。", "", "第二段。"]],
+    [
+      "multiple blank lines",
+      "第一段。\n\n\n第二段。",
+      ["第一段。", "", "", "第二段。"]
+    ],
+    [
+      "leading and trailing whitespace",
+      "\n　　第一段。\n \n第二段。  \n\n",
+      ["", "　　第一段。", " ", "第二段。  ", "", ""]
+    ],
+    [
+      "mixed platform newlines",
+      "第一段。\r\n\r\n第二段。\r第三段。\n第四段。",
+      ["第一段。", "", "第二段。", "第三段。", "第四段。"]
+    ],
+    ["only blank lines", "\n\n", ["", "", ""]],
+    ["empty content", "", []]
+  ])(
+    "preserves %s with consistent DOCX body paragraphs",
+    (_, content, lines) => {
+      const entries = storedZipEntries(
+        buildDocx({
+          title: "测试作品",
+          format: "docx",
+          sections: [
+            { title: "第一节", content },
+            { title: "第二节", content: "下一节正文。" }
+          ]
+        })
+      );
+      const document = entries.get("word/document.xml")!.toString("utf8");
+      const paragraphs = [...document.matchAll(/<w:p>(.*?)<\/w:p>/gu)].map(
+        (match) => match[1]!
+      );
+      const paragraphTexts = paragraphs.map((paragraph) =>
+        [...paragraph.matchAll(/<w:t\b[^>]*>(.*?)<\/w:t>/gu)]
+          .map((match) => match[1])
+          .join("")
+      );
+      expect(paragraphTexts).toEqual([
+        "测试作品",
+        "第一节",
+        ...lines,
+        "第二节",
+        "下一节正文。"
+      ]);
+      const bodyParagraphs = paragraphs.filter(
+        (paragraph) => !paragraph.includes("<w:pStyle")
+      );
+      for (const paragraph of bodyParagraphs) {
+        expect(paragraph).toContain(
+          '<w:spacing w:after="0" w:line="360" w:lineRule="auto"/>'
+        );
+        expect(paragraph).toContain('<w:ind w:firstLineChars="200"/>');
+        expect(paragraph).not.toContain("<w:br/>");
+      }
+    }
+  );
+
   it("creates an EPUB 3 package with an uncompressed mimetype first and one file per section", () => {
     const epub = buildEpub(fixture("epub"));
     const entries = storedZipEntries(epub);

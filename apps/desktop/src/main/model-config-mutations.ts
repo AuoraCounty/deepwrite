@@ -44,6 +44,21 @@ export function editModelSettings(
       encryptedApiKeys[model.id] = safeStorage
         .encryptString(apiKey)
         .toString("base64");
+    } else if (!model.clearApiKey && model.sourceApiKeyId) {
+      const source = settings.models.find(
+        (entry) => entry.id === model.sourceApiKeyId
+      );
+      if (
+        !source ||
+        source.managedBy ||
+        source.provider !== model.provider ||
+        source.api !== model.api ||
+        source.baseUrl !== model.baseUrl ||
+        !secrets.encryptedApiKeys[source.id]
+      ) {
+        throw new Error("无法复用原模型密钥，请重新填写 API Key 后批量保存。");
+      }
+      encryptedApiKeys[model.id] = secrets.encryptedApiKeys[source.id]!;
     } else if (!model.clearApiKey && secrets.encryptedApiKeys[model.id]) {
       encryptedApiKeys[model.id] = secrets.encryptedApiKeys[model.id]!;
     }

@@ -11,6 +11,7 @@ import type {
 import { createId } from "@deepwrite/shared";
 import { useSettingsStore } from "../stores/settingsStore";
 import { uiMessage } from "../ui-feedback";
+import { applyBatchModelSettings } from "../utils/batchModelSettings";
 import { mergeCustomModelSettings } from "../utils/customModelSettings";
 import {
   cloneDraftModel,
@@ -165,21 +166,17 @@ export function useModelSettingsDraft(
 
   function saveModelEditor(payload: ModelEditorSavePayload): void {
     if (props.modelSaving) return;
-    const index = draftModels.value.findIndex(
-      (model) => model.id === (payload.originalId ?? payload.model.id)
-    );
-    const duplicateIndex = draftModels.value.findIndex(
-      (model, candidateIndex) =>
-        model.id === payload.model.id && candidateIndex !== index
-    );
-    if (duplicateIndex >= 0) {
-      uiMessage.warning("模型配置 ID 不能重复。");
-      return;
+    try {
+      const models = applyBatchModelSettings(draftModels.value, payload);
+      submitModelSettings(
+        models,
+        draftDefaultModelId.value || models[0]?.id || ""
+      );
+    } catch (error) {
+      uiMessage.warning(
+        error instanceof Error ? error.message : "模型配置无效。"
+      );
     }
-    const models = [...draftModels.value];
-    if (index >= 0) models[index] = payload.model;
-    else models.push(payload.model);
-    submitModelSettings(models, draftDefaultModelId.value || payload.model.id);
   }
 
   function testDraftModel(model: DraftModel): void {

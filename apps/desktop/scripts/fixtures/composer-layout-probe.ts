@@ -2,6 +2,7 @@ import { createApp, h, nextTick, ref } from "vue";
 import { createPinia } from "pinia";
 import ConversationComposer from "../../src/renderer/src/components/ConversationComposer.vue";
 import type { AgentApprovalMode } from "../../src/renderer/src/types/conversation";
+import type { ThinkingLevel } from "@deepwrite/contracts/renderer";
 import "../../src/renderer/src/styles.css";
 import {
   applyAppearanceThemeToDocument,
@@ -9,6 +10,9 @@ import {
 } from "../../src/renderer/src/composables/appearanceThemeRuntime";
 
 const responding = ref(false);
+const thinkingLevel = ref<ThinkingLevel>("off");
+const webSearchEnabled = ref(true);
+const selectedModelId = ref("test-model");
 const approvalMode = ref<AgentApprovalMode>("request-approval");
 let sent = 0;
 let stopped = 0;
@@ -29,9 +33,9 @@ const app = createApp({
         messagesEmpty: true,
         bookTitle: "用于验证长标题省略的虚构测试作品",
         stageLabel: "剧情",
-        selectedModelId: "test-model",
+        selectedModelId: selectedModelId.value,
         selectedModel: undefined,
-        thinkingLevel: "off",
+        thinkingLevel: thinkingLevel.value,
         temperature: 0.7,
         approvalMode: approvalMode.value,
         agentTeamMode: "normal",
@@ -42,10 +46,32 @@ const app = createApp({
         availableMaterials: [],
         editorReferences: [],
         modelOptions: [
-          { value: "test-model", label: "Very long test model name for layout" }
+          {
+            value: "test-model",
+            label: "Very long test model name for layout",
+            provider: "test",
+            providerLabel: "测试供应商"
+          },
+          {
+            value: "second-model",
+            label: "另一个测试模型",
+            provider: "second-test",
+            providerLabel: "另一个测试供应商"
+          },
+          ...Array.from({ length: 24 }, (_, index) => ({
+            value: `extra-model-${index}`,
+            label: `测试模型 ${index + 1}`,
+            provider: `test-group-${Math.floor(index / 4)}`,
+            providerLabel: `测试供应商 ${Math.floor(index / 4) + 1}`
+          }))
         ],
-        availableThinkingOptions: [{ value: "off", label: "关闭" }],
-        webSearchEnabled: true,
+        availableThinkingOptions: [
+          { value: "off", label: "关闭" },
+          { value: "low", label: "轻度" },
+          { value: "medium", label: "标准" },
+          { value: "high", label: "深度" }
+        ],
+        webSearchEnabled: webSearchEnabled.value,
         webSearchAvailable: true,
         webSearchDisabledReason: "",
         showsTemperature: false,
@@ -63,6 +89,15 @@ const app = createApp({
           }
         ],
         approvalModeIcon: "check",
+        onSelectModel: (value) => {
+          selectedModelId.value = value;
+        },
+        onSelectThinking: (value) => {
+          thinkingLevel.value = value;
+        },
+        onToggleWebSearch: (value) => {
+          webSearchEnabled.value = value;
+        },
         onSelectApproval: (mode) => {
           approvalMode.value = mode;
         },
@@ -192,8 +227,67 @@ async function runComposerProbe() {
           );
           await click(".composer-more-trigger");
         }
+        await click(".conversation-model-config-trigger");
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        const modelList = element(".conversation-model-config-models");
+        const footer = element(".conversation-model-config-footer");
+        const before = footer.getBoundingClientRect();
+        check(
+          modelList.scrollHeight > modelList.clientHeight,
+          `Model list must scroll: ${theme}/${fontSize}/${width}; scroll=${modelList.scrollHeight}, client=${modelList.clientHeight}; menu=${element(".conversation-model-config-menu").getAttribute("style")}`
+        );
+        modelList.scrollTop = modelList.scrollHeight;
+        await frames();
+        const after = footer.getBoundingClientRect();
+        const menu = element(".conversation-model-config-menu");
+        check(modelList.scrollTop > 0, "Models did not scroll");
+        check(
+          Math.abs(before.top - after.top) < 1,
+          "Scrolling models moved fixed settings"
+        );
+        check(
+          after.bottom <= menu.getBoundingClientRect().bottom,
+          "Fixed settings clipped"
+        );
+        check(
+          menu.scrollTop === 0 && menu.scrollHeight <= menu.clientHeight + 1,
+          "Outer menu scrolls"
+        );
+        check(
+          visible('[aria-label="联网"]') &&
+            visible('button[aria-label="思考等级"]'),
+          "Fixed controls missing"
+        );
+        await click(".conversation-model-config-trigger");
         samples.push({ theme, fontSize, width, compact });
       }
+
+  await click(".conversation-model-config-trigger");
+  await click('button[aria-label="思考等级"]');
+  const thinkingOptions = document.querySelectorAll<HTMLButtonElement>(
+    ".conversation-model-config-submenu [role=option]"
+  );
+  check(thinkingOptions.length === 4, "Thinking levels missing");
+  thinkingOptions[3]!.click();
+  await frames();
+  check(thinkingLevel.value === "high", "Thinking update not relayed");
+  await click('[aria-label="联网"]');
+  check(!webSearchEnabled.value, "Web search update not relayed");
+  const models = element(
+    ".conversation-model-config-models"
+  ).querySelectorAll<HTMLButtonElement>('[role="option"]');
+  models[1]!.click();
+  await frames();
+  check(selectedModelId.value === "second-model", "Model update not relayed");
+  check(
+    thinkingLevel.value === "high" && !webSearchEnabled.value,
+    "Model selection changed settings"
+  );
+  check(
+    visible(".conversation-model-config-footer"),
+    "Selecting a model hid fixed settings"
+  );
+  await click(".conversation-model-config-trigger");
 
   document.documentElement.style.setProperty("--ui-font-size", "24px");
   element(".conversation-pane").style.width = "320px";
@@ -260,6 +354,18 @@ async function runComposerProbe() {
     !visible(".composer-settings-panel"),
     "Outside click did not close settings"
   );
+  responding.value = false;
+  applyAppearanceThemeToDocument({
+    scheme: "light",
+    theme: { ...defaultAppearanceTheme("light"), accent: "#b35a22" },
+    uiFontFamily: "system",
+    editorFontFamily: "song"
+  });
+  element(".conversation-pane").style.width = "390px";
+  await frames();
+  await click(".conversation-model-config-trigger");
+  element(".conversation-model-config-models").scrollTop = 500;
+  await new Promise((resolve) => setTimeout(resolve, 150));
   return { samples, sent, stopped, approval: approvalMode.value };
 }
 
