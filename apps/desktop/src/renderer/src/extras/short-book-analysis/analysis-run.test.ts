@@ -59,6 +59,58 @@ const flush = async () => {
   await Promise.resolve();
 };
 describe("short analysis run", () => {
+  it("records actual stage changes once per stream with timestamps and retains public output on failure", async () => {
+    const f = fixture();
+    f.run.start([book], preset, model, "off", "");
+    await flush();
+    const input = f.prompt.mock.calls[0]![0];
+    expect(f.run.entries.value[0]?.detail).toContain(book.title);
+    for (let i = 0; i < 3; i++)
+      f.run.handleEvent(
+        event("agent.thinking_delta", input, { delta: "private reasoning" })
+      );
+    expect(
+      f.run.entries.value.filter((entry) => entry.title === "模型正在分析全文")
+    ).toHaveLength(1);
+    f.run.handleEvent(
+      event("agent.message_delta", input, { delta: "公开分析" })
+    );
+    f.run.handleEvent(event("agent.message_delta", input, { delta: "说明" }));
+    expect(f.run.activity.value).toBe("模型正在输出分析说明");
+    expect(
+      f.run.entries.value.filter(
+        (entry) => entry.title === f.run.activity.value
+      )
+    ).toHaveLength(1);
+    f.run.handleEvent(event("agent.error", input, { message: "测试请求失败" }));
+    expect(f.run.entries.value.at(-1)?.tone).toBe("error");
+    expect(f.run.liveOutput.value).toBe("公开分析说明");
+    expect(
+      f.run.entries.value.every((entry) =>
+        Number.isFinite(Date.parse(entry.createdAt))
+      )
+    ).toBe(true);
+    expect(JSON.stringify(f.run.entries.value)).not.toContain(
+      "private reasoning"
+    );
+    f.run.retry();
+    expect(f.run.liveOutput.value).toBe("");
+    expect(f.run.entries.value.some((entry) => entry.tone === "error")).toBe(
+      false
+    );
+  });
+  it("retains a non-streamed public response when no structured result was submitted", async () => {
+    const f = fixture();
+    f.run.start([book], preset, model, "off", "");
+    await flush();
+    f.run.handleEvent(
+      event("agent.message_completed", f.prompt.mock.calls[0]![0], {
+        content: "供用户查看的公开说明"
+      })
+    );
+    expect(f.run.liveOutput.value).toBe("供用户查看的公开说明");
+    expect(f.run.status.value).toBe("error");
+  });
   it("sends one immutable complete request and publishes only a completed structured result", async () => {
     const f = fixture();
     const books = [{ ...book }, { ...book, id: "book2", title: "第二本" }];
@@ -74,20 +126,28 @@ describe("short analysis run", () => {
     await flush();
     f.run.handleEvent(
       event("long_book_analysis.result_updated", input, {
-        result: { title: "错误", body: "来自长篇" }
+        result: {
+          name: "错误",
+          description: "用于提炼写作方法。",
+          content: "来自长篇"
+        }
       })
     );
     expect(f.run.result.value).toBeNull();
     f.run.handleEvent(
       event("short_book_analysis.result_updated", input, {
         jobId: input.workspaceContext!.shortBookAnalysis!.jobId,
-        result: { title: "联合结果", body: "分析两本的异同" }
+        result: {
+          name: "联合结果",
+          description: "用于提炼写作方法。",
+          content: "分析两本的异同"
+        }
       })
     );
     expect(f.run.result.value).toBeNull();
     f.run.handleEvent(event("agent.message_completed", input));
     expect(f.run.status.value).toBe("completed");
-    expect(f.run.result.value?.title).toBe("联合结果");
+    expect(f.run.result.value?.name).toBe("联合结果");
     expect(f.prompt).toHaveBeenCalledTimes(1);
   });
   it("does not issue requests for oversized or invalid selections", () => {
@@ -130,7 +190,11 @@ describe("short analysis run", () => {
     f.run.handleEvent(
       event("short_book_analysis.result_updated", input, {
         jobId: input.workspaceContext!.shortBookAnalysis!.jobId,
-        result: { title: "旧结果", body: "旧输出" }
+        result: {
+          name: "旧结果",
+          description: "用于提炼写作方法。",
+          content: "旧输出"
+        }
       })
     );
     expect(f.run.result.value).toBeNull();

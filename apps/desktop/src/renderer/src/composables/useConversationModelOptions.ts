@@ -1,14 +1,30 @@
 import { computed } from "vue";
 import {
   BUILT_IN_REASONING_LEVELS,
+  isDeepWriteSiteOfficialModel,
   type BuiltInReasoningLevel,
   type ModelConfig,
   type ThinkingLevel
 } from "@deepwrite/contracts/renderer";
-import { MODEL_PROVIDER_OPTIONS } from "../components/modelProviderPresets";
 import type { AgentApprovalMode } from "../types/conversation";
 import type { IconName } from "../types/workspace";
 import { isWorkspaceWebSearchAvailable } from "./agent-conversation/web-search";
+
+const MODEL_GROUPS = [
+  { provider: "official", providerLabel: "官方小站" },
+  { provider: "custom", providerLabel: "自定义模型" },
+  { provider: "free", providerLabel: "免费模型" }
+] as const;
+
+function modelGroup(model: ModelConfig): string {
+  if (
+    isDeepWriteSiteOfficialModel(model) ||
+    model.managedBy === "deepwrite-official"
+  ) {
+    return "official";
+  }
+  return model.managedBy === "deepwrite-free" ? "free" : "custom";
+}
 
 export function useConversationModelOptions(options: {
   models: ModelConfig[];
@@ -62,14 +78,15 @@ export function useConversationModelOptions(options: {
       : fallbackThinkingOptions
   );
   const modelOptions = computed(() =>
-    options.models.map((model) => ({
-      value: model.id,
-      label: model.label,
-      provider: model.provider,
-      providerLabel:
-        MODEL_PROVIDER_OPTIONS.find((option) => option.value === model.provider)
-          ?.label ?? model.provider
-    }))
+    MODEL_GROUPS.flatMap((group) =>
+      options.models
+        .filter((model) => modelGroup(model) === group.provider)
+        .map((model) => ({
+          value: model.id,
+          label: model.label,
+          ...group
+        }))
+    )
   );
   const showsTemperature = computed(
     () => Boolean(selectedModel.value) && options.thinkingLevel === "off"

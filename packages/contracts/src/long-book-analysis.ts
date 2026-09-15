@@ -113,8 +113,13 @@ export type LongBookAnalysisRuntimeContext = z.infer<
 >;
 
 export const LongBookAnalysisResultSchema = z.object({
-  title: LongBookAnalysisTitleSchema,
-  body: z.string().trim().min(1).max(LONG_BOOK_ANALYSIS_MAX_RESULT_CHARACTERS)
+  name: LongBookAnalysisTitleSchema,
+  description: z.string().trim().min(1).max(1_000),
+  content: z
+    .string()
+    .trim()
+    .min(1)
+    .max(LONG_BOOK_ANALYSIS_MAX_RESULT_CHARACTERS)
 });
 export type LongBookAnalysisResult = z.infer<
   typeof LongBookAnalysisResultSchema

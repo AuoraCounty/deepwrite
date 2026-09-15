@@ -22,7 +22,7 @@ export type LongBookAnalysisToolDetails =
       kind: "long-book-analysis-result";
       jobId: string;
       unitId: string;
-      result: { title: string; body: string };
+      result: import("@deepwrite/contracts").LongBookAnalysisResult;
     };
 
 type ToolDetails = { kind: "none" } | LongBookAnalysisToolDetails;
@@ -192,10 +192,19 @@ function buildResultTool(context: LongBookAnalysisRuntimeContext): AgentTool {
     name: "write_analysis_result",
     label: "写入长篇拆书结果",
     description:
-      "把最终拆书结果写入可编辑预览区。只更新预览，不会直接写入素材库或技能库。",
+      "提交 name 名称、description 使用说明和 content 完整 Markdown 正文到可编辑预览区。正文无需包含说明头部，保存到素材库或技能库时自动生成 name / description 头部。只更新预览，不会直接写入资料库。",
     parameters: Type.Object({
-      title: Type.String({ minLength: 1, maxLength: 256 }),
-      body: Type.String({
+      name: Type.String({
+        minLength: 1,
+        maxLength: 256,
+        description: "素材或技能名称，同时作为资料库条目标题。"
+      }),
+      description: Type.String({
+        minLength: 1,
+        maxLength: 1_000,
+        description: "简要说明用途、适用场景和何时使用。"
+      }),
+      content: Type.String({
         minLength: 1,
         maxLength: LONG_BOOK_ANALYSIS_MAX_RESULT_CHARACTERS
       })

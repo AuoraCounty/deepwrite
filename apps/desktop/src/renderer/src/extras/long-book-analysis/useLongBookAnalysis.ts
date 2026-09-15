@@ -1,3 +1,4 @@
+import { analysisResultEntry } from "./analysis-result-content";
 import {
   computed,
   ref,
@@ -285,12 +286,12 @@ export function useLongBookAnalysis(options: {
       throw new Error("当前没有可落库的拆书结果。");
     }
     const output = preset.output;
+    const entry = analysisResultEntry(result.value, output.domain);
     if (output.domain === "material") {
       await api().catalog.createLibraryEntry({
         domain: "material",
         libraryId: input.libraryId,
-        title: result.value.title,
-        content: result.value.body,
+        ...entry,
         stageId: output.stageId,
         ...(input.baseProjectRevision === undefined
           ? {}
@@ -300,8 +301,7 @@ export function useLongBookAnalysis(options: {
       await api().catalog.createLibraryEntry({
         domain: "skill",
         libraryId: input.libraryId,
-        title: result.value.title,
-        content: result.value.body,
+        ...entry,
         stageId: output.stageId,
         ...(input.baseProjectRevision === undefined
           ? {}

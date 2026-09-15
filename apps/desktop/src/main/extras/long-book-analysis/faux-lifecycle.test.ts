@@ -171,7 +171,7 @@ describe("long-book analysis Faux lifecycle", () => {
 
     const edited = {
       ...generated,
-      body: `${generated.body}\n\n## 用户校正\n\n保留这条可迁移结构。`
+      content: `${generated.content}\n\n## 用户校正\n\n保留这条可迁移结构。`
     };
     const createLibraryEntry = vi.fn(
       async (_input: Record<string, unknown>) => ({ id: "entry-1" })
@@ -179,14 +179,14 @@ describe("long-book analysis Faux lifecycle", () => {
     await createLibraryEntry({
       domain: profile.output.domain,
       libraryId: "plot-library",
-      title: edited.title,
-      content: edited.body,
+      title: edited.name,
+      content: edited.content,
       stageId: profile.output.stageId
     });
 
     expect(firstReductionNotes).toHaveLength(2);
     expect(new Set(sessions).size).toBe(8);
-    expect(edited.body).toContain("用户校正");
+    expect(edited.content).toContain("用户校正");
     expect(createLibraryEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         domain: "material",

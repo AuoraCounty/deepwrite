@@ -274,13 +274,52 @@ async function run() {
     ).every((el) => el.disabled),
     "Removal is disabled during analysis"
   );
+  check(
+    !document.querySelector(":popover-open"),
+    "Run details stay closed on start"
+  );
+  const statusTrigger = document.querySelector<HTMLButtonElement>(
+    ".analysis-status-trigger"
+  )!;
+  statusTrigger.click();
+  await frame();
+  check(document.querySelector(":popover-open"), "Status opens run details");
+  emit("agent.thinking_delta", { delta: "Private test reasoning" });
+  emit("agent.message_delta", { delta: "公开分析：人物目标与冲突正在整理。" });
+  await frame();
+  check(
+    document
+      .querySelector(".analysis-process-output")
+      ?.textContent?.includes("公开分析"),
+    "Public stream is visible in details"
+  );
+  check(
+    !document
+      .querySelector(".analysis-status-popover")
+      ?.textContent?.includes("Private test reasoning"),
+    "Internal reasoning is not exposed"
+  );
+  document
+    .querySelector<HTMLButtonElement>('[aria-label="关闭运行详情"]')!
+    .click();
+  await frame();
+  check(
+    !document.querySelector(":popover-open") && c.isBusy.value,
+    "Closing details leaves analysis running"
+  );
+  check(
+    document.activeElement === statusTrigger,
+    "Closing details restores focus"
+  );
   visible.value = false;
   await frame();
   emit("short_book_analysis.result_updated", {
     jobId: request!.workspaceContext!.shortBookAnalysis!.jobId,
     result: {
-      title: "综合分析",
-      body: "# 核心发现\n\n两篇都通过迟到的消息引出人物选择，结尾呈现不同代价。"
+      name: "综合分析",
+      description: "用于提炼写作方法。",
+      content:
+        "# 核心发现\n\n两篇都通过迟到的消息引出人物选择，结尾呈现不同代价。"
     }
   });
   emit("agent.message_completed");
@@ -294,6 +333,12 @@ async function run() {
     .querySelector<HTMLButtonElement>('[aria-label="管理拆书预设"]')!
     .click();
   await frame();
+  if (!document.querySelector('[aria-label="可选择书本数量"]')) {
+    document
+      .querySelector<HTMLButtonElement>(".preset-card-heading .preset-summary")
+      ?.click();
+    await frame();
+  }
   check(
     document.querySelector('[aria-label="可选择书本数量"]'),
     "Selection mode is configurable"

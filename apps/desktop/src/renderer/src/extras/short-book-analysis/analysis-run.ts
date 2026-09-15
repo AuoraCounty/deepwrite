@@ -11,6 +11,7 @@ import {
   type SystemEventEnvelope,
   type ThinkingLevel
 } from "@deepwrite/contracts/renderer";
+import type { LongBookAnalysisProcessEntry } from "../long-book-analysis/analysis-process";
 interface Job {
   context: ReturnType<typeof ShortBookAnalysisRuntimeContextSchema.parse>;
   preset: ShortBookAnalysisPreset;
@@ -28,7 +29,7 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
   const error = ref<string | null>(null);
   const liveOutput = ref("");
   const activity = ref("等待开始");
-  const entries = ref<string[]>([]);
+  const entries = ref<LongBookAnalysisProcessEntry[]>([]);
   const isBusy = computed(
     () => status.value === "running" || status.value === "stopping"
   );
@@ -43,9 +44,28 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
   const canRetry = computed(
     () => status.value === "stopped" || status.value === "error"
   );
-  function log(message: string) {
+  function log(
+    message: string,
+    detail?: string,
+    tone: LongBookAnalysisProcessEntry["tone"] = "info"
+  ) {
     activity.value = message;
-    entries.value.push(message);
+    entries.value = [
+      ...entries.value,
+      {
+        id: createId("short_analysis_process"),
+        createdAt: new Date().toISOString(),
+        title: message,
+        ...(detail ? { detail } : {}),
+        tone,
+        phase: null
+      }
+    ];
+    if (entries.value.length > 120)
+      entries.value.splice(1, entries.value.length - 120);
+  }
+  function setActivity(message: string) {
+    if (activity.value !== message) log(message);
   }
   function clear() {
     if (isBusy.value) throw new Error("分析运行中，不能修改输入。");
@@ -61,7 +81,7 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
   function fail(cause: unknown) {
     status.value = "error";
     error.value = cause instanceof Error ? cause.message : "短篇拆书失败。";
-    log(error.value);
+    log(error.value, undefined, "error");
     pending = null;
   }
   async function execute() {
@@ -73,7 +93,11 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
     result.value = null;
     liveOutput.value = "";
     entries.value = [];
-    log(`正在联合分析 ${current.context.books.length} 本短篇`);
+    log(
+      `正在联合分析 ${current.context.books.length} 本短篇`,
+      `预设：${current.preset.name} · ${current.context.books.map((book) => book.title).join("、")} · 共 ${current.context.books.reduce((total, book) => total + book.text.length, 0).toLocaleString()} 字符`
+    );
+    log("正在提交分析请求");
     const unit: {
       sessionId: string;
       runId?: string;
@@ -98,6 +122,8 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
         return;
       }
       unit.runId = accepted.runId;
+      if (activity.value === "正在提交分析请求")
+        log("请求已接收，等待模型响应");
       if (stopping()) await abortPending();
     } catch (cause) {
       if (pending === unit && !disposed) {
@@ -127,7 +153,7 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
         status.value = "running";
         error.value =
           cause instanceof Error ? cause.message : "停止失败，请重试。";
-        log(error.value);
+        log(error.value, undefined, "error");
       }
     }
   }
@@ -195,21 +221,30 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
       }
       return;
     }
-    if (event.type === "agent.message_delta")
+    if (event.type === "agent.message_delta") {
+      setActivity("模型正在输出分析说明");
       liveOutput.value = (liveOutput.value + event.payload.delta).slice(
         -200000
       );
-    else if (event.type === "agent.thinking_delta")
-      activity.value = "模型正在思考";
+    } else if (event.type === "agent.thinking_delta")
+      setActivity("模型正在分析全文");
     else if (event.type === "tool.call_requested") log("正在生成结构化结果");
     else if (
       event.type === "short_book_analysis.result_updated" &&
       event.payload.jobId === job?.context.jobId
-    )
+    ) {
       unit.result = event.payload.result;
+      log("结构化结果已生成", event.payload.result.name, "success");
+    } else if (
+      event.type === "tool.execution_completed" &&
+      event.payload.isError
+    )
+      log("生成结果时遇到错误", "等待模型修正或重试当前动作", "error");
     else if (event.type === "agent.error")
       fail(new Error(event.payload.message));
     else if (event.type === "agent.message_completed") {
+      if (!liveOutput.value.trim() && event.payload.content?.trim())
+        liveOutput.value = event.payload.content.slice(-200000);
       if (!unit.result) {
         fail(new Error("模型未提交结构化结果，请重新分析。"));
         return;
@@ -217,7 +252,7 @@ export function createShortAnalysisRun(api: () => DeepWriteApi) {
       result.value = unit.result;
       pending = null;
       status.value = "completed";
-      log("分析完成，结果可编辑并保存");
+      log("分析完成，结果可编辑并保存", undefined, "success");
     }
   }
   return {

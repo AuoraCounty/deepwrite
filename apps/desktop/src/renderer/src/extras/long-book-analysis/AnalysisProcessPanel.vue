@@ -27,6 +27,13 @@ const displayEntries = computed(() =>
   )
 );
 const logElement = ref<HTMLElement | null>(null);
+const followLatest = ref(true);
+function trackScroll(): void {
+  const element = logElement.value;
+  if (element)
+    followLatest.value =
+      element.scrollHeight - element.scrollTop - element.clientHeight < 48;
+}
 
 function timeLabel(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -40,11 +47,11 @@ function timeLabel(value: string): string {
 async function scrollToLatest(): Promise<void> {
   await nextTick();
   const element = logElement.value;
-  if (element) element.scrollTop = element.scrollHeight;
+  if (element && followLatest.value) element.scrollTop = element.scrollHeight;
 }
 
 watch(
-  () => [props.entries.length, props.liveOutput] as const,
+  () => [props.entries.at(-1), props.liveOutput] as const,
   () => void scrollToLatest(),
   { flush: "post" }
 );
@@ -63,7 +70,12 @@ onMounted(() => void scrollToLatest());
       </div>
       <small>{{ entries.length }} 条记录</small>
     </header>
-    <div ref="logElement" class="analysis-process-log" role="log">
+    <div
+      ref="logElement"
+      class="analysis-process-log"
+      role="log"
+      @scroll="trackScroll"
+    >
       <ol v-if="entries.length">
         <li
           v-for="entry in displayEntries"
@@ -91,6 +103,17 @@ onMounted(() => void scrollToLatest());
         <pre>{{ liveOutput }}</pre>
       </div>
     </div>
+    <button
+      v-if="!followLatest"
+      type="button"
+      class="analysis-process-follow"
+      @click="
+        followLatest = true;
+        scrollToLatest();
+      "
+    >
+      回到最新进度
+    </button>
     <p v-if="error" class="analysis-process-error">{{ error }}</p>
     <footer>
       {{
@@ -167,12 +190,11 @@ onMounted(() => void scrollToLatest());
 }
 .analysis-process-entry-heading {
   min-width: 0;
+  flex-wrap: wrap;
 }
 .analysis-process-entry-heading strong {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .analysis-process-entry-heading span,
 .analysis-process-entry-heading time {
@@ -182,6 +204,8 @@ onMounted(() => void scrollToLatest());
 .analysis-process-empty,
 .analysis-process-error {
   margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   color: var(--text-secondary);
   font-size: 0.785714rem;
   line-height: 1.5;

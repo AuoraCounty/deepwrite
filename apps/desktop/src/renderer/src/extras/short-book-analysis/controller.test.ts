@@ -61,10 +61,14 @@ it("removes drafts without deleting saved sources and allows loading them again"
     expect(c.drafts.value).toEqual([]);
     expect(c.activeId.value).toBe("");
     expect(c.savedSources.value).toEqual(summaries);
-    c.result.value = { title: "保留结果", body: "其他分析" };
+    c.result.value = {
+      name: "保留结果",
+      description: "用于提炼写作方法。",
+      content: "其他分析"
+    };
     await c.deleteSource("book-1");
     expect(c.savedSources.value.map((source) => source.id)).toEqual(["book-0"]);
-    expect(c.result.value?.body).toBe("其他分析");
+    expect(c.result.value?.content).toBe("其他分析");
   } finally {
     c.dispose();
     scope.stop();
@@ -85,7 +89,11 @@ it("deletes saved sources, repairs selection and active editor, and preserves st
     }));
     c.selectedIds.value = ["book-0", "book-1"];
     c.activeId.value = "book-1";
-    c.result.value = { title: "旧结果", body: "旧分析" };
+    c.result.value = {
+      name: "旧结果",
+      description: "用于提炼写作方法。",
+      content: "旧分析"
+    };
     c.status.value = "completed";
     remove.mockRejectedValueOnce(new Error("删除失败"));
     await expect(c.deleteSource("book-1")).rejects.toThrow("删除失败");
@@ -93,7 +101,7 @@ it("deletes saved sources, repairs selection and active editor, and preserves st
     expect(c.savedSources.value).toHaveLength(3);
     expect(c.selectedIds.value).toEqual(["book-0", "book-1"]);
     expect(c.activeId.value).toBe("book-1");
-    expect(c.result.value?.body).toBe("旧分析");
+    expect(c.result.value?.content).toBe("旧分析");
     expect(c.loading.value).toBe(false);
     await c.deleteSource("book-1");
     expect(remove).toHaveBeenLastCalledWith("book-1");
@@ -203,13 +211,18 @@ it("retains selections on preset change, enforces ten and saves edited results t
     ).toThrow("正在处理");
     expect(() => c.toggleBook("book-0")).toThrow();
     c.status.value = "completed";
-    c.result.value = { title: "已编辑结果", body: "整理后的综合分析" };
+    c.result.value = {
+      name: "已编辑结果",
+      description: "用于提炼写作方法。",
+      content: "整理后的综合分析"
+    };
     await c.persistResult({ libraryId: "library", baseProjectRevision: 7 });
     expect(createLibraryEntry).toHaveBeenCalledWith({
       domain: "material",
       libraryId: "library",
       title: "已编辑结果",
-      content: "整理后的综合分析",
+      content:
+        '---\nname: "已编辑结果"\ndescription: "用于提炼写作方法。"\n---\n\n整理后的综合分析',
       stageId: "pacing",
       baseProjectRevision: 7
     });

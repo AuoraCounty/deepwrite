@@ -49,19 +49,39 @@ describe("short analysis runtime", () => {
   });
   it("requires a valid result and disallows a second result", async () => {
     const tool = buildShortBookAnalysisTools(context)[0]!;
+    expect(tool.parameters).toMatchObject({
+      required: ["name", "description", "content"]
+    });
     await expect(
-      tool.execute("call", { title: "", body: "" })
+      tool.execute("missing-description", { name: "名称", content: "正文" })
+    ).rejects.toThrow();
+    await expect(
+      tool.execute("call", {
+        name: "",
+        description: "用于提炼写作方法。",
+        content: ""
+      })
     ).rejects.toThrow();
     const result = await tool.execute("call", {
-      title: "综合分析",
-      body: "完整结果"
+      name: "综合分析",
+      description: "用于提炼写作方法。",
+      content: "完整结果"
     });
     expect(result.details).toMatchObject({
       kind: "short-book-analysis-result",
-      jobId: context.jobId
+      jobId: context.jobId,
+      result: {
+        name: "综合分析",
+        description: "用于提炼写作方法。",
+        content: "完整结果"
+      }
     });
     await expect(
-      tool.execute("again", { title: "重复", body: "结果" })
+      tool.execute("again", {
+        name: "重复",
+        description: "用于提炼写作方法。",
+        content: "结果"
+      })
     ).rejects.toThrow("一份");
   });
   it("completes the faux lifecycle with a single isolated short result", async () => {

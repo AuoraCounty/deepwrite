@@ -60,16 +60,22 @@ watch(
   { immediate: true }
 );
 
-function updateTitle(event: Event): void {
+function updateName(event: Event): void {
   const element = event.target;
   if (element instanceof HTMLInputElement)
-    emit("update", { ...props.result, title: element.value });
+    emit("update", { ...props.result, name: element.value });
 }
 
-function updateBody(event: Event): void {
+function updateDescription(event: Event): void {
   const element = event.target;
   if (element instanceof HTMLTextAreaElement)
-    emit("update", { ...props.result, body: element.value });
+    emit("update", { ...props.result, description: element.value });
+}
+
+function updateContent(event: Event): void {
+  const element = event.target;
+  if (element instanceof HTMLTextAreaElement)
+    emit("update", { ...props.result, content: element.value });
 }
 
 function save(): void {
@@ -97,17 +103,26 @@ function save(): void {
     </header>
     <input
       class="result-title"
-      :value="result.title"
+      :value="result.name"
       maxlength="256"
-      aria-label="结果标题"
-      @input="updateTitle"
+      aria-label="结果名称"
+      @input="updateName"
+    />
+    <textarea
+      class="result-description"
+      :value="result.description"
+      maxlength="1000"
+      rows="3"
+      aria-label="结果描述"
+      placeholder="简要说明用途、适用场景和何时使用"
+      @input="updateDescription"
     />
     <textarea
       class="result-body"
-      :value="result.body"
+      :value="result.content"
       maxlength="200000"
       aria-label="Markdown 结果正文"
-      @input="updateBody"
+      @input="updateContent"
     />
     <div class="result-save-row">
       <div class="result-target-library">
@@ -144,7 +159,8 @@ function save(): void {
       </button>
     </div>
     <p class="analysis-help">
-      结果会一直保留在当前预览中；每次写入只创建新条目，不会覆盖已有内容。
+      保存时会自动在正文顶部添加 name 和 description
+      说明头部。结果会一直保留在当前预览中；每次写入只创建新条目，不会覆盖已有内容。
     </p>
   </section>
 </template>
@@ -155,6 +171,7 @@ function save(): void {
   gap: 12px;
 }
 .result-title,
+.result-description,
 .result-body,
 .result-target-library {
   box-sizing: border-box;
@@ -169,6 +186,10 @@ function save(): void {
 .result-title {
   font-size: 16px;
   font-weight: 650;
+}
+.result-description {
+  resize: vertical;
+  line-height: 1.7;
 }
 .result-body {
   min-height: 420px;

@@ -9,7 +9,7 @@ import {
 import PopupSelect from "../../components/PopupSelect.vue";
 import { uiMessage } from "../../ui-feedback";
 import PresetManager from "../long-book-analysis/PresetManager.vue";
-import AnalysisProcessPanel from "../long-book-analysis/AnalysisProcessPanel.vue";
+import AnalysisRunStatus from "../long-book-analysis/AnalysisRunStatus.vue";
 import ShortAnalysisSourceControls from "./ShortAnalysisSourceControls.vue";
 import AnalysisResultPanel from "../long-book-analysis/AnalysisResultPanel.vue";
 import {
@@ -31,7 +31,6 @@ const emit = defineEmits<{ refreshCatalog: [] }>();
 const c = props.controller;
 const managerOpen = ref(false);
 const saving = ref(false);
-const processOpen = ref(false);
 const resultAnchor = ref<HTMLElement | null>(null);
 const model = computed(
   () => props.models.find((m) => m.id === c.selectedModelId.value) ?? null
@@ -40,17 +39,6 @@ const libraries = computed(() =>
   compatibleAnalysisLibraries(c.selectedPreset.value, props.catalogSnapshot)
 );
 const disabled = computed(() => c.isBusy.value || c.loading.value);
-const statusLabel = computed(
-  () =>
-    ({
-      idle: "等待开始",
-      running: "后台分析中",
-      stopping: "正在停止",
-      stopped: "已停止",
-      error: "分析失败，可重试",
-      completed: "分析完成"
-    })[c.status.value]
-);
 async function act(action: () => unknown) {
   try {
     await action();
@@ -127,9 +115,14 @@ onMounted(() => void act(() => c.loadPresets()));
             <p class="analysis-eyebrow">选择范围与预设</p>
             <h2>配置本次拆书任务</h2>
           </div>
-          <span class="analysis-status" :class="`is-${c.status.value}`"
-            ><i aria-hidden="true"></i>{{ statusLabel }}</span
-          >
+          <AnalysisRunStatus
+            :status="c.status.value"
+            :entries="c.entries.value"
+            :current-activity="c.activity.value"
+            :live-output="c.liveOutput.value"
+            :error="c.error.value"
+            title="短篇拆书运行详情"
+          />
         </header>
         <div class="setup-grid">
           <div class="setup-field setup-range-field">
@@ -221,12 +214,6 @@ onMounted(() => void act(() => c.loadPresets()));
           </div>
           <div class="analysis-run-actions">
             <button
-              v-if="c.status.value !== 'idle'"
-              :aria-expanded="processOpen"
-              @click="processOpen = !processOpen"
-            >
-              {{ processOpen ? "收起执行过程" : "查看执行过程" }}</button
-            ><button
               v-if="c.result.value"
               @click="
                 resultAnchor?.scrollIntoView({
@@ -257,25 +244,12 @@ onMounted(() => void act(() => c.loadPresets()));
                 !model ||
                 !c.selectedPreset.value
               "
-              @click="
-                act(() => {
-                  c.start();
-                  processOpen = true;
-                })
-              "
+              @click="act(() => c.start())"
             >
               执行“{{ c.selectedPreset.value?.name ?? "当前" }}”预设
             </button>
           </div>
         </div>
-        <AnalysisProcessPanel
-          v-if="processOpen"
-          :entries="c.entries.value"
-          :current-activity="c.activity.value"
-          :live-output="c.liveOutput.value"
-          :error="null"
-          footer-text="全部所选短篇联合分析，生成一份结果；内部思考文本不会展示。"
-        />
       </section>
       <div
         v-if="c.result.value && c.preset.value"

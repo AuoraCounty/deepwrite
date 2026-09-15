@@ -40,8 +40,9 @@ export function analysisFauxResponses(input: AgentRunInput) {
         fauxToolCall(
           "write_analysis_result",
           {
-            title: `${input.shortBookAnalysisProfile?.name ?? "短篇拆书"}｜${short.books.length} 本`,
-            body: `# 短篇联合分析\n\n${short.books.map((b) => `- 《${b.title}》：已读取完整短篇。`).join("\n")}\n\n这是 Faux Runtime 验证结果。`
+            name: `${input.shortBookAnalysisProfile?.name ?? "短篇拆书"}｜${short.books.length} 本`,
+            description: "根据作品证据提炼可复用的写作方法与适用场景。",
+            content: `# 短篇联合分析\n\n${short.books.map((b) => `- 《${b.title}》：已读取完整短篇。`).join("\n")}\n\n这是 Faux Runtime 验证结果。`
           },
           { id: `${input.runId}-short-result` }
         ),
@@ -58,8 +59,9 @@ export function analysisFauxResponses(input: AgentRunInput) {
       ? fauxToolCall(
           "write_analysis_result",
           {
-            title: `${input.longBookAnalysisProfile?.name ?? "长篇拆书"}｜第 ${chapterStart}-${chapterEnd} 章`,
-            body: [
+            name: `${input.longBookAnalysisProfile?.name ?? "长篇拆书"}｜第 ${chapterStart}-${chapterEnd} 章`,
+            description: "根据作品证据提炼可复用的写作方法与适用场景。",
+            content: [
               `# ${input.longBookAnalysisProfile?.name ?? "长篇拆书分析"}`,
               "",
               `> 分析范围：第 ${chapterStart}-${chapterEnd} 章`,

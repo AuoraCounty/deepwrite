@@ -157,10 +157,14 @@ describe("long-book analysis pipeline checkpoints", () => {
         unitId: finalContext.unitId,
         jobId: finalContext.jobId,
         toolCallId: "tool-result",
-        result: { title: "剧情结构", body: "# 可编辑结果" }
+        result: {
+          name: "剧情结构",
+          description: "用于提炼写作方法。",
+          content: "# 可编辑结果"
+        }
       })
     );
-    expect(state.result.value?.body).toBe("# 可编辑结果");
+    expect(state.result.value?.content).toBe("# 可编辑结果");
     pipeline.handleEvent(
       event("agent.message_completed", final, {
         role: "assistant",
@@ -169,7 +173,7 @@ describe("long-book analysis pipeline checkpoints", () => {
     );
 
     await vi.waitFor(() => expect(state.status.value).toBe("completed"));
-    expect(state.result.value?.body).toBe("# 可编辑结果");
+    expect(state.result.value?.content).toBe("# 可编辑结果");
     expect(state.processEntries.value.at(-1)?.title).toBe("当前预设执行完成");
   });
 

@@ -196,7 +196,7 @@ export class LongBookAnalysisPipeline {
     ) {
       pending.result = event.payload.result;
       this.state.result.value = event.payload.result;
-      this.process.resultWritten(event.payload.result.title);
+      this.process.resultWritten(event.payload.result.name);
       return;
     }
     if (event.type === "agent.error") {

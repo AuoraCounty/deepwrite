@@ -119,8 +119,39 @@ describe("long-book analysis tools", () => {
     const result = await tool(
       buildLongBookAnalysisTools(context("final")),
       "write_analysis_result"
-    ).execute("write-result", { title: "剧情结构", body: "# 结果" });
+    ).execute("write-result", {
+      name: "剧情结构",
+      description: "用于提炼写作方法。",
+      content: "# 结果"
+    });
     expect(isLongBookAnalysisToolDetails(result.details)).toBe(true);
+    expect(result.details).toMatchObject({
+      result: {
+        name: "剧情结构",
+        description: "用于提炼写作方法。",
+        content: "# 结果"
+      }
+    });
+  });
+
+  it("requires name, description and content for the final result", async () => {
+    const writer = tool(
+      buildLongBookAnalysisTools(context("final")),
+      "write_analysis_result"
+    );
+    expect(writer.parameters).toMatchObject({
+      required: ["name", "description", "content"]
+    });
+    await expect(
+      writer.execute("missing-description", { name: "名称", content: "正文" })
+    ).rejects.toThrow();
+    await expect(
+      writer.execute("blank-description", {
+        name: "名称",
+        description: "  ",
+        content: "正文"
+      })
+    ).rejects.toThrow();
   });
 
   it("completes a Faux Runtime batch through the scoped note writer", async () => {

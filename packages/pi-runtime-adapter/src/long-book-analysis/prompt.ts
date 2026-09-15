@@ -22,7 +22,7 @@ function phaseRequirements(context: LongBookAnalysisRuntimeContext): string {
   return [
     "当前是最终结果生成阶段。",
     "必须读取全部归并笔记，严格按照预设目标生成一份完整 Markdown 结果。",
-    "完成后必须且只能调用一次 write_analysis_result。该工具只写预览区，不能声称已经正式落库。"
+    "完成后必须且只能调用一次 write_analysis_result，参数为 name（名称）、description（用途与适用场景）、content（完整 Markdown 正文，无需说明头部）。该工具只写预览区，不能声称已经正式落库。"
   ].join("\n");
 }
 

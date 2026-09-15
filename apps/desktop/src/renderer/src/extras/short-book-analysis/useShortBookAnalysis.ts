@@ -1,3 +1,4 @@
+import { analysisResultEntry } from "../long-book-analysis/analysis-result-content";
 import { computed, ref, shallowRef, watch } from "vue";
 import {
   ShortBookAnalysisSettingsInputSchema,
@@ -237,8 +238,7 @@ export function useShortBookAnalysis(options: {
         throw new Error("没有已完成的分析结果。");
       const base = {
         libraryId: input.libraryId,
-        title: result.title,
-        content: result.body,
+        ...analysisResultEntry(result, output.domain),
         ...(input.baseProjectRevision !== undefined
           ? { baseProjectRevision: input.baseProjectRevision }
           : {})

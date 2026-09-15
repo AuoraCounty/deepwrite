@@ -92,10 +92,14 @@ export class LongBookAnalysisProcessTracker {
   }
 
   thinking(): void {
+    if (this.state.currentActivity.value !== "模型正在整理当前阶段")
+      this.add("模型正在整理当前阶段");
     this.state.currentActivity.value = "模型正在整理当前阶段";
   }
 
   appendMessage(delta: string): void {
+    if (this.state.currentActivity.value !== "模型正在输出当前阶段说明")
+      this.add("模型正在输出当前阶段说明");
     const next = `${this.state.liveOutput.value}${delta}`;
     this.state.liveOutput.value = next.slice(-20_000);
     this.state.currentActivity.value = "模型正在输出当前阶段说明";
@@ -169,6 +173,7 @@ export class LongBookAnalysisProcessTracker {
         tone
       }
     ];
-    this.state.processEntries.value = entries.slice(-120);
+    this.state.processEntries.value =
+      entries.length > 120 ? [entries[0]!, ...entries.slice(-119)] : entries;
   }
 }

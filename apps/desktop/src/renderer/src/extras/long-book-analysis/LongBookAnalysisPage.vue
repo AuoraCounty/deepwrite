@@ -10,7 +10,8 @@ import PopupSelect, {
   type PopupSelectOption
 } from "../../components/PopupSelect.vue";
 import { uiMessage } from "../../ui-feedback";
-import AnalysisProcessPanel from "./AnalysisProcessPanel.vue";
+import AnalysisRunStatus from "./AnalysisRunStatus.vue";
+import LongAnalysisRunControls from "./LongAnalysisRunControls.vue";
 import AnalysisResultPanel from "./AnalysisResultPanel.vue";
 import AnalysisSourceControls from "./AnalysisSourceControls.vue";
 import ChapterEditor from "./ChapterEditor.vue";
@@ -40,7 +41,6 @@ const endOrder = ref(1);
 const presetManagerOpen = ref(false);
 const presetSaving = ref(false);
 const resultSaving = ref(false);
-const processOpen = ref(false);
 const resultAnchor = ref<HTMLElement | null>(null);
 
 const source = computed(() => props.controller.source.value);
@@ -97,17 +97,6 @@ const targetLibraryPlaceholder = computed(() =>
 const selectionCount = computed(() =>
   Math.max(0, endOrder.value - startOrder.value + 1)
 );
-const runStatusLabel = computed(() => {
-  const labels = {
-    idle: "等待开始",
-    running: "后台分析中",
-    stopping: "正在停止",
-    stopped: "已停止，可继续",
-    error: "阶段失败，可重试",
-    completed: "当前预设已完成"
-  } as const;
-  return labels[props.controller.status.value];
-});
 
 watch(
   presets,
@@ -177,7 +166,7 @@ function normalizeRange(anchor: "start" | "end"): void {
 
 async function start(): Promise<void> {
   try {
-    const started = await props.controller.start({
+    await props.controller.start({
       presetId: selectedPresetId.value,
       startOrder: startOrder.value,
       endOrder: endOrder.value,
@@ -185,7 +174,6 @@ async function start(): Promise<void> {
       thinkingLevel: props.controller.selectedThinkingLevel.value,
       libraryId: selectedTargetLibraryId.value
     });
-    if (started) processOpen.value = true;
   } catch (error: unknown) {
     uiMessage.warning(
       error instanceof Error ? error.message : "无法开始分析。"
@@ -303,13 +291,15 @@ onMounted(() => {
             <p class="analysis-eyebrow">选择范围与预设</p>
             <h2>配置本次拆书任务</h2>
           </div>
-          <span
-            class="analysis-status"
-            :class="`is-${controller.status.value}`"
-          >
-            <i aria-hidden="true"></i>
-            {{ runStatusLabel }}
-          </span>
+          <AnalysisRunStatus
+            :status="controller.status.value"
+            :entries="controller.processEntries.value"
+            :current-activity="controller.currentActivity.value"
+            :live-output="controller.liveOutput.value"
+            :error="controller.error.value"
+            :progress-text="controller.progressText.value"
+            title="长篇拆书运行详情"
+          />
         </header>
         <div class="setup-grid">
           <div class="setup-field setup-range-field">
@@ -402,65 +392,19 @@ onMounted(() => {
             />
           </label>
         </div>
-        <div class="analysis-run-bar">
-          <div class="analysis-run-progress">
-            <strong>已选 {{ selectionCount }} 章</strong>
-            <span>{{ controller.progressText.value }}</span>
-          </div>
-          <div class="analysis-run-actions">
-            <button
-              v-if="controller.status.value !== 'idle'"
-              type="button"
-              :aria-expanded="processOpen"
-              @click="processOpen = !processOpen"
-            >
-              {{ processOpen ? "收起执行过程" : "查看执行过程" }}
-            </button>
-            <button
-              v-if="controller.result.value"
-              type="button"
-              @click="showResult"
-            >
-              查看生成结果
-            </button>
-            <button
-              v-if="controller.canRetry.value"
-              type="button"
-              @click="controller.retry"
-            >
-              从失败阶段继续
-            </button>
-            <button
-              v-if="controller.isBusy.value"
-              class="analysis-danger-button"
-              type="button"
-              @click="controller.stop"
-            >
-              停止
-            </button>
-            <button
-              v-else
-              class="analysis-primary-button"
-              type="button"
-              :disabled="
-                !source ||
-                !selectedPreset ||
-                !controller.selectedModelId.value ||
-                selectionCount < 1 ||
-                selectionCount > 50
-              "
-              @click="start"
-            >
-              执行“{{ selectedPreset?.name ?? "当前" }}”预设
-            </button>
-          </div>
-        </div>
-        <AnalysisProcessPanel
-          v-if="processOpen"
-          :entries="controller.processEntries.value"
-          :current-activity="controller.currentActivity.value"
-          :live-output="controller.liveOutput.value"
-          :error="controller.error.value"
+        <LongAnalysisRunControls
+          :controller="controller"
+          :selection-count="selectionCount"
+          :preset-name="selectedPreset?.name ?? '当前'"
+          :can-start="
+            !!source &&
+            !!selectedPreset &&
+            !!controller.selectedModelId.value &&
+            selectionCount >= 1 &&
+            selectionCount <= 50
+          "
+          @start="start"
+          @show-result="showResult"
         />
       </section>
 
