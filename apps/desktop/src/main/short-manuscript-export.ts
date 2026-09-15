@@ -152,11 +152,12 @@ export function buildDocx(input: ExportShortManuscriptInput): Buffer {
     wordParagraph(validated.title, "Title"),
     ...validated.sections.flatMap((section) => [
       wordParagraph(section.title, "Heading1"),
-      // Preserve every source line, including blank lines and edge whitespace.
-      ...(section.content === ""
-        ? []
-        : normalizeText(section.content).split("\n")
-      ).map((line) => wordParagraph(line))
+      // Use paragraph formatting instead of source blank lines or indentation.
+      ...normalizeText(section.content)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((line) => wordParagraph(line))
     ])
   ].join("");
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

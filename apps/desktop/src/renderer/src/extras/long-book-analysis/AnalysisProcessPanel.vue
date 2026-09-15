@@ -103,17 +103,6 @@ onMounted(() => void scrollToLatest());
         <pre>{{ liveOutput }}</pre>
       </div>
     </div>
-    <button
-      v-if="!followLatest"
-      type="button"
-      class="analysis-process-follow"
-      @click="
-        followLatest = true;
-        scrollToLatest();
-      "
-    >
-      回到最新进度
-    </button>
     <p v-if="error" class="analysis-process-error">{{ error }}</p>
     <footer>
       {{

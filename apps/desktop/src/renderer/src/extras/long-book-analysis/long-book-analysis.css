@@ -5,7 +5,7 @@
   height: 100%;
   overflow: auto;
   box-sizing: border-box;
-  padding: 30px clamp(18px, 4%, 64px) 56px;
+  padding: 30px clamp(18px, 4%, 64px) clamp(120px, 18vh, 200px);
   background: var(--surface-main);
   color: var(--text-primary);
 }

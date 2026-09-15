@@ -59,26 +59,32 @@ describe("short manuscript file builders", () => {
 
   it.each([
     ["single newlines", "第一段。\n第二段。", ["第一段。", "第二段。"]],
-    ["one blank line", "第一段。\n\n第二段。", ["第一段。", "", "第二段。"]],
+    ["one blank line", "第一段。\n\n第二段。", ["第一段。", "第二段。"]],
     [
       "multiple blank lines",
       "第一段。\n\n\n第二段。",
-      ["第一段。", "", "", "第二段。"]
+      ["第一段。", "第二段。"]
     ],
     [
       "leading and trailing whitespace",
       "\n　　第一段。\n \n第二段。  \n\n",
-      ["", "　　第一段。", " ", "第二段。  ", "", ""]
+      ["第一段。", "第二段。"]
     ],
     [
       "mixed platform newlines",
       "第一段。\r\n\r\n第二段。\r第三段。\n第四段。",
-      ["第一段。", "", "第二段。", "第三段。", "第四段。"]
+      ["第一段。", "第二段。", "第三段。", "第四段。"]
     ],
-    ["only blank lines", "\n\n", ["", "", ""]],
+    ["only blank lines", "\n\n", []],
+    ["whitespace-only lines", " \n\t\r\n　　\n", []],
+    [
+      "manual indentation and inline spaces",
+      "　　第一段有 two words。\n\t第二段  保留间隔。 ",
+      ["第一段有 two words。", "第二段  保留间隔。"]
+    ],
     ["empty content", "", []]
   ])(
-    "preserves %s with consistent DOCX body paragraphs",
+    "normalizes %s into nonempty, consistently formatted DOCX paragraphs",
     (_, content, lines) => {
       const entries = storedZipEntries(
         buildDocx({
