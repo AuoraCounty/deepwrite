@@ -8,6 +8,7 @@ import type {
   WorkspaceFeatureHostCoordinatorOptions
 } from "./workspaceFeatureHostTypes";
 import { buildWorkspaceFeatureModule } from "./workspaceFeatureHostModule";
+import { useMarketplaceDisplayName } from "./useMarketplaceDisplayName";
 import type { buildSettingsFeatureModule } from "./settingsFeatureModule";
 export type {
   ActiveFeature,
@@ -30,7 +31,8 @@ export function useWorkspaceFeatureHostCoordinator(
   options: WorkspaceFeatureHostCoordinatorOptions
 ): WorkspaceFeatureHostCoordinator {
   const { settingsStore } = options;
-  const marketplaceDisplayName = ref<string>();
+  const { marketplaceDisplayName, applyDisplayName } =
+    useMarketplaceDisplayName();
   const agentTeamNavigationEpoch = ref(0);
   const knownMarketplaceSession = ref<MarketplaceSession | null>(null);
   let active = true;
@@ -300,9 +302,7 @@ export function useWorkspaceFeatureHostCoordinator(
     if (!active) return;
     marketplaceRevision += 1;
     knownMarketplaceSession.value = session;
-    marketplaceDisplayName.value = session.authenticated
-      ? session.user?.displayName
-      : undefined;
+    applyDisplayName(session);
   }
 
   async function loadMarketplaceSession(): Promise<void> {

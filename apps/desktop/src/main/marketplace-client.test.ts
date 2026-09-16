@@ -115,6 +115,8 @@ describe("MarketplaceClient", () => {
     });
 
     const session = await client.register({
+      email: "writer@example.test",
+      emailCode: "012345",
       username: "writer-test",
       password: "invalid-test-password"
     });
@@ -410,6 +412,8 @@ describe("MarketplaceClient", () => {
 
     await expect(
       client.register({
+        email: "writer@example.test",
+        emailCode: "012345",
         username: "writer-test",
         password: "invalid-test-password"
       })

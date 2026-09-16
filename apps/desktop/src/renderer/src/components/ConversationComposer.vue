@@ -343,7 +343,7 @@ function handleApprovalChange(value: string | number): void {
                 class="round-tool-button"
                 type="button"
                 aria-label="上传附件"
-                title="上传 TXT、MD、PDF 或图片"
+                title="上传 TXT、MD、PDF、Word（.docx）或图片"
                 :disabled="
                   responding || !runtimeAvailable || readingAttachments
                 "

@@ -17,7 +17,9 @@ import {
   type MarketplaceSkillDetail,
   type MarketplaceSkillKind,
   type MarketplaceSkillStage
-} from "@deepwrite/contracts";
+} from "@deepwrite/contracts/renderer";
+import MarketplaceAuthForm from "./MarketplaceAuthForm.vue";
+import MarketplaceBindEmail from "./MarketplaceBindEmail.vue";
 import AppIcon from "./AppIcon.vue";
 import MarkdownContent from "./MarkdownContent.vue";
 import PopupSelect, {
@@ -48,7 +50,6 @@ const emit = defineEmits<{
 }>();
 
 type PageTab = "browse" | "mine" | "publish";
-type AuthMode = "login" | "register";
 type DetailSkillSection = {
   id: string;
   title: string;
@@ -111,12 +112,6 @@ const publishTypeOptions: PopupSelectOption[] = [
 ];
 
 const session = ref<MarketplaceSession | null>(props.initialSession ?? null);
-const authMode = ref<AuthMode>("login");
-const authPending = ref(false);
-const username = ref("");
-const password = ref("");
-const displayName = ref("");
-const email = ref("");
 const pageTab = ref<PageTab>("browse");
 const loading = ref(false);
 const mineLoading = ref(false);
@@ -335,48 +330,9 @@ async function restoreSession(): Promise<void> {
   }
 }
 
-async function submitAuth(): Promise<void> {
-  if (!apiAvailable.value || authPending.value) return;
-  if (!username.value.trim() || !password.value) {
-    uiMessage.warning("请输入用户名和密码。");
-    return;
-  }
-  if (authMode.value === "register" && password.value.length < 8) {
-    uiMessage.warning("注册密码至少需要 8 个字符。");
-    return;
-  }
-  authPending.value = true;
-  try {
-    updateSession(
-      authMode.value === "login"
-        ? await window.deepwrite!.marketplace.login({
-            username: username.value.trim(),
-            password: password.value
-          })
-        : await window.deepwrite!.marketplace.register({
-            username: username.value.trim(),
-            password: password.value,
-            ...(displayName.value.trim()
-              ? { displayName: displayName.value.trim() }
-              : {}),
-            ...(email.value.trim() ? { email: email.value.trim() } : {})
-          })
-    );
-    password.value = "";
-    uiMessage.success(
-      authMode.value === "login" ? "登录成功" : "注册并登录成功"
-    );
-    await Promise.all([loadBrowse(), loadMine()]);
-  } catch (error: unknown) {
-    uiMessage.error(
-      errorMessage(
-        error,
-        authMode.value === "login" ? "登录失败。" : "注册失败。"
-      )
-    );
-  } finally {
-    authPending.value = false;
-  }
+async function authenticatedSession(next: MarketplaceSession): Promise<void> {
+  updateSession(next);
+  await Promise.all([loadBrowse(), loadMine()]);
 }
 
 async function logout(): Promise<void> {
@@ -1148,6 +1104,12 @@ onMounted(() => {
       </div>
       <div v-if="authenticated" class="marketplace-account">
         <span>{{ session?.user?.displayName }}</span>
+        <MarketplaceBindEmail
+          v-if="session"
+          :key="session.user?.id ?? 'account'"
+          :session="session"
+          @updated="updateSession"
+        />
         <button type="button" class="secondary-button" @click="logout">
           退出登录
         </button>
@@ -1174,75 +1136,10 @@ onMounted(() => {
       <span>正在恢复登录状态…</span>
     </div>
 
-    <section v-else-if="!authenticated" class="auth-shell">
-      <div class="auth-card">
-        <div class="auth-tabs" role="tablist" aria-label="登录或注册">
-          <button
-            type="button"
-            :class="{ active: authMode === 'login' }"
-            @click="authMode = 'login'"
-          >
-            登录
-          </button>
-          <button
-            type="button"
-            :class="{ active: authMode === 'register' }"
-            @click="authMode = 'register'"
-          >
-            注册
-          </button>
-        </div>
-        <form class="auth-form" @submit.prevent="submitAuth">
-          <label>
-            <span>用户名</span>
-            <input v-model="username" autocomplete="username" maxlength="120" />
-          </label>
-          <label>
-            <span>密码</span>
-            <input
-              v-model="password"
-              type="password"
-              :autocomplete="
-                authMode === 'login' ? 'current-password' : 'new-password'
-              "
-              maxlength="128"
-            />
-          </label>
-          <template v-if="authMode === 'register'">
-            <label>
-              <span>显示名（可选）</span>
-              <input
-                v-model="displayName"
-                autocomplete="nickname"
-                maxlength="120"
-              />
-            </label>
-            <label>
-              <span>邮箱（可选，不验证）</span>
-              <input
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                maxlength="320"
-              />
-            </label>
-          </template>
-          <button class="primary-button" type="submit" :disabled="authPending">
-            {{
-              authPending
-                ? "请稍候…"
-                : authMode === "login"
-                  ? "登录"
-                  : "注册并登录"
-            }}
-          </button>
-          <small
-            >登录会话有效期为 30
-            天；安全存储不可用时仅保留到本次运行结束。</small
-          >
-        </form>
-      </div>
-    </section>
+    <MarketplaceAuthForm
+      v-else-if="!authenticated"
+      @authenticated="authenticatedSession"
+    />
 
     <template v-else>
       <nav class="marketplace-tabs" aria-label="技能广场页面">
@@ -2071,25 +1968,10 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.55;
 }
-.auth-shell {
-  min-height: calc(100% - 170px);
-  display: grid;
-  place-items: center;
-}
-.auth-card {
-  width: min(430px, 100%);
-  border: 1px solid var(--theme-line);
-  border-radius: 18px;
-  background: var(--surface-raised);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-.auth-tabs,
 .marketplace-tabs {
   display: flex;
   border-bottom: 1px solid var(--theme-line-soft);
 }
-.auth-tabs button,
 .marketplace-tabs button {
   flex: 1;
   border: 0;
@@ -2099,16 +1981,10 @@ onMounted(() => {
   background: transparent;
   cursor: pointer;
 }
-.auth-tabs button.active,
 .marketplace-tabs button.active {
   color: var(--text-primary);
   border-bottom-color: var(--accent);
   background: var(--surface-selected);
-}
-.auth-form {
-  display: grid;
-  gap: 15px;
-  padding: 24px;
 }
 label {
   display: grid;
@@ -2134,7 +2010,6 @@ textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-.auth-form small,
 .publish-actions > span {
   color: var(--text-tertiary);
   line-height: 1.5;

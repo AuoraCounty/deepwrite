@@ -87,6 +87,6 @@ describe("prompt attachments", () => {
       readPromptAttachment(
         new File(["{}"], "data.json", { type: "application/json" })
       )
-    ).rejects.toThrow("TXT、MD、PDF 或常见图片");
+    ).rejects.toThrow("TXT、MD、PDF、Word（.docx）或常见图片");
   });
 });

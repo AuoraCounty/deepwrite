@@ -384,3 +384,10 @@ export * from "./revision-analysis-defaults";
 export * from "./revision-analysis-budget";
 
 export type * from "./text-context-menu";
+
+export * from "./marketplace-email";
+
+export {
+  MarketplaceLoginInputSchema,
+  MarketplaceRegisterInputSchema
+} from "./marketplace";

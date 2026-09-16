@@ -6,6 +6,7 @@ import {
   type ModelConfig,
   type ThinkingLevel
 } from "@deepwrite/contracts/renderer";
+import { MODEL_PROVIDER_OPTIONS } from "../components/modelProviderPresets";
 import type { AgentApprovalMode } from "../types/conversation";
 import type { IconName } from "../types/workspace";
 import { isWorkspaceWebSearchAvailable } from "./agent-conversation/web-search";
@@ -84,7 +85,15 @@ export function useConversationModelOptions(options: {
         .map((model) => ({
           value: model.id,
           label: model.label,
-          ...group
+          ...(group.provider === "custom"
+            ? {
+                provider: `custom:${model.provider}`,
+                providerLabel:
+                  MODEL_PROVIDER_OPTIONS.find(
+                    (option) => option.value === model.provider
+                  )?.label ?? model.provider
+              }
+            : group)
         }))
     )
   );

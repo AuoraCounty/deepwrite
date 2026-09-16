@@ -1,3 +1,8 @@
+import type {
+  MarketplaceEmailCodeInput,
+  MarketplaceEmailCodeResult,
+  MarketplaceBindEmailInput
+} from "./marketplace-email";
 import type { TextContextMenuPreloadApi } from "./text-context-menu";
 import type { ConversationExportApi } from "./conversation-export";
 import type { LongPreloadApi } from "./long-preload-api";
@@ -181,6 +186,10 @@ export interface DeepWriteApi extends TextContextMenuPreloadApi {
     acknowledgeDesktop(revision: string): Promise<void>;
   };
   marketplace: {
+    sendEmailCode(
+      input: MarketplaceEmailCodeInput
+    ): Promise<MarketplaceEmailCodeResult>;
+    bindEmail(input: MarketplaceBindEmailInput): Promise<MarketplaceSession>;
     session(): Promise<MarketplaceSession>;
     register(input: MarketplaceRegisterInput): Promise<MarketplaceSession>;
     login(input: MarketplaceLoginInput): Promise<MarketplaceSession>;

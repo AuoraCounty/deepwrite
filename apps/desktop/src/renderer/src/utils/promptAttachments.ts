@@ -5,14 +5,17 @@ import {
   PromptTextAttachmentSchema,
   type PromptImageMediaType,
   type UserPromptAttachment
-} from "@deepwrite/contracts";
+} from "@deepwrite/contracts/renderer";
 import { createId } from "@deepwrite/shared";
+import { DOCX_MEDIA_TYPE, extractDocxText } from "./docxDocumentText";
 
 export const PROMPT_ATTACHMENT_ACCEPT = [
   ".txt",
   ".md",
   ".markdown",
   ".pdf",
+  ".docx",
+  DOCX_MEDIA_TYPE,
   "image/png",
   "image/jpeg",
   "image/webp",
@@ -21,6 +24,7 @@ export const PROMPT_ATTACHMENT_ACCEPT = [
 
 const TEXT_FILE_MAX_BYTES = 5 * 1024 * 1024;
 const PDF_FILE_MAX_BYTES = 20 * 1024 * 1024;
+const DOCX_FILE_MAX_BYTES = 25 * 1024 * 1024;
 const TEXT_EXTENSIONS = new Set(["txt", "md", "markdown"]);
 const IMAGE_MEDIA_TYPES = new Set<PromptImageMediaType>([
   "image/png",
@@ -191,6 +195,23 @@ async function readPdfText(file: File): Promise<PromptAttachmentReadResult> {
   }
 }
 
+async function readDocxText(file: File): Promise<PromptAttachmentReadResult> {
+  if (file.size > DOCX_FILE_MAX_BYTES) {
+    throw new Error(`Word“${file.name}”超过 25 MB，请拆分或压缩后再上传。`);
+  }
+  try {
+    return extractedTextAttachment(
+      file,
+      DOCX_MEDIA_TYPE,
+      await extractDocxText(await file.arrayBuffer())
+    );
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "未知 Word 解析错误";
+    throw new Error(`读取 Word“${file.name}”失败：${message}`);
+  }
+}
+
 export async function readPromptAttachment(
   file: File
 ): Promise<PromptAttachmentReadResult> {
@@ -202,10 +223,13 @@ export async function readPromptAttachment(
   if (extension === "pdf" || file.type === "application/pdf") {
     return readPdfText(file);
   }
+  if (extension === "docx" || file.type === DOCX_MEDIA_TYPE) {
+    return readDocxText(file);
+  }
   if (TEXT_EXTENSIONS.has(extension) || file.type.startsWith("text/")) {
     return readPlainText(file);
   }
   throw new Error(
-    `不支持“${file.name}”的文件类型；请选择 TXT、MD、PDF 或常见图片。`
+    `不支持“${file.name}”的文件类型；请选择 TXT、MD、PDF、Word（.docx）或常见图片。`
   );
 }

@@ -73,8 +73,6 @@ import {
   UPDATE_INSTALL_CHANNEL,
   UPDATE_STATE_EVENT_CHANNEL,
   LearningImitationSettingsSchema,
-  MARKETPLACE_IPC_CHANNEL,
-  MarketplaceIpcRequestSchema,
   CatalogInstallMarketplaceSkillContentResultSchema,
   LibraryAgentSettingsSchema,
   LongApplyOperationsResultSchema,
@@ -139,7 +137,6 @@ import {
 import { AppearanceService } from "./appearance-service";
 import { AgentTeamConfigStore } from "./agent-team-config-store";
 import { resolveAgentTeamRuntime } from "./agent-team-run-mode";
-
 import { GeneralSettingsStore } from "./general-settings-store";
 import { ChatAssistantProjectConfigStore } from "./chat-assistant-project-config-store";
 import { ModelConfigStore } from "./model-config-store";
@@ -189,6 +186,7 @@ import {
   installAppearanceFontProtocolHandler,
   registerAppearanceFontScheme
 } from "./appearance-font-protocol";
+import { registerMarketplaceIpc } from "./ipc/marketplace-ipc";
 
 registerAppearanceFontScheme();
 
@@ -1053,54 +1051,10 @@ function registerIpc(): void {
     }
   );
 
-  ipcMain.handle(
-    MARKETPLACE_IPC_CHANNEL,
-    async (event, rawRequest: unknown): Promise<unknown> => {
-      if (
-        !mainWindow ||
-        mainWindow.isDestroyed() ||
-        event.sender !== mainWindow.webContents
-      ) {
-        throw new Error("技能广场 IPC 请求来源无效。");
-      }
-      if (!marketplaceClient) {
-        throw new Error("技能广场服务尚未初始化。");
-      }
-      const request = MarketplaceIpcRequestSchema.parse(rawRequest);
-      switch (request.operation) {
-        case "session":
-          return marketplaceClient.session();
-        case "register":
-          return marketplaceClient.register(request.input);
-        case "login":
-          return marketplaceClient.login(request.input);
-        case "logout":
-          return marketplaceClient.logout();
-        case "list":
-          return marketplaceClient.list(request.filter);
-        case "detail":
-          return marketplaceClient.detail(request.ref);
-        case "listMine":
-          return marketplaceClient.listMine(request.filter);
-        case "myDetail":
-          return marketplaceClient.myDetail(request.ref);
-        case "publish":
-          return marketplaceClient.publish(request.input);
-        case "update":
-          return marketplaceClient.update(request.input);
-        case "setEnabled":
-          return marketplaceClient.setEnabled(request.input);
-        case "delete":
-          return marketplaceClient.delete(request.ref);
-        case "like":
-          return marketplaceClient.like(request.input);
-        case "previewInstall":
-          return marketplaceClient.previewInstall(request.ref);
-        case "install":
-          return marketplaceClient.install(request.input);
-      }
-    }
-  );
+  registerMarketplaceIpc({
+    getMainWindow: () => mainWindow,
+    getMarketplaceClient: () => marketplaceClient
+  });
 
   registerDeviceSyncIpc(
     () => deviceSyncService,

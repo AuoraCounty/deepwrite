@@ -46,7 +46,7 @@ describe("DeepWrite site official model config", () => {
     expect(configured).toEqual([
       expect.objectContaining({
         id: DEEPWRITE_SITE_OFFICIAL_MODEL_ID,
-        label: "DeepSeek-V4-Flash（新官方小站）",
+        label: "DeepSeek-V4-Flash",
         provider: "deepseek",
         modelId: "deepseek-v4-flash",
         api: "openai-completions",
@@ -58,7 +58,7 @@ describe("DeepWrite site official model config", () => {
       }),
       expect.objectContaining({
         id: "deepwrite-site-official-gemini-3.7-flash",
-        label: "Gemini 3.7 Flash（新官方小站）",
+        label: "Gemini 3.7 Flash",
         provider: "google",
         modelId: "gemini-3.7-flash",
         api: "google-generative-ai",
@@ -119,7 +119,7 @@ describe("DeepWrite site official model config", () => {
     );
 
     expect(configured).toMatchObject({
-      label: "Remote DeepSeek（新官方小站）",
+      label: "Remote DeepSeek",
       provider: "deepseek-gateway",
       modelId: "deepseek-v4-flash",
       requestModelId: "deepseek-v4-flash-20260901",

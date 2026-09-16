@@ -3,6 +3,7 @@ import {
   expectSourceToContain,
   sourceTextIndexOf
 } from "../../../test-utils/sourceText";
+import authSource from "./MarketplaceAuthForm.vue?raw";
 import source from "./SkillMarketplacePage.vue?raw";
 import appSource from "../WorkspaceShell.vue?raw";
 import featureModulesSource from "./WorkspaceFeatureModules.vue?raw";
@@ -21,9 +22,9 @@ describe("SkillMarketplacePage", () => {
     expect(source).toContain('v-else-if="session === null"');
     expect(source).toContain("正在恢复登录状态…");
     expect(source).toContain('v-else-if="!authenticated"');
-    expect(source).toContain('authMode === "login"');
-    expect(source).toContain("marketplace.register");
-    expect(source).toContain("marketplace.login");
+    expect(authSource).toContain('authMode === "login"');
+    expect(authSource).toContain("marketplace.register");
+    expect(authSource).toContain("marketplace.login");
     expect(source).toContain("连接未加密");
     expect(source).toContain("用户名、密码和会话令牌在传输中可能被窃听");
   });

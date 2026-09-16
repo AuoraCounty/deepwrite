@@ -26,6 +26,10 @@ export function registerMarketplaceIpc(options: {
       }
       const request = MarketplaceIpcRequestSchema.parse(rawRequest);
       switch (request.operation) {
+        case "sendEmailCode":
+          return marketplaceClient.sendEmailCode(request.input);
+        case "bindEmail":
+          return marketplaceClient.bindEmail(request.input);
         case "session":
           return marketplaceClient.session();
         case "register":

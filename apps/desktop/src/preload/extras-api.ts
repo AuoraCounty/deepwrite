@@ -9,24 +9,6 @@ import {
   CloudBackupIpcRequestSchema,
   CloudBackupPreviewSchema,
   CloudBackupStatusSchema,
-  MARKETPLACE_IPC_CHANNEL,
-  MarketplaceContentDetailSchema,
-  MarketplaceContentPageSchema,
-  MarketplaceContentRefSchema,
-  MarketplaceContentSummarySchema,
-  MarketplaceInstallInputSchema,
-  MarketplaceInstallPreviewSchema,
-  MarketplaceInstallResultSchema,
-  MarketplaceIpcRequestSchema,
-  MarketplaceLikeInputSchema,
-  MarketplaceLikeResultSchema,
-  MarketplaceListFilterSchema,
-  MarketplaceLoginInputSchema,
-  MarketplacePublishInputSchema,
-  MarketplaceRegisterInputSchema,
-  MarketplaceSessionSchema,
-  MarketplaceSetEnabledInputSchema,
-  MarketplaceUpdateInputSchema,
   RendererStateKeySchema,
   RendererStateLoadResultSchema,
   RendererStateMutationResultSchema,
@@ -39,18 +21,8 @@ import {
   createEnvelope,
   type AppAlertSnapshot,
   type DeepWriteApi,
-  type MarketplaceContentRef,
-  type MarketplaceInstallInput,
-  type MarketplaceLikeInput,
-  type MarketplaceListFilter,
-  type MarketplaceLoginInput,
-  type MarketplacePublishInput,
-  type MarketplaceRegisterInput,
-  type MarketplaceSetEnabledInput,
-  type MarketplaceUpdateInput,
   type UpdateState
 } from "@deepwrite/contracts";
-
 import { browserId, invokeCommand } from "./invoke";
 
 export async function loadConversationPersistence(
@@ -130,14 +102,6 @@ export async function acknowledgeDesktopAlert(
   await ipcRenderer.invoke(APP_ALERT_ACKNOWLEDGE_DESKTOP_CHANNEL, revision);
 }
 
-export async function invokeMarketplace(rawRequest: unknown): Promise<unknown> {
-  const request = MarketplaceIpcRequestSchema.parse(rawRequest);
-  return ipcRenderer.invoke(
-    MARKETPLACE_IPC_CHANNEL,
-    request
-  ) as Promise<unknown>;
-}
-
 export async function invokeCloudBackup(rawRequest: unknown): Promise<unknown> {
   const request = CloudBackupIpcRequestSchema.parse(rawRequest);
   return ipcRenderer.invoke(
@@ -174,120 +138,7 @@ export const appAlerts: DeepWriteApi["appAlerts"] = {
   acknowledgeDesktop: acknowledgeDesktopAlert
 };
 
-export const marketplace: DeepWriteApi["marketplace"] = {
-  async session() {
-    return MarketplaceSessionSchema.parse(
-      await invokeMarketplace({ operation: "session" })
-    );
-  },
-  async register(input: MarketplaceRegisterInput) {
-    return MarketplaceSessionSchema.parse(
-      await invokeMarketplace({
-        operation: "register",
-        input: MarketplaceRegisterInputSchema.parse(input)
-      })
-    );
-  },
-  async login(input: MarketplaceLoginInput) {
-    return MarketplaceSessionSchema.parse(
-      await invokeMarketplace({
-        operation: "login",
-        input: MarketplaceLoginInputSchema.parse(input)
-      })
-    );
-  },
-  async logout() {
-    return MarketplaceSessionSchema.parse(
-      await invokeMarketplace({ operation: "logout" })
-    );
-  },
-  async list(filter: MarketplaceListFilter = {}) {
-    return MarketplaceContentPageSchema.parse(
-      await invokeMarketplace({
-        operation: "list",
-        filter: MarketplaceListFilterSchema.parse(filter)
-      })
-    );
-  },
-  async detail(ref: MarketplaceContentRef) {
-    return MarketplaceContentDetailSchema.parse(
-      await invokeMarketplace({
-        operation: "detail",
-        ref: MarketplaceContentRefSchema.parse(ref)
-      })
-    );
-  },
-  async listMine(filter: MarketplaceListFilter = {}) {
-    return MarketplaceContentPageSchema.parse(
-      await invokeMarketplace({
-        operation: "listMine",
-        filter: MarketplaceListFilterSchema.parse(filter)
-      })
-    );
-  },
-  async myDetail(ref: MarketplaceContentRef) {
-    return MarketplaceContentDetailSchema.parse(
-      await invokeMarketplace({
-        operation: "myDetail",
-        ref: MarketplaceContentRefSchema.parse(ref)
-      })
-    );
-  },
-  async publish(input: MarketplacePublishInput) {
-    return MarketplaceContentDetailSchema.parse(
-      await invokeMarketplace({
-        operation: "publish",
-        input: MarketplacePublishInputSchema.parse(input)
-      })
-    );
-  },
-  async update(input: MarketplaceUpdateInput) {
-    return MarketplaceContentDetailSchema.parse(
-      await invokeMarketplace({
-        operation: "update",
-        input: MarketplaceUpdateInputSchema.parse(input)
-      })
-    );
-  },
-  async setEnabled(input: MarketplaceSetEnabledInput) {
-    return MarketplaceContentSummarySchema.parse(
-      await invokeMarketplace({
-        operation: "setEnabled",
-        input: MarketplaceSetEnabledInputSchema.parse(input)
-      })
-    );
-  },
-  async delete(ref: MarketplaceContentRef) {
-    await invokeMarketplace({
-      operation: "delete",
-      ref: MarketplaceContentRefSchema.parse(ref)
-    });
-  },
-  async like(input: MarketplaceLikeInput) {
-    return MarketplaceLikeResultSchema.parse(
-      await invokeMarketplace({
-        operation: "like",
-        input: MarketplaceLikeInputSchema.parse(input)
-      })
-    );
-  },
-  async previewInstall(ref: MarketplaceContentRef) {
-    return MarketplaceInstallPreviewSchema.parse(
-      await invokeMarketplace({
-        operation: "previewInstall",
-        ref: MarketplaceContentRefSchema.parse(ref)
-      })
-    );
-  },
-  async install(input: MarketplaceInstallInput) {
-    return MarketplaceInstallResultSchema.parse(
-      await invokeMarketplace({
-        operation: "install",
-        input: MarketplaceInstallInputSchema.parse(input)
-      })
-    );
-  }
-};
+export { marketplace } from "./marketplace-api";
 
 export const cloudBackup: DeepWriteApi["cloudBackup"] = {
   async status() {

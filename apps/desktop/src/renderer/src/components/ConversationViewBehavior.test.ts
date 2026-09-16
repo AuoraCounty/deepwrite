@@ -85,7 +85,7 @@ describe("conversation view behavior", () => {
     const models = (
       [
         { id: "free", managedBy: "deepwrite-free" },
-        { id: "custom-first", provider: "provider-a" },
+        { id: "custom-first", provider: "openai" },
         { id: "deepwrite-site-official-example", provider: "deepwrite-site" },
         { id: "custom-second", provider: "provider-b" },
         { id: "legacy-official", managedBy: "deepwrite-official" }
@@ -112,8 +112,8 @@ describe("conversation view behavior", () => {
     ).toEqual([
       ["deepwrite-site-official-example", "官方小站"],
       ["legacy-official", "官方小站"],
-      ["custom-first", "自定义模型"],
-      ["custom-second", "自定义模型"],
+      ["custom-first", "OpenAI"],
+      ["custom-second", "provider-b"],
       ["free", "免费模型"]
     ]);
     expect(composerSource).toContain(':model-options="modelOptions"');

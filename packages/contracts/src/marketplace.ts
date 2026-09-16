@@ -1,3 +1,9 @@
+import {
+  MarketplaceEmailSchema,
+  MarketplaceEmailCodeInputSchema,
+  MarketplaceBindEmailInputSchema
+} from "./marketplace-email";
+export * from "./marketplace-email";
 import { z } from "zod";
 import { EnvelopeBaseSchema } from "./envelope";
 
@@ -59,6 +65,7 @@ export const MarketplaceUserSchema = z
     id: MarketplaceIdSchema,
     username: z.string().trim().min(1).max(120),
     email: z.string().email().optional(),
+    emailVerifiedAt: MarketplaceTimestampSchema.optional(),
     displayName: z.string().trim().min(1).max(120),
     avatarUrl: z.string(),
     bio: z.string(),
@@ -92,7 +99,11 @@ export const MarketplaceRegisterInputSchema = z
     username: z.string().trim().min(3).max(120),
     password: z.string().min(8).max(128),
     displayName: z.string().trim().max(120).optional(),
-    email: z.union([z.literal(""), z.string().email()]).optional()
+    email: MarketplaceEmailSchema,
+    emailCode: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{6}$/u)
   })
   .strict();
 export type MarketplaceRegisterInput = z.infer<
@@ -445,6 +456,18 @@ export const CatalogInstallMarketplaceSkillContentCommandEnvelopeSchema =
   });
 
 export const MarketplaceIpcRequestSchema = z.discriminatedUnion("operation", [
+  z
+    .object({
+      operation: z.literal("sendEmailCode"),
+      input: MarketplaceEmailCodeInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      operation: z.literal("bindEmail"),
+      input: MarketplaceBindEmailInputSchema
+    })
+    .strict(),
   z.object({ operation: z.literal("session") }).strict(),
   z
     .object({

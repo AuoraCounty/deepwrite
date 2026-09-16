@@ -146,7 +146,7 @@ function createDeepWriteSiteOfficialModel(
       : (["low", "high", "max"] as const));
   return ModelConfigInputSchema.parse({
     id: configId(remote.id),
-    label: `${remote.label ?? known?.label ?? remote.id}（新官方小站）`,
+    label: remote.label ?? known?.label ?? remote.id,
     provider:
       remote.provider ?? known?.provider ?? inferredProvider(remote.id, api),
     modelId: remote.id,

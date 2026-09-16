@@ -280,6 +280,12 @@ function createDeferredApi(): {
       async acknowledgeDesktop() {}
     },
     marketplace: {
+      async sendEmailCode() {
+        throw new Error("Marketplace is not used by conversation tests.");
+      },
+      async bindEmail() {
+        throw new Error("Marketplace is not used by conversation tests.");
+      },
       async session() {
         throw new Error("Marketplace is not used by conversation tests.");
       },
