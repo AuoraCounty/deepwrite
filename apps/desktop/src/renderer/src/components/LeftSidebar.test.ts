@@ -3,7 +3,8 @@ import { expectSourceToContain } from "../../../test-utils/sourceText";
 import moreFeaturesSource from "./sidebarMoreFeatures.ts?raw";
 import sidebarSource from "./LeftSidebar.vue?raw";
 import profileSource from "./SidebarProfileMenu.vue?raw";
-const source = `${sidebarSource}\n${profileSource}\n${moreFeaturesSource}`;
+import updateDialogSource from "./VersionUpdateDialog.vue?raw";
+const source = `${sidebarSource}\n${profileSource}\n${updateDialogSource}\n${moreFeaturesSource}`;
 
 describe("LeftSidebar account controls", () => {
   it("separates the account menu from the settings-page button", () => {

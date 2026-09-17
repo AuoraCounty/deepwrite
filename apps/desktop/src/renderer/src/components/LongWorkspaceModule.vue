@@ -39,6 +39,8 @@ import { uiMessage } from "../ui-feedback";
 import AgentConversation from "./AgentConversation.vue";
 import AppIcon from "./AppIcon.vue";
 import LongWorkspaceEditor from "./LongWorkspaceEditor.vue";
+import LongWorkspaceLoading from "./LongWorkspaceLoading.vue";
+import LongWorkspacePanePlaceholder from "./LongWorkspacePanePlaceholder.vue";
 
 const props = defineProps<{
   conversationController: AgentConversationController | null;
@@ -384,6 +386,7 @@ function forwardPreviewMutation(
         @locate-editor-reference="locateEditorReference"
         @submit-user-input="conversationController.submitUserInput($event)"
       />
+      <LongWorkspacePanePlaceholder v-else kind="agent" />
       <section
         v-if="refreshStatus?.error"
         class="long-workspace-refresh-status is-error"
@@ -431,25 +434,12 @@ function forwardPreviewMutation(
         @mutation="forwardMutation"
       />
     </template>
-    <div
+    <LongWorkspacePanePlaceholder
       v-else-if="paneLayout === 'editor-agent' || !rightPane.collapsed"
-      class="long-workspace-editor-loading-state"
-      aria-live="polite"
-    >
-      <span class="long-workspace-loading-icon">
-        <AppIcon name="book" :size="28" />
-      </span>
-      <strong>
-        {{ loading ? "正在打开长篇工作区…" : "长篇工作区尚未载入" }}
-      </strong>
-      <span>
-        {{
-          loading
-            ? "正在读取轻量导航索引，正文将在选择文件后按需读取。"
-            : "请再次选择左侧长篇书籍重试。"
-        }}
-      </span>
-    </div>
+      kind="editor"
+      :right-pane="paneLayout === 'agent-editor'"
+      :loading="loading"
+    />
     <div
       v-if="!rightPane.collapsed"
       class="pane-resizer pane-resizer-right"
@@ -464,30 +454,12 @@ function forwardPreviewMutation(
       @keydown="emit('resizeKeydown', $event)"
     />
   </template>
-  <template v-else>
-    <button
-      v-if="leftCollapsed"
-      class="icon-button long-workspace-expand-sidebar"
-      type="button"
-      aria-label="展开左侧栏"
-      @click="emit('expandLeft')"
-    >
-      <AppIcon name="panel-left" :size="18" />
-    </button>
-    <div class="long-workspace-loading-state">
-      <span class="long-workspace-loading-icon">
-        <AppIcon name="book" :size="28" />
-      </span>
-      <strong>
-        {{ loading ? "正在打开长篇工作区…" : "长篇工作区尚未载入" }}
-      </strong>
-      <span>
-        {{
-          loading
-            ? "先加载轻量导航索引，正文将在选择文件后按需读取。"
-            : "请再次选择左侧长篇书籍重试。"
-        }}
-      </span>
-    </div>
-  </template>
+  <LongWorkspaceLoading
+    v-else
+    :left-collapsed="leftCollapsed"
+    :right-pane="rightPane"
+    :pane-layout="paneLayout"
+    :pending="loading"
+    @expand-left="emit('expandLeft')"
+  />
 </template>

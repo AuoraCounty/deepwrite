@@ -345,7 +345,7 @@ describe("long-form renderer vertical slice: editor-and-layout", () => {
     );
     expect(longWorkspaceModuleSource).toContain('<template v-if="book">');
     expect(longWorkspaceModuleSource).toContain(
-      'class="long-workspace-editor-loading-state"'
+      "<LongWorkspacePanePlaceholder"
     );
     expect(longWorkspaceModuleSource).toContain(
       '<template v-if="workspaceIndex">'

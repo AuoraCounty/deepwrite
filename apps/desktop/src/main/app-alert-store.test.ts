@@ -28,6 +28,101 @@ afterEach(async () => {
 });
 
 describe("AppAlertStore", () => {
+  it("uses only the current remote documentation URL and clears missing, invalid and failed results", async () => {
+    const root = await temporaryRoot("deepwrite-alerts-docs-");
+    let docsUrl: unknown = " https://example.test/docs?source=app#download ";
+    let fail = false;
+    const store = new AppAlertStore(root, {
+      configUrl: "https://example.test/ALERT.json",
+      fetcher: async () => {
+        if (fail) throw new Error("offline");
+        return new Response(
+          JSON.stringify({
+            desketop: [],
+            model: ["模型公告"],
+            officialDocsUrl: docsUrl
+          })
+        );
+      }
+    });
+    expect((await store.getSnapshot()).officialDocsUrl).toBe(
+      "https://example.test/docs?source=app#download"
+    );
+    const offline = new AppAlertStore(root, {
+      configUrl: "https://example.test/ALERT.json",
+      fetcher: async () => {
+        throw new Error("offline");
+      }
+    });
+    expect((await offline.getSnapshot()).officialDocsUrl).toBeUndefined();
+    for (const invalid of [
+      undefined,
+      null,
+      "",
+      "  ",
+      "invalid",
+      "javascript:alert(1)",
+      "http://example.test/docs",
+      "https://user:pass@example.test/docs",
+      "https://example.test/a b",
+      "https://example.test/\\docs",
+      "https://example.test/" + "x".repeat(2048),
+      123
+    ]) {
+      docsUrl = "https://example.test/docs";
+      expect((await store.getSnapshot()).officialDocsUrl).toBe(docsUrl);
+      docsUrl = invalid;
+      const snapshot = await store.getSnapshot();
+      expect(snapshot.officialDocsUrl).toBeUndefined();
+      expect(snapshot.modelMessages).toEqual(["模型公告"]);
+    }
+    docsUrl = "https://example.test/new-docs";
+    expect((await store.getSnapshot()).officialDocsUrl).toBe(docsUrl);
+    fail = true;
+    expect((await store.getSnapshot()).officialDocsUrl).toBeUndefined();
+    fail = false;
+    expect((await store.getSnapshot()).officialDocsUrl).toBe(docsUrl);
+  });
+
+  it("keeps version reminders independent of read announcements and clears removed versions", async () => {
+    const root = await temporaryRoot("deepwrite-alerts-version-");
+    let version: string | undefined = "v1.5.3";
+    const store = new AppAlertStore(root, {
+      configUrl: "https://example.test/ALERT.json",
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({
+            desketop: ["版本公告"],
+            model: ["模型公告"],
+            pcLatestVersion: version,
+            appLatestVersion: "2.0.0",
+            updatedAt: "2026-09-16T11:21:35.981Z"
+          })
+        )
+    });
+    const first = await store.getSnapshot();
+    expect(first.pcLatestVersion).toBe("1.5.3");
+    await store.acknowledgeDesktop(first.desktopRevision);
+    version = "1.5.4";
+    const next = await store.getSnapshot();
+    expect(next.shouldShowDesktop).toBe(false);
+    expect(next.pcLatestVersion).toBe("1.5.4");
+
+    const offline = new AppAlertStore(root, {
+      configUrl: "https://example.test/ALERT.json",
+      fetcher: async () => {
+        throw new Error("offline");
+      }
+    });
+    expect((await offline.getSnapshot()).pcLatestVersion).toBe("1.5.4");
+    version = undefined;
+    expect((await store.getSnapshot()).pcLatestVersion).toBeUndefined();
+    version = "invalid";
+    const invalid = await store.getSnapshot();
+    expect(invalid.pcLatestVersion).toBeUndefined();
+    expect(invalid.modelMessages).toEqual(["模型公告"]);
+  });
+
   it("shows each desktop message revision once and keeps model messages visible", async () => {
     const root = await temporaryRoot("deepwrite-alerts-once-");
     const fetcher = async () => new Response(JSON.stringify(manifest()));

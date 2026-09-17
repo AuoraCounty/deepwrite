@@ -391,3 +391,5 @@ export {
   MarketplaceLoginInputSchema,
   MarketplaceRegisterInputSchema
 } from "./marketplace";
+
+export { compareVersions } from "./update-version";

@@ -1,12 +1,16 @@
 import { defineAsyncComponent, type Component } from "vue";
+import LongWorkspaceLoading from "./LongWorkspaceLoading.vue";
 type FeatureImports = typeof import("./lazyFeatureImports");
 /** Share the import boundary without repeating dependency manifests in startup code. */
 function lazyFeature<T extends Component>(
-  load: (features: FeatureImports) => Promise<{ default: T }>
+  load: (features: FeatureImports) => Promise<{ default: T }>,
+  loadingComponent?: Component
 ): T {
-  return defineAsyncComponent<T>(
-    async () => (await load(await import("./lazyFeatureImports"))).default
-  );
+  return defineAsyncComponent<T>({
+    loader: async () =>
+      (await load(await import("./lazyFeatureImports"))).default,
+    ...(loadingComponent ? { loadingComponent, delay: 0 } : {})
+  });
 }
 // The default writing surface remains eager; optional pages and dialogs load on demand.
 export const AuthorSupportDialog = lazyFeature((features) =>
@@ -24,8 +28,9 @@ export const ShortBookAnalysisPage = lazyFeature((features) =>
 export const LongBookAnalysisPage = lazyFeature((features) =>
   features.loadLongBookAnalysisPage()
 );
-export const LongWorkspaceModule = lazyFeature((features) =>
-  features.loadLongWorkspaceModule()
+export const LongWorkspaceModule = lazyFeature(
+  (features) => features.loadLongWorkspaceModule(),
+  LongWorkspaceLoading
 );
 export const SettingsPage = lazyFeature((features) =>
   features.loadSettingsPage()

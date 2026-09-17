@@ -119,6 +119,8 @@ export class AppAlertStore {
     return AppAlertSnapshotSchema.parse({
       desktopMessages: this.manifest.desketop,
       modelMessages: this.manifest.model,
+      pcLatestVersion: this.manifest.pcLatestVersion,
+      officialDocsUrl: this.manifest.officialDocsUrl,
       desktopRevision: revision,
       shouldShowDesktop:
         this.manifest.desketop.length > 0 &&
@@ -166,6 +168,8 @@ export class AppAlertStore {
       this.fetchedAt = new Date(now).toISOString();
       await this.persistState();
     } catch (error: unknown) {
+      // A failed fetch must not expose a previously cached documentation link.
+      delete this.manifest.officialDocsUrl;
       console.warn(
         "DeepWrite remote alerts could not be refreshed; using cached content:",
         error instanceof Error ? error.message : "unknown error"
