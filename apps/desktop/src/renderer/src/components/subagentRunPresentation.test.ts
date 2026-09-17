@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentSubagentRun, ChatMessage } from "../types/conversation";
 import {
+  subagentProcessingDisplayItems,
   subagentRetryStatus,
   subagentReviewHint,
   subagentStatusLabel
@@ -80,5 +81,54 @@ describe("subagentRunPresentation", () => {
     } as ChatMessage;
     expect(subagentReviewHint({} as ChatMessage, writing)).toBe("1 次写入调用");
     expect(subagentReviewHint(message, writing)).toBe("1 项待审阅");
+  });
+
+  it("folds thinking and tools until a visible inner response", () => {
+    const current = run({
+      toolCalls: [
+        {
+          id: "read_1",
+          name: "read_workspace_content",
+          args: {},
+          status: "completed",
+          requestedAt: startedAt,
+          resultSummary: "已读取"
+        }
+      ],
+      processingSteps: [
+        {
+          id: "think-a",
+          type: "thinking",
+          content: "先读文件",
+          createdAt: startedAt
+        },
+        {
+          id: "tool-a",
+          type: "tool",
+          toolCallId: "read_1",
+          createdAt: startedAt
+        },
+        {
+          id: "reply-a",
+          type: "response",
+          content: "阶段结论",
+          createdAt: startedAt
+        },
+        {
+          id: "think-b",
+          type: "thinking",
+          content: "继续",
+          createdAt: startedAt
+        }
+      ]
+    });
+    const items = subagentProcessingDisplayItems(current);
+    expect(items.map((item) => item.type)).toEqual([
+      "work-group",
+      "response",
+      "work-group"
+    ]);
+    expect(items[0]).toMatchObject({ running: false });
+    expect(items[2]).toMatchObject({ type: "work-group", running: true });
   });
 });

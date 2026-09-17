@@ -21,17 +21,19 @@ import AgentEditProposalCard from "./AgentEditProposalCard.vue";
 import LongProposalReview from "./LongProposalReview.vue";
 import StreamedContent from "./StreamedContent.vue";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    item: ProcessingDisplayItem;
+    item: Exclude<ProcessingDisplayItem, { type: "subagent" | "work-group" }>;
     streaming: boolean;
     messageStatus?: "streaming" | "completed" | "stopped" | "error" | undefined;
     allowLiveEditReview?: boolean;
     longWorkspaceIndex?: LongWorkspaceIndexSnapshot | null;
+    detailIdPrefix?: string;
   }>(),
   {
     allowLiveEditReview: false,
-    longWorkspaceIndex: null
+    longWorkspaceIndex: null,
+    detailIdPrefix: ""
   }
 );
 
@@ -56,12 +58,16 @@ function writeToolFallback(tool: AgentToolTrace): string {
     ? "正在等待写入内容……"
     : "没有写入内容";
 }
+
+function detailId(id: string): string {
+  return props.detailIdPrefix ? `${props.detailIdPrefix}:${id}` : id;
+}
 </script>
 
 <template>
   <ConversationDetails
     v-if="item.type === 'thinking'"
-    :detail-id="item.id"
+    :detail-id="detailId(item.id)"
     class="processing-live-item processing-live-thinking"
   >
     <template #summary>
@@ -90,7 +96,7 @@ function writeToolFallback(tool: AgentToolTrace): string {
 
   <ConversationDetails
     v-else-if="item.type === 'tool'"
-    :detail-id="item.id"
+    :detail-id="detailId(item.id)"
     class="processing-live-item processing-live-tool"
   >
     <template #summary>
@@ -176,7 +182,7 @@ function writeToolFallback(tool: AgentToolTrace): string {
 
   <ConversationDetails
     v-else
-    :detail-id="item.id"
+    :detail-id="detailId(item.id)"
     class="processing-live-item processing-live-thinking processing-tool-group"
     :aria-busy="toolGroupIsRunning(item.tools)"
   >
@@ -188,7 +194,7 @@ function writeToolFallback(tool: AgentToolTrace): string {
       <ConversationDetails
         v-for="tool in item.tools"
         :key="tool.id"
-        :detail-id="tool.id"
+        :detail-id="detailId(tool.id)"
         class="processing-live-item processing-live-tool tool-call-list-item"
       >
         <template #summary>

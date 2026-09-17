@@ -4,6 +4,10 @@ import type {
   ChatMessage
 } from "../types/conversation";
 import { isWriteTool } from "./conversationToolPresentation";
+import {
+  foldWorkGroups,
+  type WorkGroupDisplayItem
+} from "./conversationWorkGroups";
 
 export type SubagentDisplayItem =
   | { id: string; type: "thinking"; content: string; createdAt: string }
@@ -13,7 +17,8 @@ export type SubagentDisplayItem =
 export type SubagentProcessingDisplayItem =
   | Exclude<SubagentDisplayItem, { type: "tool" }>
   | { id: string; type: "tool"; tool: AgentToolTrace; createdAt: string }
-  | { id: string; type: "tool-group"; tools: AgentToolTrace[] };
+  | { id: string; type: "tool-group"; tools: AgentToolTrace[] }
+  | WorkGroupDisplayItem;
 
 export function subagentDisplayItems(
   run: AgentSubagentRun
@@ -71,7 +76,9 @@ export function subagentDisplayItems(
 export function subagentProcessingDisplayItems(
   run: AgentSubagentRun
 ): SubagentProcessingDisplayItem[] {
-  const displayItems: SubagentProcessingDisplayItem[] = [];
+  const displayItems: Array<
+    Exclude<SubagentProcessingDisplayItem, { type: "work-group" }>
+  > = [];
   for (const item of subagentDisplayItems(run)) {
     if (item.type !== "tool" || isWriteTool(item.tool)) {
       displayItems.push(item);
@@ -88,7 +95,7 @@ export function subagentProcessingDisplayItems(
       tools: [item.tool]
     });
   }
-  return displayItems;
+  return foldWorkGroups(displayItems, run.status === "running");
 }
 
 const subagentStatusLabels: Record<AgentSubagentRun["status"], string> = {

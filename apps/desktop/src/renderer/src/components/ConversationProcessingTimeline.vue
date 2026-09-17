@@ -3,7 +3,6 @@ import type { LongWorkspaceIndexSnapshot } from "@deepwrite/contracts";
 import type { LongWorkspaceProposalItem } from "../composables/useLongWorkspaceProposals";
 import type { ChatMessage } from "../types/conversation";
 import {
-  hasProcessing,
   hasProcessingDisclosure,
   processingDisplayItems,
   processingLabel
@@ -12,6 +11,7 @@ import AppIcon from "./AppIcon.vue";
 import ConversationDetails from "./ConversationDetails.vue";
 import ConversationRunClock from "./ConversationRunClock.vue";
 import ConversationProcessingItem from "./ConversationProcessingItem.vue";
+import ConversationWorkGroup from "./ConversationWorkGroup.vue";
 import SubagentRunList from "./SubagentRunList.vue";
 
 withDefaults(
@@ -48,7 +48,7 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="
-      (hasProcessing(message) ||
+      (hasProcessingDisclosure(message) ||
         message.retry ||
         message.processingStartedAt) &&
       message.status === 'streaming'
@@ -59,27 +59,41 @@ const emit = defineEmits<{
     <div class="processing-live-status" aria-live="off">
       <ConversationRunClock
         v-slot="{ now }"
-        :active="message.status === 'streaming'"
+        :active="message.status === 'streaming' || Boolean(message.retry)"
       >
         {{ processingLabel(message, now) }}
       </ConversationRunClock>
     </div>
-    <ConversationProcessingItem
+    <template
       v-for="item in processingDisplayItems(message, true, longProposalItems)"
       :key="item.id"
-      :item="item"
-      streaming
-      :message-status="message.status"
-      :allow-live-edit-review="allowLiveEditReview"
-      :long-workspace-index="longWorkspaceIndex"
-      @review-edit="emit('reviewEdit', $event)"
-      @locate-edit-proposal="emit('locateEditProposal', $event)"
-      @discard-edit-proposal="emit('discardEditProposal', $event)"
-      @approve-long-proposal="emit('approveLongProposal', $event)"
-      @reject-long-proposal="emit('rejectLongProposal', $event)"
-      @retry-long-proposal-preview="emit('retryLongProposalPreview', $event)"
-      @locate-long-proposal="emit('locateLongProposal', $event)"
-    />
+    >
+      <ConversationWorkGroup
+        v-if="item.type === 'work-group'"
+        :item="item"
+        streaming
+      />
+      <SubagentRunList
+        v-else-if="item.type === 'subagent'"
+        :message="message"
+        :runs="[item.run]"
+      />
+      <ConversationProcessingItem
+        v-else
+        :item="item"
+        streaming
+        :message-status="message.status"
+        :allow-live-edit-review="allowLiveEditReview"
+        :long-workspace-index="longWorkspaceIndex"
+        @review-edit="emit('reviewEdit', $event)"
+        @locate-edit-proposal="emit('locateEditProposal', $event)"
+        @discard-edit-proposal="emit('discardEditProposal', $event)"
+        @approve-long-proposal="emit('approveLongProposal', $event)"
+        @reject-long-proposal="emit('rejectLongProposal', $event)"
+        @retry-long-proposal-preview="emit('retryLongProposalPreview', $event)"
+        @locate-long-proposal="emit('locateLongProposal', $event)"
+      />
+    </template>
   </div>
 
   <ConversationDetails
@@ -99,28 +113,35 @@ const emit = defineEmits<{
       <AppIcon name="chevron" :size="13" />
     </template>
     <div class="processing-content">
-      <ConversationProcessingItem
-        v-for="item in processingDisplayItems(message)"
-        :key="item.id"
-        :item="item"
-        :streaming="false"
-        :message-status="message.status"
-        :allow-live-edit-review="allowLiveEditReview"
-        :long-workspace-index="longWorkspaceIndex"
-        @review-edit="emit('reviewEdit', $event)"
-        @locate-edit-proposal="emit('locateEditProposal', $event)"
-        @discard-edit-proposal="emit('discardEditProposal', $event)"
-        @approve-long-proposal="emit('approveLongProposal', $event)"
-        @reject-long-proposal="emit('rejectLongProposal', $event)"
-        @retry-long-proposal-preview="emit('retryLongProposalPreview', $event)"
-        @locate-long-proposal="emit('locateLongProposal', $event)"
-      />
-      <SubagentRunList v-if="message.subagentRuns?.length" :message="message" />
+      <template v-for="item in processingDisplayItems(message)" :key="item.id">
+        <ConversationWorkGroup
+          v-if="item.type === 'work-group'"
+          :item="item"
+          :streaming="false"
+        />
+        <SubagentRunList
+          v-else-if="item.type === 'subagent'"
+          :message="message"
+          :runs="[item.run]"
+        />
+        <ConversationProcessingItem
+          v-else
+          :item="item"
+          :streaming="false"
+          :message-status="message.status"
+          :allow-live-edit-review="allowLiveEditReview"
+          :long-workspace-index="longWorkspaceIndex"
+          @review-edit="emit('reviewEdit', $event)"
+          @locate-edit-proposal="emit('locateEditProposal', $event)"
+          @discard-edit-proposal="emit('discardEditProposal', $event)"
+          @approve-long-proposal="emit('approveLongProposal', $event)"
+          @reject-long-proposal="emit('rejectLongProposal', $event)"
+          @retry-long-proposal-preview="
+            emit('retryLongProposalPreview', $event)
+          "
+          @locate-long-proposal="emit('locateLongProposal', $event)"
+        />
+      </template>
     </div>
   </ConversationDetails>
-
-  <SubagentRunList
-    v-if="message.subagentRuns?.length && message.status === 'streaming'"
-    :message="message"
-  />
 </template>

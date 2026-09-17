@@ -5,12 +5,13 @@ import streamedContentSource from "./StreamedContent.vue?raw";
 import streamingMarkdownSource from "./StreamingMarkdown.vue?raw";
 import streamingTextSource from "./StreamingText.vue?raw";
 import subagentSource from "./SubagentRunList.vue?raw";
+import workGroupSource from "./ConversationWorkGroup.vue?raw";
 
 describe("streaming conversation content", () => {
   it("keeps thinking as incremental plain text in every state", () => {
     expect(streamedContentSource).toContain('props.format === "plain"');
     expect(processingItemSource).toContain('format="plain"');
-    expect(subagentSource).toContain('format="plain"');
+    expect(workGroupSource).toContain("<ConversationProcessingItem");
     expect(streamingTextSource).toContain("textNode.appendData");
     expect(streamingTextSource).toContain("globalThis.requestAnimationFrame");
     expect(streamingTextSource).toContain("BACKGROUND_RENDER_FALLBACK_MS");
@@ -55,11 +56,14 @@ describe("streaming conversation content", () => {
     expect(subagentSource).toContain(
       'import StreamedContent from "./StreamedContent.vue"'
     );
+    expect(subagentSource).toContain("<ConversationWorkGroup");
+    expect(workGroupSource).toContain("<ConversationProcessingItem");
+    expect(processingItemSource).toContain('format="plain"');
     expect(
       subagentSource.match(/:streaming="run\.status === 'running'"/g)
     ).toHaveLength(2);
     expect(subagentSource.match(/format="markdown"/g)).toHaveLength(2);
-    expect(subagentSource.match(/format="plain"/g)).toHaveLength(1);
+    expect(subagentSource).not.toContain('format="plain"');
     expect(subagentSource).not.toContain("<MessageMarkdown");
   });
 });

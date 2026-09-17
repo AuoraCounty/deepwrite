@@ -143,7 +143,7 @@ describe("conversation view behavior", () => {
     expect(conversationSource).not.toContain(":clock=");
     expect(messageListSource).not.toContain(":clock=");
     expect(processingTimelineSource).toContain(
-      ":active=\"message.status === 'streaming'\""
+      ":active=\"message.status === 'streaming' || Boolean(message.retry)\""
     );
     expect(subagentSource).toContain(":active=\"run.status === 'running'\"");
     expect(clockSource).toContain("useConversationActivityClock");

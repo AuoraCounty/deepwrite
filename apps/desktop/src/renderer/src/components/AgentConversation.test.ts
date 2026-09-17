@@ -16,6 +16,7 @@ import messageListSource from "./ConversationMessageList.vue?raw";
 import messageItemSource from "./ConversationMessageItem.vue?raw";
 import processingTimelineSource from "./ConversationProcessingTimeline.vue?raw";
 import processingItemSource from "./ConversationProcessingItem.vue?raw";
+import workGroupSource from "./ConversationWorkGroup.vue?raw";
 import presentationSource from "./conversationToolPresentation.ts?raw";
 import proposalCardSource from "./AgentEditProposalCard.vue?raw";
 import discardButtonSource from "./ApprovalDiscardButton.vue?raw";
@@ -144,7 +145,7 @@ describe("AgentConversation edit proposal placement", () => {
       '<div class="message-body">'
     );
     const liveTimelineStart = processingTimelineSource.indexOf(
-      "processingDisplayItems(message, true, longProposalItems)"
+      "message.status === 'streaming'"
     );
     const liveProposalStart = processingItemSource.indexOf(
       "<AgentEditProposalCard"
@@ -162,6 +163,10 @@ describe("AgentConversation edit proposal placement", () => {
       "approval.toolCallIds.includes(item.tool.id)"
     );
     expect(presentationSource).toContain("position: anchorIndex * 2 + 1");
+    expectSourceToContain(
+      processingTimelineSource,
+      "processingDisplayItems(message, true, longProposalItems)"
+    );
   });
 
   it("allows every explicitly enabled agent proposal to save while streaming", () => {
@@ -366,10 +371,8 @@ describe("AgentConversation edit proposal placement", () => {
     expect(proposalCardSource).toContain(
       "接受后将把当前章正文保存到该章节独立的 Markdown 文件。"
     );
-    expect(subagentSource).toContain(
-      'import { writeToolText } from "../utils/agentWriteToolPreview"'
-    );
-    expect(subagentSource).toContain("toolLabel(item.tool)");
+    expect(workGroupSource).toContain("<ConversationProcessingItem");
+    expect(subagentSource).toContain("<ConversationWorkGroup");
   });
 
   it("renders subagent runs via a shared collapsed card list", () => {
@@ -383,18 +386,33 @@ describe("AgentConversation edit proposal placement", () => {
     );
     expect(subagentSource).toContain('aria-label="子智能体执行过程"');
     expect(subagentSource).toContain("subagentProcessingDisplayItems(run)");
-    expect(subagentSource).toContain(
+    expect(subagentSource).toContain("<ConversationWorkGroup");
+    expect(workGroupSource).toContain("workGroupLabel(item.running)");
+    expect(workGroupSource).toContain(
+      'class="processing-live-item processing-live-thinking processing-work-group"'
+    );
+    expect(workGroupSource).toContain('class="processing-work-group-body"');
+    const workGroupBodyStart = rendererStyles.indexOf(
+      ".processing-work-group-body"
+    );
+    const workGroupBodyStyles = rendererStyles.slice(
+      workGroupBodyStart,
+      rendererStyles.indexOf("}", workGroupBodyStart)
+    );
+    expect(workGroupBodyStart).toBeGreaterThan(-1);
+    expect(workGroupBodyStyles).toContain("padding-left: 16px;");
+    expect(processingItemSource).toContain(
       'class="processing-live-item processing-live-thinking"'
     );
-    expect(subagentSource).toContain(
+    expect(processingItemSource).toContain(
       'class="processing-live-item processing-live-tool"'
     );
-    expect(subagentSource).toContain(
+    expect(processingItemSource).toContain(
       'class="processing-live-item processing-live-thinking processing-tool-group"'
     );
     expectSourceToContain(
-      subagentSource,
-      "run.status === 'running' ? '思考中' : '思考过程'"
+      processingItemSource,
+      "streaming ? '思考中' : '思考过程'"
     );
     expect(subagentSource).not.toContain('class="subagent-run-timeline"');
     expect(subagentSource).toContain("{{ run.task }}");
@@ -403,47 +421,56 @@ describe("AgentConversation edit proposal placement", () => {
     expect(subagentSource).toContain("subagentReviewHint(message, run)");
     expect(subagentPresentationSource).toContain("`${writeCount} 次写入调用`");
     expect(subagentSource).not.toContain("`${writeCount} 项文本变更`");
-    expect(subagentSource).toContain(
+    expect(processingItemSource).toContain(
       "formatToolPayload(visibleToolArguments(item.tool))"
     );
-    expect(subagentSource).toContain("item.tool.resultSummary");
+    expect(processingItemSource).toContain("item.tool.resultSummary");
     expect(subagentSource).toContain("run.summary");
-    expect(presentationSource).toContain('tool.name === "spawn_subagent"');
     expect(subagentSource).not.toContain("subagent-run-modal");
   });
 
-  it("nests completed subagent runs inside the processed disclosure only", () => {
+  it("renders subagent cards within both ordered timelines without a trailing list", () => {
     expect(processingTimelineSource).toContain(
       "hasProcessingDisclosure(message)"
     );
-    expect(presentationSource).toContain(
-      "hasProcessing(message) || Boolean(message.subagentRuns?.length)"
-    );
-
-    const disclosureStart = sourceTextIndexOf(
-      processingTimelineSource,
+    const disclosureStart = processingTimelineSource.indexOf(
       'v-else-if="hasProcessingDisclosure(message)"'
     );
-    const nestedSubagentStart = sourceTextIndexOf(
-      processingTimelineSource,
-      'v-if="message.subagentRuns?.length"',
+    const disclosureEnd = processingTimelineSource.indexOf(
+      "</ConversationDetails>",
       disclosureStart
     );
-    const disclosureEnd = sourceTextIndexOf(
-      processingTimelineSource,
-      "</ConversationDetails>",
-      nestedSubagentStart
-    );
-    const streamingSubagentStart = sourceTextIndexOf(
-      processingTimelineSource,
-      "message.subagentRuns?.length && message.status === 'streaming'",
+    expect(disclosureStart).toBeGreaterThan(-1);
+    expect(disclosureEnd).toBeGreaterThan(disclosureStart);
+    expect(processingTimelineSource).toContain('class="processing-block"');
+    expect(processingTimelineSource).toContain('class="processing-live-status"');
+    expect(processingTimelineSource).not.toContain("showProcessingStatus");
+    const liveTimeline = processingTimelineSource.slice(0, disclosureStart);
+    const historyTimeline = processingTimelineSource.slice(
+      disclosureStart,
       disclosureEnd
     );
-
-    expect(disclosureStart).toBeGreaterThan(-1);
-    expect(nestedSubagentStart).toBeGreaterThan(disclosureStart);
-    expect(nestedSubagentStart).toBeLessThan(disclosureEnd);
-    expect(streamingSubagentStart).toBeGreaterThan(disclosureEnd);
+    for (const timeline of [liveTimeline, historyTimeline]) {
+      const loopStart = timeline.indexOf(
+        'v-for="item in processingDisplayItems'
+      );
+      const workGroupStart = timeline.indexOf(
+        "<ConversationWorkGroup",
+        loopStart
+      );
+      const cardStart = timeline.indexOf("<SubagentRunList", loopStart);
+      const loopEnd = timeline.indexOf("</template>", loopStart);
+      expect(loopStart).toBeGreaterThan(-1);
+      expect(workGroupStart).toBeGreaterThan(loopStart);
+      expect(cardStart).toBeGreaterThan(workGroupStart);
+      expect(cardStart).toBeLessThan(loopEnd);
+      expect(timeline).toContain("v-if=\"item.type === 'work-group'\"");
+      expect(timeline).toContain("v-else-if=\"item.type === 'subagent'\"");
+      expect(timeline).toContain(':runs="[item.run]"');
+    }
+    expect(processingTimelineSource.slice(disclosureEnd)).not.toContain(
+      "<SubagentRunList"
+    );
   });
 
   it("shows retry countdowns in the existing processing areas", () => {
@@ -454,7 +481,7 @@ describe("AgentConversation edit proposal placement", () => {
     expect(presentationSource).toContain("正在重试${suffix}");
     expectSourceToContain(
       processingTimelineSource,
-      "hasProcessing(message) || message.retry || message.processingStartedAt"
+      "hasProcessingDisclosure(message) || message.retry || message.processingStartedAt"
     );
     expect(processingTimelineSource).not.toContain("retry-error");
 

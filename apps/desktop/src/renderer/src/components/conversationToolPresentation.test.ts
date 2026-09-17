@@ -102,13 +102,16 @@ describe("conversation tool presentation", () => {
       "tool"
     ]);
     expect(processingDisplayItems(message).map((item) => item.type)).toEqual([
-      "thinking",
+      "work-group",
       "response",
-      "tool-group",
-      "thinking",
+      "work-group",
       "response",
-      "tool-group"
+      "work-group"
     ]);
+    const groups = processingDisplayItems(message).filter(
+      (item) => item.type === "work-group"
+    );
+    expect(groups.map((item) => item.running)).toEqual([false, false, true]);
     expect(visibleResponse(message)).toBe("");
   });
 
@@ -122,6 +125,11 @@ describe("conversation tool presentation", () => {
     ).toEqual(["阶段回答 A", "阶段回答 B"]);
     expect(visibleResponse(message)).toBe("最终回复");
     expect(processingLabel(message, Date.parse(startedAt))).toBe("已处理 6s");
+    expect(
+      processingDisplayItems(message)
+        .filter((item) => item.type === "work-group")
+        .every((item) => item.type === "work-group" && !item.running)
+    ).toBe(true);
   });
 
   it("supports legacy thinking and tool fields", () => {
@@ -138,6 +146,9 @@ describe("conversation tool presentation", () => {
     expect(processingItems(message).map((item) => item.type)).toEqual([
       "thinking",
       "tool"
+    ]);
+    expect(processingDisplayItems(message).map((item) => item.type)).toEqual([
+      "work-group"
     ]);
     expect(visibleResponse(message)).toBe("旧回复");
   });

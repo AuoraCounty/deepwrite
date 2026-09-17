@@ -751,6 +751,13 @@ html[data-platform="darwin"] .conversation-header {
   font-weight: 500;
 }
 
+.processing-work-group-body {
+  display: grid;
+  gap: 4px;
+  margin: 2px 20px 8px 0;
+  padding-left: 16px;
+}
+
 .processing-live-tool > summary .tool-trace {
   flex: 1;
   min-width: 0;

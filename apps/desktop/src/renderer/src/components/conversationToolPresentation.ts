@@ -7,6 +7,24 @@ import type { LongWorkspaceProposalItem } from "../composables/useLongWorkspaceP
 import { agentApprovalCanDiscard } from "../utils/acceptedEditDiscard";
 
 import { isWriteTool } from "./conversationToolStatus";
+import {
+  processingItems,
+  type ProcessingItem
+} from "./conversationProcessingItems";
+import {
+  foldWorkGroups,
+  type WorkGroupDisplayItem
+} from "./conversationWorkGroups";
+export {
+  processingItems,
+  type ProcessingItem
+} from "./conversationProcessingItems";
+export {
+  foldWorkGroups,
+  workGroupLabel,
+  type WorkGroupDisplayItem,
+  type WorkGroupMemberItem
+} from "./conversationWorkGroups";
 export {
   workspaceToolLabel,
   isWriteTool,
@@ -32,25 +50,6 @@ export function hasProcessingDisclosure(message: ChatMessage): boolean {
   return hasProcessing(message) || Boolean(message.subagentRuns?.length);
 }
 
-export function isSpawnSubagentTool(tool: AgentToolTrace): boolean {
-  return tool.name === "spawn_subagent";
-}
-
-function hasSubagentRunForTool(
-  message: ChatMessage,
-  tool: AgentToolTrace
-): boolean {
-  return Boolean(
-    isSpawnSubagentTool(tool) &&
-    message.subagentRuns?.some((run) => run.parentToolCallId === tool.id)
-  );
-}
-
-export type ProcessingItem =
-  | { id: string; type: "thinking"; content: string; createdAt: string }
-  | { id: string; type: "response"; content: string; createdAt: string }
-  | { id: string; type: "tool"; tool: AgentToolTrace; createdAt: string };
-
 export type ApprovalCardItem =
   | {
       id: string;
@@ -72,79 +71,8 @@ export type ProcessingDisplayItem =
   | Exclude<ProcessingItem, { type: "tool" }>
   | { id: string; type: "tool"; tool: AgentToolTrace }
   | { id: string; type: "tool-group"; tools: AgentToolTrace[] }
-  | ApprovalCardItem;
-
-export function processingItems(message: ChatMessage): ProcessingItem[] {
-  const items: ProcessingItem[] = [];
-  if (message.processingSteps?.length) {
-    let lastResponseIndex = -1;
-    for (
-      let index = message.processingSteps.length - 1;
-      index >= 0;
-      index -= 1
-    ) {
-      if (message.processingSteps[index]?.type === "response") {
-        lastResponseIndex = index;
-        break;
-      }
-    }
-    for (const [index, step] of message.processingSteps.entries()) {
-      if (step.type === "thinking") {
-        items.push({
-          id: step.id,
-          type: "thinking",
-          content: step.content,
-          createdAt: step.createdAt
-        });
-        continue;
-      }
-      if (step.type === "response") {
-        // While streaming every turn remains visible in arrival order. Once the
-        // run ends, the last response moves outside the processed disclosure.
-        if (message.status === "streaming" || index !== lastResponseIndex) {
-          items.push({
-            id: step.id,
-            type: "response",
-            content: step.content,
-            createdAt: step.createdAt
-          });
-        }
-        continue;
-      }
-      const tool = message.toolCalls?.find(
-        (toolCall) => toolCall.id === step.toolCallId
-      );
-      if (tool && !hasSubagentRunForTool(message, tool)) {
-        items.push({
-          id: step.id,
-          type: "tool",
-          tool,
-          createdAt: step.createdAt
-        });
-      }
-    }
-    return items;
-  }
-  if (message.thinking) {
-    items.push({
-      id: `${message.id}_thinking`,
-      type: "thinking",
-      content: message.thinking,
-      createdAt: message.createdAt
-    });
-  }
-  for (const tool of message.toolCalls ?? []) {
-    if (!hasSubagentRunForTool(message, tool)) {
-      items.push({
-        id: `${message.id}_${tool.id}`,
-        type: "tool",
-        tool,
-        createdAt: tool.requestedAt
-      });
-    }
-  }
-  return items;
-}
+  | ApprovalCardItem
+  | WorkGroupDisplayItem;
 
 function compareApprovalCards(
   left: ApprovalCardItem,
@@ -214,7 +142,11 @@ export function liveTimelineItems(
   ).entries()) {
     let anchorIndex = -1;
     for (const [index, item] of processing.entries()) {
-      if (item.type === "tool" && approval.toolCallIds.includes(item.tool.id)) {
+      if (
+        (item.type === "tool" && approval.toolCallIds.includes(item.tool.id)) ||
+        (item.type === "subagent" &&
+          approval.toolCallIds.includes(item.run.parentToolCallId))
+      ) {
         anchorIndex = index;
       }
     }
@@ -262,7 +194,9 @@ export function processingDisplayItems(
   includeApprovalCards = false,
   longProposalItems: readonly LongWorkspaceProposalItem[] = []
 ): ProcessingDisplayItem[] {
-  const displayItems: ProcessingDisplayItem[] = [];
+  const displayItems: Array<
+    Exclude<ProcessingDisplayItem, { type: "work-group" }>
+  > = [];
   const timelineItems = includeApprovalCards
     ? liveTimelineItems(message, longProposalItems)
     : processingItems(message);
@@ -286,7 +220,7 @@ export function processingDisplayItems(
       tools: [item.tool]
     });
   }
-  return displayItems;
+  return foldWorkGroups(displayItems, message.status === "streaming");
 }
 
 function hasResponseSteps(message: ChatMessage): boolean {

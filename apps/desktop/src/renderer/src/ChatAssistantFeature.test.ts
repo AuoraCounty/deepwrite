@@ -83,6 +83,7 @@ describe("independent chat assistant feature", () => {
     expect(processingTimelineSource).toContain(
       "processingDisplayItems(message)"
     );
+    expect(processingTimelineSource).toContain("<ConversationWorkGroup");
   });
 
   it("stops following the tail as soon as the user scrolls upward", () => {

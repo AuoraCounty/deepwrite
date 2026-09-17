@@ -1,0 +1,42 @@
+<script setup lang="ts">
+import type { WorkGroupDisplayItem } from "./conversationWorkGroups";
+import { workGroupLabel } from "./conversationWorkGroups";
+import AppIcon from "./AppIcon.vue";
+import ConversationDetails from "./ConversationDetails.vue";
+import ConversationProcessingItem from "./ConversationProcessingItem.vue";
+
+withDefaults(
+  defineProps<{
+    item: WorkGroupDisplayItem;
+    streaming: boolean;
+    detailIdPrefix?: string;
+  }>(),
+  { detailIdPrefix: "" }
+);
+
+function detailId(id: string, prefix: string): string {
+  return prefix ? `${prefix}:${id}` : id;
+}
+</script>
+
+<template>
+  <ConversationDetails
+    :detail-id="detailId(item.id, detailIdPrefix)"
+    class="processing-live-item processing-live-thinking processing-work-group"
+    :aria-busy="item.running"
+  >
+    <template #summary>
+      <span>{{ workGroupLabel(item.running) }}</span>
+      <AppIcon name="chevron" :size="13" />
+    </template>
+    <div class="processing-work-group-body">
+      <ConversationProcessingItem
+        v-for="member in item.items"
+        :key="member.id"
+        :item="member"
+        :streaming="streaming && item.running"
+        :detail-id-prefix="detailIdPrefix"
+      />
+    </div>
+  </ConversationDetails>
+</template>
