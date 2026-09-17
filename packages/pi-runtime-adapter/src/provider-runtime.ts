@@ -96,6 +96,7 @@ function resolveOpenAICompletionsCompat(
   } else if (
     provider === "qwen" ||
     provider === "dashscope" ||
+    provider === "qwen-token-plan" ||
     (baseUrl.includes("dashscope") && baseUrl.includes("aliyuncs.com"))
   ) {
     compat.thinkingFormat = "qwen";

@@ -128,7 +128,8 @@ describe("ModelSettingsFeature provider presets", () => {
 
   it.each([
     ["minimax-codeplan", "MiniMax Plan"],
-    ["dashscope", "阿里云百炼"],
+    ["dashscope", "阿里千问AI平台（百炼）"],
+    ["qwen-token-plan", "阿里千问 Token Plan"],
     ["volcengine", "火山引擎（豆包）"],
     ["volcengine-plan", "火山引擎 Coding Plan"],
     ["zai-coding-cn", "智谱 Z.AI Coding Plan"],

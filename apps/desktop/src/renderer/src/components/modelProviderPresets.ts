@@ -41,9 +41,19 @@ export const MODEL_PROVIDER_OPTIONS = [
   },
   {
     value: "dashscope",
-    label: "阿里云百炼",
+    label: "阿里千问AI平台（百炼）",
+    description: "按量计费，使用千问AI平台 API Key，与 Token Plan 密钥不通用",
     api: "openai-completions",
     baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  },
+  {
+    value: "qwen-token-plan",
+    label: "阿里千问 Token Plan",
+    description:
+      "国内个人版 / 团队版，使用套餐专属 API Key 和套餐支持的模型 ID",
+    api: "openai-completions",
+    baseUrl:
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
   },
   {
     value: "volcengine",
