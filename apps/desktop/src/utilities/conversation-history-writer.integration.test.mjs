@@ -174,6 +174,9 @@ describe("controller → incremental writer → SQLite", () => {
     expect(full(database, controller.sessionId.value, id).content).toBe(
       "修订后仍须先保存的提问"
     );
+    expect(
+      database.messages({ key, sessionId: controller.sessionId.value }).messages
+    ).toHaveLength(1);
     model.resolveAccepted(0, {
       sessionId: controller.sessionId.value,
       runId: "run-durable-retry",
@@ -185,8 +188,11 @@ describe("controller → incremental writer → SQLite", () => {
     expect(
       database.session({ key, sessionId: controller.sessionId.value })
         ?.messageCount
-    ).toBe(1);
+    ).toBe(2);
     expect(controller.messages.value[0]?.id).toBe(id);
+    expect(
+      full(database, controller.sessionId.value, "run-durable-retry_assistant")
+    ).toMatchObject({ role: "assistant", runId: "run-durable-retry" });
     expect(full(database, controller.sessionId.value, id).content).toBe(
       "修订后仍须先保存的提问"
     );
@@ -266,7 +272,7 @@ describe("controller → incremental writer → SQLite", () => {
       sessionId: controller.sessionId.value
     });
     expect(rows.messages.map((row) => row.messageId)).toEqual(
-      controller.messages.value.map((item) => item.id)
+      controller.messages.value.slice(0, -1).map((item) => item.id)
     );
     expect(rows.messages.map((row) => row.position)).toEqual([0, 1, 2]);
     expect(
@@ -276,6 +282,12 @@ describe("controller → incremental writer → SQLite", () => {
         controller.messages.value[2].id
       ).content
     ).toBe("修改后的问题");
+    await flush();
+    expect(
+      database
+        .messages({ key, sessionId: controller.sessionId.value })
+        .messages.map((row) => row.messageId)
+    ).toEqual(controller.messages.value.map((item) => item.id));
   });
   it("moves restored messages without overwriting unknown fields and does not re-put cloned history when switching", async () => {
     const { database, api } = await storage();

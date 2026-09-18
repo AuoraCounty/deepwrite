@@ -2,6 +2,7 @@ import {
   BUILT_IN_REASONING_LEVELS,
   type BuiltInReasoningLevel,
   type ModelConfig,
+  type ShortAgentSubagentDefinition,
   type ThinkingLevel,
   type WorkspaceAgentTeamSettingsInput
 } from "@deepwrite/contracts";
@@ -21,6 +22,52 @@ export function agentTeamModelDefaults(model: ModelConfig | undefined): {
   return {
     thinkingLevel: model?.defaultThinkingLevel ?? "medium",
     temperature: model?.temperatureOptions[1] ?? 0.7
+  };
+}
+
+export function nextCopiedSubagentName(
+  name: string,
+  existingNames: readonly string[],
+  maxLength: number
+): string {
+  const trimmed = name.trim() || "未命名子智能体";
+  const existing = new Set(
+    existingNames.map((item) => item.trim().toLocaleLowerCase())
+  );
+  const numbered = trimmed.match(/^(.*) (\d+)$/);
+  const base = numbered?.[1]?.trim() || trimmed;
+  let index = numbered ? Number(numbered[2]) + 1 : 2;
+
+  for (let attempt = 0; attempt < 10_000; attempt += 1, index += 1) {
+    const suffix = ` ${index}`;
+    const allowedBaseLength = Math.max(1, maxLength - suffix.length);
+    const candidateBase =
+      base.length <= allowedBaseLength
+        ? base
+        : base.slice(0, allowedBaseLength).trimEnd();
+    const candidate = `${candidateBase}${suffix}`.slice(0, maxLength);
+    if (!existing.has(candidate.toLocaleLowerCase())) {
+      return candidate;
+    }
+  }
+
+  return `${base} ${Date.now()}`.slice(0, maxLength);
+}
+
+export function createCopiedSubagent(
+  source: ShortAgentSubagentDefinition,
+  existing: readonly Pick<ShortAgentSubagentDefinition, "name">[],
+  nextId: string,
+  maxNameLength: number
+): ShortAgentSubagentDefinition {
+  return {
+    ...source,
+    id: nextId,
+    name: nextCopiedSubagentName(
+      source.name,
+      existing.map((item) => item.name),
+      maxNameLength
+    )
   };
 }
 

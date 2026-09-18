@@ -3,6 +3,7 @@ import type { ModelConfig } from "@deepwrite/contracts/renderer";
 import { useConversationModelOptions } from "../composables/useConversationModelOptions";
 import conversationSource from "./AgentConversation.vue?raw";
 import composerSource from "./ConversationComposer.vue?raw";
+import composerLogicSource from "../composables/useConversationComposer.ts?raw";
 import modelConfigSource from "./ConversationModelConfigSelect.vue?raw";
 import messageListSource from "./ConversationMessageList.vue?raw";
 import processingTimelineSource from "./ConversationProcessingTimeline.vue?raw";
@@ -139,6 +140,14 @@ describe("conversation view behavior", () => {
     expect(optionsBlock).not.toContain("selectedModel.value.reasoning");
   });
 
+  it("shows the processed timer from the streaming assistant, not a list placeholder", () => {
+    expect(messageListSource).not.toContain("hasStreamingAssistant");
+    expect(messageListSource).not.toContain("正在思考");
+    expect(messageListSource).not.toContain('class="thinking-row"');
+    expect(messageListSource).not.toContain("已处理 1s");
+    expect(messageListSource).not.toContain('class="processing-live-status"');
+  });
+
   it("isolates elapsed clocks to active processing labels", () => {
     expect(conversationSource).not.toContain(":clock=");
     expect(messageListSource).not.toContain(":clock=");
@@ -148,6 +157,7 @@ describe("conversation view behavior", () => {
     expect(subagentSource).toContain(":active=\"run.status === 'running'\"");
     expect(clockSource).toContain("useConversationActivityClock");
   });
+
   it("unmounts closed detail bodies while preserving native disclosure semantics", () => {
     expect(detailsSource).toContain(
       '<details :open="open" @toggle="handleToggle">'
@@ -156,5 +166,18 @@ describe("conversation view behavior", () => {
       '<summary><slot name="summary" /></summary>'
     );
     expect(detailsSource).toContain('<slot v-if="open" />');
+  });
+
+  it("moves focus into the composer after a welcome suggestion is chosen", () => {
+    expect(messageListSource).toContain("emit('suggestion', item)");
+    expect(conversationSource).toContain('@suggestion="applySuggestion"');
+    expect(conversationSource).toContain('ref="composer"');
+    expect(conversationSource).toContain("composer.value?.focusInput()");
+    expect(composerSource).toContain("defineExpose({ focusInput })");
+    expect(composerLogicSource).toContain("function focusInput");
+    expect(composerLogicSource).toContain("input.focus()");
+    expect(composerLogicSource).toContain(
+      "input.setSelectionRange(caret, caret)"
+    );
   });
 });

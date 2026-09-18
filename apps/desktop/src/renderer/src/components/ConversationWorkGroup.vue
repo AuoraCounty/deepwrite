@@ -26,7 +26,9 @@ function detailId(id: string, prefix: string): string {
     :aria-busy="item.running"
   >
     <template #summary>
-      <span>{{ workGroupLabel(item.running) }}</span>
+      <span :class="{ 'is-processing-shimmer': item.running }">{{
+        workGroupLabel(item.running)
+      }}</span>
       <AppIcon name="chevron" :size="13" />
     </template>
     <div class="processing-work-group-body">

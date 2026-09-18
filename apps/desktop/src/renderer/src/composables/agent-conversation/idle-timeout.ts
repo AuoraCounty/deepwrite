@@ -1,4 +1,5 @@
 import type { AgentRuntimeRef } from "@deepwrite/contracts";
+import { discardPendingAssistantMessage } from "./message-identity";
 import type { AgentConversationState } from "./context";
 
 export interface IdleTimeoutScope {
@@ -60,6 +61,9 @@ export function expireIdleConversation(
     state.pendingAttemptId.value = null;
     state.observedRunByAttempt.delete(scope.attemptId);
     state.approvalModeByAttempt.delete(scope.attemptId);
+  }
+  if (!scope.runId) {
+    discardPendingAssistantMessage(state);
   }
   state.submitting.value = false;
   state.stopping.value = false;

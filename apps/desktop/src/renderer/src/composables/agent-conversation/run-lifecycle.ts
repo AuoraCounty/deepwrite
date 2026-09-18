@@ -2,6 +2,7 @@ import type { AgentConversationContext } from "./context";
 import { expireIdleConversation, type IdleTimeoutScope } from "./idle-timeout";
 import type { AgentRuntimeRef } from "@deepwrite/contracts";
 import type { ChatMessage } from "../../types/conversation";
+import { claimPendingActivityPlaceholder } from "./message-identity";
 import { finalizeUnfinishedMessageTools } from "./attempt-state";
 import { id, rememberBounded } from "./shared";
 
@@ -84,6 +85,7 @@ export function markRunError(
   eventRuntime?: AgentRuntimeRef
 ): void {
   ctx.flushPendingAgentTextDelta();
+  claimPendingActivityPlaceholder(ctx, runId, eventRuntime);
   const messageId = ctx.runMessageIds.get(runId) ?? `${runId}_assistant`;
   let message = ctx.messages.value.find(
     (item) =>
@@ -123,6 +125,7 @@ export function markRunStopped(
   eventRuntime?: AgentRuntimeRef
 ): void {
   ctx.flushPendingAgentTextDelta();
+  claimPendingActivityPlaceholder(ctx, runId, eventRuntime);
   const messageId = ctx.runMessageIds.get(runId) ?? `${runId}_assistant`;
   let message = ctx.messages.value.find(
     (item) =>

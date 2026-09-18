@@ -22,7 +22,9 @@ export function currentStoredConversation(
 ): AgentConversationPersistenceRecord {
   return {
     sessionId: ctx.sessionId.value,
-    messages: ctx.messages.value.map(cloneMessageForPersistence),
+    messages: ctx.messages.value
+      .filter((message) => !message.activityOnly || Boolean(message.runId))
+      .map(cloneMessageForPersistence),
     draft: ctx.draft.value,
     approvalMode: ctx.approvalMode.value,
     createdAt: ctx.currentCreatedAt.value,

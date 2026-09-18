@@ -737,18 +737,38 @@ html[data-platform="darwin"] .conversation-header {
 .processing-live-item > summary > svg {
   flex: 0 0 auto;
   color: var(--text-tertiary);
-  transform: rotate(90deg);
-  transition: transform 150ms ease;
+  opacity: 0;
+  transform: rotate(0deg);
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 
 .processing-live-item[open] > summary > svg {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
+}
+
+.processing-live-item > summary:is(:hover, :focus-visible) > svg {
+  opacity: 1;
 }
 
 .processing-live-thinking > summary {
   justify-content: flex-start;
   font-size: 0.928571rem;
   font-weight: 500;
+}
+
+.processing-live-thinking > summary > .is-processing-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-tertiary) 20%,
+    var(--theme-line) 45%,
+    var(--text-secondary) 70%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: thinking-shimmer 1.8s linear infinite;
 }
 
 .processing-work-group-body {
@@ -907,8 +927,11 @@ html[data-platform="darwin"] .conversation-header {
 
 .processing-block > summary > svg {
   color: var(--text-tertiary);
-  transform: rotate(90deg);
-  transition: transform 150ms ease;
+  opacity: 0;
+  transform: rotate(0deg);
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 
 .processing-block[open] > summary {
@@ -916,7 +939,11 @@ html[data-platform="darwin"] .conversation-header {
 }
 
 .processing-block[open] > summary > svg {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
+}
+
+.processing-block > summary:is(:hover, :focus-visible) > svg {
+  opacity: 1;
 }
 
 .processing-content {
@@ -1002,12 +1029,22 @@ html[data-platform="darwin"] .conversation-header {
 .write-tool-label > svg {
   flex: 0 0 auto;
   color: var(--text-tertiary);
-  transform: rotate(90deg);
-  transition: transform 150ms ease;
+  opacity: 0;
+  transform: rotate(0deg);
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 
 .processing-live-item[open] > summary .write-tool-label > svg {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
+}
+
+.processing-live-item
+  > summary:is(:hover, :focus-visible)
+  .write-tool-label
+  > svg {
+  opacity: 1;
 }
 
 .tool-trace span {

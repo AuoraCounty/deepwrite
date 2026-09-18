@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useConversationContentGroups } from "../composables/useConversationContentGroups";
 import { useConversationWindowPins } from "../composables/conversation-window/useConversationWindowPins";
 import { useConversationMessageEditing } from "../composables/useConversationMessageEditing";
@@ -67,11 +67,6 @@ const emit = defineEmits<{
   insertSelection: [reference: EditorTextReference];
 }>();
 
-const hasStreamingAssistant = computed(() =>
-  props.messages.some(
-    (message) => message.role === "assistant" && message.status === "streaming"
-  )
-);
 provideConversationDisclosureState(() => props.conversationSessionId ?? "");
 const { editingMessageId, messageIsEditable, requestEdit, cancelEdit } =
   useConversationMessageEditing({
@@ -164,13 +159,6 @@ const { handleConversationContextMenu } = useConversationSelectionInsertion({
           @cancel-edit="cancelEdit"
         />
       </div>
-
-      <article
-        v-if="responding && !hasStreamingAssistant"
-        class="message is-assistant is-thinking"
-      >
-        <div class="thinking-row"><span>正在思考</span></div>
-      </article>
     </div>
   </section>
 </template>

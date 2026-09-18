@@ -126,6 +126,12 @@ describe("conversation tool presentation", () => {
     expect(visibleResponse(message)).toBe("最终回复");
     expect(processingLabel(message, Date.parse(startedAt))).toBe("已处理 6s");
     expect(
+      processingLabel(
+        orderedMessage("streaming"),
+        Date.parse(startedAt) + 3_000
+      )
+    ).toBe("已处理 3s");
+    expect(
       processingDisplayItems(message)
         .filter((item) => item.type === "work-group")
         .every((item) => item.type === "work-group" && !item.running)

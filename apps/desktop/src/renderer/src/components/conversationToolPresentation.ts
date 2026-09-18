@@ -285,7 +285,7 @@ export function processingLabel(message: ChatMessage, now: number): string {
       ? now
       : start + 1_000;
   if (!Number.isFinite(start) || !Number.isFinite(end)) {
-    return message.status === "streaming" ? "处理中" : "已处理";
+    return "已处理";
   }
   const seconds = Math.max(1, Math.ceil((end - start) / 1_000));
   if (
@@ -295,5 +295,5 @@ export function processingLabel(message: ChatMessage, now: number): string {
   ) {
     return `模型排队中 · 已等待 ${seconds}s`;
   }
-  return `${message.status === "streaming" ? "处理中" : "已处理"} ${seconds}s`;
+  return `已处理 ${seconds}s`;
 }

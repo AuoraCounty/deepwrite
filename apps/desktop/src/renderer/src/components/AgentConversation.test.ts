@@ -429,6 +429,33 @@ describe("AgentConversation edit proposal placement", () => {
     expect(subagentSource).not.toContain("subagent-run-modal");
   });
 
+  it("shimmers running work-group labels and hides disclosure chevrons until hover", () => {
+    expect(workGroupSource).toContain(
+      ":class=\"{ 'is-processing-shimmer': item.running }\""
+    );
+    expect(rendererStyles).toContain(
+      ".processing-live-thinking > summary > .is-processing-shimmer"
+    );
+    expect(rendererStyles).toContain(
+      "animation: thinking-shimmer 1.8s linear infinite"
+    );
+    const liveChevronStart = rendererStyles.indexOf(
+      ".processing-live-item > summary > svg"
+    );
+    const liveChevronStyles = rendererStyles.slice(
+      liveChevronStart,
+      rendererStyles.indexOf("}", liveChevronStart)
+    );
+    expect(liveChevronStart).toBeGreaterThan(-1);
+    expect(liveChevronStyles).toContain("opacity: 0");
+    expect(rendererStyles).toContain(
+      ".processing-live-item > summary:is(:hover, :focus-visible) > svg"
+    );
+    expect(rendererStyles).toContain(
+      ".processing-block > summary:is(:hover, :focus-visible) > svg"
+    );
+  });
+
   it("renders subagent cards within both ordered timelines without a trailing list", () => {
     expect(processingTimelineSource).toContain(
       "hasProcessingDisclosure(message)"
@@ -443,7 +470,9 @@ describe("AgentConversation edit proposal placement", () => {
     expect(disclosureStart).toBeGreaterThan(-1);
     expect(disclosureEnd).toBeGreaterThan(disclosureStart);
     expect(processingTimelineSource).toContain('class="processing-block"');
-    expect(processingTimelineSource).toContain('class="processing-live-status"');
+    expect(processingTimelineSource).toContain(
+      'class="processing-live-status"'
+    );
     expect(processingTimelineSource).not.toContain("showProcessingStatus");
     const liveTimeline = processingTimelineSource.slice(0, disclosureStart);
     const historyTimeline = processingTimelineSource.slice(

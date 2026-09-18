@@ -118,6 +118,7 @@ const {
   updateActiveReference,
   handleInput,
   closeReferenceMenu,
+  focusInput,
   selectReference,
   submitMessage,
   handleKeydown
@@ -149,6 +150,8 @@ function handleApprovalChange(value: string | number): void {
   if (value === "request-approval" || value === "auto-approve")
     emit("selectApproval", value);
 }
+
+defineExpose({ focusInput });
 </script>
 
 <template>

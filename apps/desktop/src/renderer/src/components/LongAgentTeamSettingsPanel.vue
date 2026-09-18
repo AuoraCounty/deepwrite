@@ -25,6 +25,7 @@ import { uiMessage } from "../ui-feedback";
 import AppIcon from "./AppIcon.vue";
 import LoadSubagentFromSkillDialog from "./LoadSubagentFromSkillDialog.vue";
 import PopupSelect, { type PopupSelectOption } from "./PopupSelect.vue";
+import { createCopiedSubagent } from "./agentTeamSettingsEditorHelpers";
 
 const props = defineProps<{
   settings: LongAgentTeamSettings | null;
@@ -242,6 +243,27 @@ function addSubagent(
     modelMode: "inherit"
   });
   editingSubagentId.value = id;
+}
+
+function duplicateSubagent(index: number): void {
+  const team = activeTeam.value;
+  if (!team || formDisabled.value) return;
+  const source = team.subagents[index];
+  if (!source) return;
+  if (team.subagents.length >= SHORT_AGENT_SUBAGENT_MAX_COUNT) {
+    uiMessage.warning(
+      `每个长篇主智能体最多配置 ${SHORT_AGENT_SUBAGENT_MAX_COUNT} 个子智能体`
+    );
+    return;
+  }
+  const copied = createCopiedSubagent(
+    source,
+    team.subagents,
+    nextSubagentId(),
+    SHORT_AGENT_SUBAGENT_NAME_MAX_LENGTH
+  );
+  team.subagents.splice(index + 1, 0, copied);
+  uiMessage.info("已复制到当前草稿；保存智能体团队后生效");
 }
 
 function openLoadFromSkill(): void {
@@ -527,6 +549,19 @@ function saveSettings(): void {
               @click="editSubagent(definition.id)"
             >
               <AppIcon name="edit" :size="15" />
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              :disabled="
+                formDisabled ||
+                activeTeam.subagents.length >= SHORT_AGENT_SUBAGENT_MAX_COUNT
+              "
+              :aria-label="`复制${definition.name}`"
+              title="复制"
+              @click="duplicateSubagent(index)"
+            >
+              <AppIcon name="copy" :size="15" />
             </button>
             <button
               type="button"

@@ -18,6 +18,11 @@ import {
   prepareConversationMessageRewrite
 } from "./history-rewrite";
 import type { WorkspaceContextAttachments } from "./types";
+import {
+  claimPendingActivityPlaceholder,
+  createPendingAssistantMessage,
+  discardPendingAssistantMessage
+} from "./message-identity";
 import { id, rememberBounded } from "./shared";
 
 type SendMessageContext = Pick<
@@ -49,6 +54,8 @@ type SendMessageContext = Pick<
   | "webSearchEnabled"
   | "observedRunByAttempt"
   | "failProtocol"
+  | "messageMutations"
+  | "runMessageIds"
   | "clearIdleTimer"
   | "finishedRunIds"
   | "runtime"
@@ -167,16 +174,19 @@ export async function sendMessage(
       : {}),
     status: "completed"
   };
+  let pendingAssistantId: string | undefined;
   if (preparedRewrite) {
     ctx.runPersistenceBatch(() => {
       ctx.messages.value.splice(preparedRewrite.targetIndex);
       ctx.messages.value.push(userMessage);
+      pendingAssistantId = createPendingAssistantMessage(ctx).id;
     });
     ctx.sessionsRequiringHistoryReplacement.add(sendSessionId);
   } else {
     if (persistenceRetryIndex >= 0)
       ctx.messages.value.splice(persistenceRetryIndex, 1, userMessage);
     else ctx.messages.value.push(userMessage);
+    pendingAssistantId = createPendingAssistantMessage(ctx).id;
     ctx.draft.value = "";
   }
   ctx.unconfirmedUserMessageId = userMessage.id;
@@ -196,8 +206,10 @@ export async function sendMessage(
         ctx.epoch !== sendEpoch ||
         ctx.sessionId.value !== sendSessionId ||
         ctx.pendingAttemptId.value !== attemptId
-      )
+      ) {
+        discardPendingAssistantMessage(ctx, pendingAssistantId);
         return;
+      }
     }
     ctx.unconfirmedUserMessageId = undefined;
     const selectedModel = ctx.configuredModels.value.find(
@@ -261,6 +273,7 @@ export async function sendMessage(
           })
           .catch(() => undefined);
       }
+      discardPendingAssistantMessage(ctx, pendingAssistantId);
       return;
     }
     if (accepted.sessionId !== sendSessionId) {
@@ -276,6 +289,7 @@ export async function sendMessage(
       ctx.approvalModeByAttempt.delete(attemptId);
       ctx.submitting.value = false;
       ctx.clearIdleTimer();
+      discardPendingAssistantMessage(ctx, pendingAssistantId);
       ctx.conversationError.value = "智能体受理结果返回了错误的会话标识。";
       return;
     }
@@ -301,6 +315,7 @@ export async function sendMessage(
     ctx.observedRunByAttempt.delete(attemptId);
     ctx.approvalModeByAttempt.delete(attemptId);
     ctx.submitting.value = false;
+    claimPendingActivityPlaceholder(ctx, accepted.runId, accepted.runtime);
     if (!ctx.finishedRunIds.has(accepted.runId)) {
       ctx.activeRunId.value = accepted.runId;
       ctx.scheduleIdleTimeout({
@@ -317,6 +332,7 @@ export async function sendMessage(
       ctx.sessionId.value !== sendSessionId ||
       ctx.pendingAttemptId.value !== attemptId
     ) {
+      discardPendingAssistantMessage(ctx, pendingAssistantId);
       return;
     }
     if (ctx.unconfirmedUserMessageId === userMessage.id && !ctx.draft.value) {
@@ -340,6 +356,7 @@ export async function sendMessage(
     ctx.approvalModeByAttempt.delete(attemptId);
     ctx.submitting.value = false;
     ctx.clearIdleTimer();
+    discardPendingAssistantMessage(ctx, pendingAssistantId);
     ctx.conversationError.value = messageText;
   }
 }

@@ -64,9 +64,11 @@ describe("durable user messages", () => {
       ).toEqual(["不能丢失的问题"]);
       const retry = controller.sendMessage(document);
       await Promise.resolve();
-      expect(controller.messages.value.map((message) => message.id)).toEqual([
-        messageId
+      expect(controller.messages.value.map((message) => message.role)).toEqual([
+        "user",
+        "assistant"
       ]);
+      expect(controller.messages.value[0]?.id).toBe(messageId);
       expect(deferred.prompts[0]?.conversationHistory).toBeUndefined();
       deferred.resolveAccepted(0, {
         sessionId: controller.sessionId.value,

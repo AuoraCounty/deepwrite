@@ -146,9 +146,14 @@ describe("agent conversation controller: history rewrite", () => {
     });
     expect(controller.draft.value).toBe("主输入框里尚未发送的草稿");
     expect(controller.messages.value.map((message) => message.content)).toEqual(
-      ["第一条问题", "第一条回答", "修改后的问题"]
+      ["第一条问题", "第一条回答", "修改后的问题", ""]
     );
-    expect(controller.messages.value.at(-1)?.id).not.toBe("user-target");
+    expect(controller.messages.value.at(-1)).toMatchObject({
+      role: "assistant",
+      status: "streaming",
+      activityOnly: true
+    });
+    expect(controller.messages.value.at(-2)?.id).not.toBe("user-target");
     expect(persisted).toHaveLength(1);
     expect(
       persisted[0]?.conversations[0]?.messages.map((message) => message.content)
@@ -247,8 +252,13 @@ describe("agent conversation controller: history rewrite", () => {
     });
     await expect(sending).resolves.toBe(true);
     expect(controller.messages.value.map((message) => message.content)).toEqual(
-      ["从第一条重新开始"]
+      ["从第一条重新开始", ""]
     );
+    expect(controller.messages.value.at(-1)).toMatchObject({
+      role: "assistant",
+      status: "streaming",
+      activityOnly: true
+    });
     controller.dispose();
   });
 

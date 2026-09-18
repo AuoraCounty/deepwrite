@@ -21,6 +21,13 @@ describe("agent conversation controller: streaming-and-tools", () => {
     controller.draft.value = "续写当前章节";
     const sessionId = controller.sessionId.value;
     const sending = controller.sendMessage(document);
+    expect(controller.messages.value.at(-1)).toMatchObject({
+      role: "assistant",
+      status: "streaming",
+      activityOnly: true
+    });
+    expect(controller.messages.value.at(-1)?.processingStartedAt).toBeTruthy();
+    expect(controller.messages.value.at(-1)?.runId).toBeUndefined();
 
     controller.draft.value = "重复发送";
     await controller.sendMessage(document);
@@ -61,6 +68,11 @@ describe("agent conversation controller: streaming-and-tools", () => {
     });
     await sending;
 
+    expect(
+      controller.messages.value.filter(
+        (message) => message.role === "assistant"
+      )
+    ).toHaveLength(1);
     expect(controller.messages.value.at(-1)).toMatchObject({
       content: "流式回复",
       thinking: "读取上下文",
@@ -114,9 +126,11 @@ describe("agent conversation controller: streaming-and-tools", () => {
     }
 
     expect(requestFrame).toHaveBeenCalledTimes(1);
-    expect(
-      controller.messages.value.find((message) => message.role === "assistant")
-    ).toBeUndefined();
+    expect(controller.messages.value.at(-1)).toMatchObject({
+      role: "assistant",
+      status: "streaming"
+    });
+    expect(controller.messages.value.at(-1)?.thinking).toBeUndefined();
 
     scheduledFrames.shift()?.(16);
     const completeThinking = thinkingChunks.join("");

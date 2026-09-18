@@ -122,7 +122,10 @@ export function createPersistenceJournal(ctx: JournalContext) {
       if (state.baseline || state.structureRevision !== undefined) {
         const order = new Map<string, number>();
         state.messages = new Map();
-        conversation.messages.forEach((message, position) => {
+        const persistedMessages = conversation.messages.filter(
+          (message) => !message.activityOnly || Boolean(message.runId)
+        );
+        persistedMessages.forEach((message, position) => {
           order.set(message.id, position);
           state.messages.set(message.id, message);
           if (

@@ -138,6 +138,16 @@ export function useConversationComposer(options: {
     activeReferenceIndex.value = 0;
   }
 
+  function focusInput(): void {
+    void nextTick(() => {
+      const input = composerInput.value;
+      if (!input || input.disabled) return;
+      input.focus();
+      const caret = input.value.length;
+      input.setSelectionRange(caret, caret);
+    });
+  }
+
   function scrollActiveReferenceOptionIntoView(): void {
     void nextTick(() => {
       document
@@ -239,6 +249,7 @@ export function useConversationComposer(options: {
     updateActiveReference,
     handleInput,
     closeReferenceMenu,
+    focusInput,
     scrollActiveReferenceOptionIntoView,
     selectReference,
     submitMessage,

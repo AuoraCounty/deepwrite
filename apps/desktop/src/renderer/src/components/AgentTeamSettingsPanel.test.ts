@@ -62,6 +62,8 @@ describe("AgentTeamSettingsPanel", () => {
     expect(longSource).toContain(
       '@change="toggleSubagent(definition, $event)"'
     );
+    expect(longSource).toContain('@click="duplicateSubagent(index)"');
+    expect(longSource).toContain('<AppIcon name="copy" :size="15" />');
     expect(longSource).toContain('@click="removeSubagent(index)"');
     expect(longSource).toContain('@click="saveSettings"');
   });
@@ -106,10 +108,12 @@ describe("AgentTeamSettingsPanel", () => {
     );
   });
 
-  it("supports adding, editing, enabling, deleting and saving subagents", () => {
+  it("supports adding, editing, enabling, copying, deleting and saving subagents", () => {
     expect(source).toContain('@click="addSubagent()"');
     expect(source).toContain('@click="openLoadFromSkill"');
     expect(source).toContain('@click="editSubagent(subagent.id)"');
+    expect(source).toContain('@click="duplicateSubagent(index)"');
+    expect(source).toContain('<AppIcon name="copy" :size="15" />');
     expect(source).toContain('@change="toggleSubagent(subagent, $event)"');
     expect(source).toContain('@click="removeSubagent(index)"');
     expect(source).toContain('@click="saveSettings"');

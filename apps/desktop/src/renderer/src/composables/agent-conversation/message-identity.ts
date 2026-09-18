@@ -7,6 +7,77 @@ type MessageIdentityContext = Pick<
   AgentConversationContext,
   "runMessageIds" | "messages" | "failProtocol" | "messageMutations"
 >;
+
+function isUnclaimedPendingAssistant(message: ChatMessage): boolean {
+  return (
+    message.role === "assistant" &&
+    message.activityOnly === true &&
+    message.status === "streaming" &&
+    !message.runId
+  );
+}
+
+export function createPendingAssistantMessage(
+  ctx: Pick<MessageIdentityContext, "messages" | "messageMutations">
+): ChatMessage {
+  discardPendingAssistantMessage(ctx);
+  const createdAt = new Date().toISOString();
+  const message: ChatMessage = {
+    id: id("assistant"),
+    role: "assistant",
+    content: "",
+    createdAt,
+    status: "streaming",
+    activityOnly: true,
+    processingStartedAt: createdAt,
+    toolCalls: [],
+    processingSteps: []
+  };
+  ctx.messages.value.push(message);
+  return ctx.messageMutations.findById(message.id)!;
+}
+
+export function discardPendingAssistantMessage(
+  ctx: Pick<MessageIdentityContext, "messages">,
+  messageId?: string
+): void {
+  const index = ctx.messages.value.findIndex(
+    (message) =>
+      isUnclaimedPendingAssistant(message) &&
+      (messageId === undefined || message.id === messageId)
+  );
+  if (index < 0) return;
+  ctx.messages.value.splice(index, 1);
+}
+
+export function claimPendingActivityPlaceholder(
+  ctx: Pick<MessageIdentityContext, "messages" | "runMessageIds">,
+  runId: string,
+  eventRuntime?: AgentRuntimeRef
+): ChatMessage | undefined {
+  if (ctx.runMessageIds.has(runId)) return undefined;
+  if (
+    ctx.messages.value.some(
+      (message) => message.role === "assistant" && message.runId === runId
+    )
+  ) {
+    return undefined;
+  }
+  const pending = ctx.messages.value.find(isUnclaimedPendingAssistant);
+  if (!pending) return undefined;
+  pending.runId = runId;
+  const preferredId = `${runId}_assistant`;
+  if (
+    pending.id !== preferredId &&
+    !ctx.messages.value.some((message) => message.id === preferredId)
+  ) {
+    pending.id = preferredId;
+  }
+  if (eventRuntime) pending.runtime = eventRuntime;
+  ctx.runMessageIds.set(runId, pending.id);
+  return pending;
+}
+
 export function assistantMessageForRun(
   ctx: MessageIdentityContext,
   runId: string
@@ -33,6 +104,7 @@ export function ensureAssistantMessage(
   eventRuntime?: AgentRuntimeRef,
   createdAt = new Date().toISOString()
 ): ChatMessage | undefined {
+  claimPendingActivityPlaceholder(ctx, runId, eventRuntime);
   const mappedMessageId = ctx.runMessageIds.get(runId);
   if (mappedMessageId && mappedMessageId !== messageId) {
     const placeholder = ctx.messages.value.find(
@@ -97,6 +169,7 @@ export function ensureActivityMessage(
   eventRuntime: AgentRuntimeRef,
   createdAt: string
 ): ChatMessage {
+  claimPendingActivityPlaceholder(ctx, runId, eventRuntime);
   const mappedMessageId = ctx.runMessageIds.get(runId);
   const existing = mappedMessageId
     ? ctx.messages.value.find(
@@ -131,6 +204,7 @@ export function ensureSubagentMessage(
   runId: string,
   createdAt: string
 ): ChatMessage {
+  claimPendingActivityPlaceholder(ctx, runId);
   const mappedMessageId = ctx.runMessageIds.get(runId);
   const existing = mappedMessageId
     ? ctx.messages.value.find(

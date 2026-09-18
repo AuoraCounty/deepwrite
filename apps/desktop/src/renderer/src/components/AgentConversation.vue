@@ -194,6 +194,7 @@ const {
   }
 });
 
+const composer = ref<{ focusInput: () => void }>();
 const welcomeContent = computed(() =>
   resolveAgentWelcome(
     props.agentId,
@@ -203,6 +204,12 @@ const welcomeContent = computed(() =>
     props.agentWorkspaceType
   )
 );
+
+function applySuggestion(value: string): void {
+  emit("suggestion", value);
+  composer.value?.focusInput();
+}
+
 const {
   selectedModel,
   webSearchAvailable,
@@ -319,7 +326,7 @@ const {
         :handle-conversation-scroll="handleConversationScroll"
         :set-scroller="setConversationScroller"
         :set-message-list="setConversationMessageList"
-        @suggestion="emit('suggestion', $event)"
+        @suggestion="applySuggestion"
         @review-edit="emit('reviewEdit', $event)"
         @locate-edit-proposal="emit('locateEditProposal', $event)"
         @discard-edit-proposal="emit('discardEditProposal', $event)"
@@ -350,6 +357,7 @@ const {
 
     <ConversationComposer
       v-else
+      ref="composer"
       :draft="draft"
       :responding="responding"
       :can-send="canSend"

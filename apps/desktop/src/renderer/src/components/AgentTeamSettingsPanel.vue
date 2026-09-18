@@ -35,6 +35,7 @@ import {
 import {
   agentTeamModelDefaults,
   agentTeamThinkingLabel,
+  createCopiedSubagent,
   validateAgentTeamDraft
 } from "./agentTeamSettingsEditorHelpers";
 
@@ -266,6 +267,27 @@ function addSubagent(
   editingSubagentId.value = id;
 }
 
+function duplicateSubagent(index: number): void {
+  const team = activeTeam.value;
+  if (!team || formDisabled.value) return;
+  const source = team.subagents[index];
+  if (!source) return;
+  if (team.subagents.length >= activeSubagentLimit.value) {
+    uiMessage.warning(
+      `当前团队最多配置 ${activeSubagentLimit.value} 个子智能体`
+    );
+    return;
+  }
+  const copied = createCopiedSubagent(
+    source,
+    team.subagents,
+    nextSubagentId(),
+    SHORT_AGENT_SUBAGENT_NAME_MAX_LENGTH
+  );
+  team.subagents.splice(index + 1, 0, copied);
+  uiMessage.info("已复制到当前草稿；保存智能体团队后生效");
+}
+
 function openLoadFromSkill(): void {
   if (formDisabled.value) return;
   if (!activeTeam.value) return;
@@ -479,6 +501,7 @@ defineExpose({
   subagentModelSummary,
   editSubagent,
   finishEditing,
+  duplicateSubagent,
   removeSubagent,
   toggleSubagent,
   saveSettings
