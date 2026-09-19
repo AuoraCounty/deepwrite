@@ -1,4 +1,5 @@
 import type { ModelApi, RemoteModelListItem } from "@deepwrite/contracts";
+import { createOpenCodeRequestHeaders } from "@deepwrite/pi-runtime-adapter";
 export { parseRemoteModelList } from "./remote-model-list-parser";
 import { parseRemoteModelList } from "./remote-model-list-parser";
 
@@ -76,7 +77,10 @@ export function resolveRemoteModelsUrl(input: ListRemoteModelsInput): string {
 }
 
 function buildHeaders(input: ListRemoteModelsInput): Headers {
-  const headers = new Headers({ Accept: "application/json" });
+  const headers = new Headers({
+    Accept: "application/json",
+    ...createOpenCodeRequestHeaders(input)()
+  });
   const apiKey = input.apiKey.trim();
   if (input.api === "google-generative-ai") {
     if (apiKey) {

@@ -234,6 +234,7 @@ export function useAgentConversation(
       ctx.seenTurnIds.clear();
       ctx.seenSubagentTurnIds.clear();
       ctx.stopping.value = false;
+      ctx.userInput.clear();
       ctx.clearIdleTimer();
     }
   };

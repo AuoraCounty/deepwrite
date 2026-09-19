@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import componentSource from "./AgentTeamSettingsPanel.vue?raw";
 import templateSource from "./AgentTeamSettingsPanel.template.html?raw";
-import longSource from "./LongAgentTeamSettingsPanel.vue?raw";
+import longComponentSource from "./LongAgentTeamSettingsPanel.vue?raw";
+import longTemplateSource from "./LongAgentTeamSettingsPanel.template.html?raw";
 import metaSource from "./agentTeamSettingsMeta.ts?raw";
+
+const longSource = `${longComponentSource}\n${longTemplateSource}`;
 
 const source = `${componentSource}\n${templateSource}\n${metaSource}`;
 

@@ -6,6 +6,33 @@ import {
 } from "./list-remote-models";
 
 describe("listRemoteModels", () => {
+  it.each([
+    "openai-completions",
+    "openai-responses",
+    "anthropic-messages"
+  ] as const)(
+    "includes an OpenCode session when listing models through %s",
+    async (api) => {
+      const models = await listRemoteModels(
+        {
+          api,
+          baseUrl: "https://gateway.example.test/v1",
+          apiKey: "invalid-test-key",
+          provider: "opencode-go"
+        },
+        async (_url, init) => {
+          const headers = new Headers(init?.headers);
+          expect(headers.get("x-opencode-session")).toBeTruthy();
+          expect(headers.get("user-agent")).toBe("DeepWrite");
+          expect(headers.get("authorization")).toBe("Bearer invalid-test-key");
+          expect(headers.get("accept")).toBe("application/json");
+          return Response.json({ data: [{ id: "test-model" }] });
+        }
+      );
+      expect(models).toEqual([{ id: "test-model" }]);
+    }
+  );
+
   it("builds OpenAI-compatible, Anthropic, and Google list endpoints", () => {
     expect(
       resolveRemoteModelsUrl({

@@ -33,9 +33,11 @@ export function createAgentUserInputController(options: {
 }): AgentUserInputController {
   const request = ref<AgentUserInputRequestedPayload | null>(null);
   const submitting = ref(false);
+  let inFlight: AgentUserInputRequestedPayload | null = null;
 
   function clear(runId?: string): void {
-    if (runId && request.value?.runId !== runId) return;
+    if (runId && (request.value ?? inFlight)?.runId !== runId) return;
+    inFlight = null;
     request.value = null;
     submitting.value = false;
   }
@@ -44,6 +46,10 @@ export function createAgentUserInputController(options: {
     const pending = request.value;
     const api = options.api();
     if (!pending || !api || submitting.value) return false;
+    // Dismiss immediately; transport and the model's next output must not
+    // keep an already answered question on screen.
+    inFlight = pending;
+    request.value = null;
     submitting.value = true;
     try {
       const accepted = await api.session.submitUserInput({
@@ -59,15 +65,16 @@ export function createAgentUserInputController(options: {
       ) {
         throw new Error("用户回答结果与当前请求不一致。");
       }
-      if (request.value?.requestId === pending.requestId) {
-        // Keep the resolved card mounted until the resumed run produces
-        // visible output (or replaces it with another question). Otherwise
-        // the normal composer flashes between consecutive runtime events.
+      if (inFlight === pending) {
+        inFlight = null;
+        submitting.value = false;
         options.onResume(pending.runId);
       }
       return true;
     } catch (error: unknown) {
-      if (request.value?.requestId === pending.requestId) {
+      if (inFlight === pending) {
+        inFlight = null;
+        request.value = pending;
         submitting.value = false;
         options.onError(
           error instanceof Error ? error.message : "提交用户回答失败。"
@@ -81,12 +88,13 @@ export function createAgentUserInputController(options: {
     request,
     submitting,
     receive(nextRequest) {
+      inFlight = null;
       request.value = nextRequest;
       submitting.value = false;
     },
     submit,
     clearSubmitted(runId) {
-      if (!submitting.value || request.value?.runId !== runId) return;
+      if (inFlight?.runId !== runId) return;
       clear(runId);
     },
     clear

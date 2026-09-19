@@ -18,6 +18,7 @@ export type {
 } from "./runtime-types";
 export { interceptToolCallStream } from "./tool-stream";
 export { PiAgentRuntimeAdapter } from "./adapter";
+export { createOpenCodeRequestHeaders } from "./opencode-request-headers";
 export { UserInputResolutionError } from "./user-input-broker";
 export {
   evaluationConversationHistory,

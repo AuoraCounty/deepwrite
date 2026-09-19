@@ -17,6 +17,7 @@ import {
 import { writeToolText } from "../utils/agentWriteToolPreview";
 import AppIcon from "./AppIcon.vue";
 import ConversationDetails from "./ConversationDetails.vue";
+import ConversationStatusIcon from "./ConversationStatusIcon.vue";
 import AgentEditProposalCard from "./AgentEditProposalCard.vue";
 import LongProposalReview from "./LongProposalReview.vue";
 import StreamedContent from "./StreamedContent.vue";
@@ -71,7 +72,10 @@ function detailId(id: string): string {
     class="processing-live-item processing-live-thinking"
   >
     <template #summary>
-      <span>{{ streaming ? "思考中" : "思考过程" }}</span>
+      <span class="processing-status-label">
+        <ConversationStatusIcon kind="thinking" />
+        <span>{{ streaming ? "思考中" : "思考过程" }}</span>
+      </span>
       <AppIcon name="chevron" :size="13" />
     </template>
     <div class="processing-live-body processing-thinking">
@@ -187,7 +191,10 @@ function detailId(id: string): string {
     :aria-busy="toolGroupIsRunning(item.tools)"
   >
     <template #summary>
-      <span>{{ toolGroupLabel(item.tools) }}</span>
+      <span class="processing-status-label">
+        <ConversationStatusIcon kind="execution" />
+        <span>{{ toolGroupLabel(item.tools) }}</span>
+      </span>
       <AppIcon name="chevron" :size="13" />
     </template>
     <div class="processing-live-body tool-call-list" aria-label="工具调用列表">
@@ -221,3 +228,12 @@ function detailId(id: string): string {
     </div>
   </ConversationDetails>
 </template>
+
+<style scoped>
+.processing-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+</style>

@@ -83,7 +83,7 @@ describe("migrateLegacyLongAgentTeamSettings", () => {
       teams: [
         {
           parentAgentId: "draft",
-          subagents: Array.from({ length: 21 }, (_, index) =>
+          subagents: Array.from({ length: 61 }, (_, index) =>
             definition(`helper_${index + 1}`)
           )
         }
@@ -91,10 +91,10 @@ describe("migrateLegacyLongAgentTeamSettings", () => {
     });
 
     expect(migrated?.map(({ teams }) => teams[0]!.subagents.length)).toEqual([
-      20, 1
+      60, 1
     ]);
     expect(
       migrated?.flatMap(({ teams }) => teams[0]!.subagents).map(({ id }) => id)
-    ).toHaveLength(21);
+    ).toHaveLength(61);
   });
 });

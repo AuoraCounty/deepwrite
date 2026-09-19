@@ -191,7 +191,7 @@ describe("agent-team contracts", () => {
     ).toBe(false);
   });
 
-  it("allows 60 short and script subagents while long remains capped at 20", () => {
+  it("allows 60 short, script, and long subagents and rejects exceeding the limit", () => {
     const definitions = Array.from({ length: 60 }, (_, index) => ({
       ...definition,
       id: `helper_${index + 1}`,
@@ -214,7 +214,12 @@ describe("agent-team contracts", () => {
     expect(ScriptAgentTeamSettingsSchema.safeParse(script).success).toBe(false);
 
     const long = structuredClone(DEFAULT_LONG_AGENT_TEAM_SETTINGS);
-    long.teams[0]!.subagents = definitions.slice(0, 21);
+    long.teams[0]!.subagents = definitions;
+    expect(LongAgentTeamSettingsSchema.safeParse(long).success).toBe(true);
+    long.teams[0]!.subagents = [
+      ...definitions,
+      { ...definition, id: "helper_61", name: "助手 61" }
+    ];
     expect(LongAgentTeamSettingsSchema.safeParse(long).success).toBe(false);
   });
 

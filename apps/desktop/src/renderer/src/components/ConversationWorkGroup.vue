@@ -42,3 +42,10 @@ function detailId(id: string, prefix: string): string {
     </div>
   </ConversationDetails>
 </template>
+
+<style scoped>
+/* Align status icons with the group heading while keeping details indented. */
+.processing-work-group-body > :deep(.processing-live-thinking > summary) {
+  margin-left: -16px;
+}
+</style>

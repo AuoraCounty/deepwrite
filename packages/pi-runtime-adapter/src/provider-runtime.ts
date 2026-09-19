@@ -37,6 +37,7 @@ import {
   assertDeepSeekWebSearchCompatible
 } from "./deepseek-web-search";
 import { applyGoogleClaudeThinkingCompatibility } from "./google-claude-thinking";
+import { createOpenCodeRequestHeaders } from "./opencode-request-headers";
 import {
   findVolcengineRuntimeModel,
   isVolcengineProvider,
@@ -242,6 +243,10 @@ export function buildProviderRuntime(
     ...(compat ? { compat } : {})
   } as Model<Api>;
   const streams = providerStreams(config.api);
+  const openCodeRequestHeaders = createOpenCodeRequestHeaders({
+    provider: config.provider,
+    baseUrl
+  });
   const isOllamaProvider = isOllamaProviderName(config.provider);
   const streamFn = (
     requestModel: Model<Api>,
@@ -249,6 +254,7 @@ export function buildProviderRuntime(
     options?: SimpleStreamOptions
   ) => {
     const upstreamOnPayload = options?.onPayload;
+    const openCodeHeaders = openCodeRequestHeaders(options?.sessionId);
     return streams.streamSimple(
       requestModel,
       applyProviderToolSchemaCompatibility(
@@ -259,6 +265,9 @@ export function buildProviderRuntime(
       ),
       applyGoogleClaudeThinkingCompatibility(config.api, requestModel.id, {
         ...options,
+        ...(openCodeHeaders
+          ? { headers: { ...options?.headers, ...openCodeHeaders } }
+          : {}),
         ...(compatibility.webSearchEnabled
           ? {
               onPayload: async (payload: unknown, payloadModel: Model<Api>) => {
