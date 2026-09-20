@@ -93,6 +93,16 @@ export function buildSpawnSubagentTool(
         definition.contextMode === "parent-snapshot"
           ? snapshotSubagentHistory(input.getParentMessages?.() ?? [])
           : [];
+      if (
+        definition.toolSource !== "library-management" &&
+        input.materialContext?.trim()
+      ) {
+        childMessages.push({
+          role: "user",
+          content: `【本轮可按需读取的素材上下文】\n${input.materialContext.trim()}`,
+          timestamp: Date.now()
+        });
+      }
       const subagentRunId =
         input.createRunId?.() ?? `subrun_${randomBytes(4).toString("hex")}`;
       const configuredChildModelId =

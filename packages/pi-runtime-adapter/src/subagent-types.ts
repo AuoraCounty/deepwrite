@@ -138,6 +138,8 @@ export interface BuildSpawnSubagentToolInput {
   getParentMessages?: () => readonly AgentMessage[];
   /** Runtime-owned requirements appended after the editable child role prompt. */
   systemPromptRequirements?: string;
+  /** Material directory for ordinary team members, never library managers. */
+  materialContext?: string;
   /**
    * Resolved provider configs keyed by model config id, for subagents with
    * `modelMode: "custom"`.

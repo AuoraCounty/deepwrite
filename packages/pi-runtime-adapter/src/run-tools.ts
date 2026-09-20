@@ -25,6 +25,7 @@ import {
   createShortWorkspaceToolSharedState
 } from "./short-agent-tools";
 import { buildSubagentAuthoringTools } from "./subagent-authoring-tools";
+import { buildSubagentMaterialContext } from "./prompts-material";
 import { buildSpawnSubagentTool } from "./subagent-runtime";
 import { buildProviderRuntime, toPiThinkingLevel } from "./provider-runtime";
 import {
@@ -202,6 +203,7 @@ export function buildRunTools(
       ],
       prepareChild: management.prepareChild,
       getParentMessages: options.getParentMessages,
+      materialContext: buildSubagentMaterialContext(input),
       ...(input.subagentRuntimeConfigs
         ? { subagentRuntimeConfigs: input.subagentRuntimeConfigs }
         : {}),

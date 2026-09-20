@@ -1,7 +1,10 @@
 import { revisionAnalysisUserPrompt } from "./revision-analysis";
 import { shortAnalysisUserPrompt } from "./short-book-analysis";
 import { materialCatalogEntries } from "./material-query-runtime";
-import { buildMaterialCatalogPrompt } from "./material-catalog";
+import {
+  buildWorkspaceMaterialContext,
+  materialCatalogNotes
+} from "./prompts-material";
 import {
   resolveScriptWorkspaceStageReadAccess,
   resolveShortWorkspaceStageReadAccess,
@@ -81,21 +84,6 @@ export function buildRuntimeUserPrompt(input: AgentRunInput): string {
       : input.libraryAgentProfile
         ? skills
         : skills;
-  const readableMaterials = writingProfile
-    ? materials.filter(
-        (item) =>
-          item.kind !== undefined &&
-          writingProfile.readAccess.material.includes(item.kind) &&
-          (!writingStageReadAccess ||
-            writingStageReadAccess.material.includes(item.kind))
-      )
-    : longProfile
-      ? materials.filter(
-          (item) =>
-            item.kind !== undefined &&
-            longProfile.readAccess.materialKinds.includes(item.kind)
-        )
-      : materials;
   const isLongAgentRun = isLongRun;
   const skillContext =
     isWritingAgentRun || isLibraryAgentRun || isLongAgentRun
@@ -119,7 +107,7 @@ export function buildRuntimeUserPrompt(input: AgentRunInput): string {
         : "显式附加技能: 无";
   const materialContext =
     isWritingAgentRun || isLongAgentRun
-      ? buildMaterialCatalogPrompt(readableMaterials)
+      ? buildWorkspaceMaterialContext(input)
       : materials.length
         ? `显式附加素材:\n${materials
             .map((item) => `- ${item.title}: ${item.content}`)
@@ -242,23 +230,6 @@ export function longAgentRefreshesDesignContextOnLaterTurns(
   return agentId !== undefined;
 }
 
-function materialCatalogNotes(input: AgentRunInput): string[] {
-  const catalog = input.workspaceContext?.materialCatalog;
-  return catalog
-    ? [
-        `本轮可查询素材共 ${catalog.total} 条。`,
-        ...(catalog.nextCursor !== undefined
-          ? [
-              `目录还有后续条目，调用 query_linked_material_entries（mode=list，cursor=${catalog.nextCursor}）继续。`
-            ]
-          : []),
-        ...catalog.notices
-      ]
-    : input.workspaceContext?.materialReadNotice
-      ? [input.workspaceContext.materialReadNotice]
-      : [];
-}
-
 function buildLongFollowUpTurnUserPrompt(input: AgentRunInput): string {
   const longWorkspace = input.workspaceContext?.longWorkspace;
   const agentId = input.longAgentProfile?.id;
@@ -267,16 +238,7 @@ function buildLongFollowUpTurnUserPrompt(input: AgentRunInput): string {
   }
   return [
     ...buildLongFollowUpContextLines(longWorkspace),
-    buildMaterialCatalogPrompt(
-      (input.workspaceContext?.materialCatalog
-        ? materialCatalogEntries(input.workspaceContext.materialCatalog)
-        : (input.workspaceContext?.attachedMaterials ?? [])
-      ).filter(
-        (item) =>
-          item.kind !== undefined &&
-          input.longAgentProfile!.readAccess.materialKinds.includes(item.kind)
-      )
-    ),
+    buildWorkspaceMaterialContext(input),
     ...materialCatalogNotes(input),
     "",
     "【用户消息与上传附件】",
