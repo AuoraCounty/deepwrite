@@ -1,4 +1,4 @@
-import { installWindowFrame } from "./window-frame";
+import { installWindowFrame, usesCustomWindowFrame } from "./window-frame";
 import { BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import type { AppearanceSettings } from "@deepwrite/contracts";
@@ -40,7 +40,7 @@ export function createDesktopWindow(
     minWidth: 1120,
     minHeight: 700,
     show: false,
-    ...(process.platform === "linux" ? { frame: false } : {}),
+    ...(usesCustomWindowFrame() ? { frame: false } : {}),
     backgroundColor: resolveNativeBackgroundColor(appearance),
     title: "DeepWrite",
     icon: join(__dirname, "../renderer/app-icon.png"),

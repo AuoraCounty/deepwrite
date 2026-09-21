@@ -1,6 +1,6 @@
 # 桌面标题栏
 
-Linux 使用 Electron 无系统装饰窗口及应用内标题栏；macOS 保留 hiddenInset 与原生交通灯，Windows 保留系统窗口。浏览器预览不模拟原生标题栏。
+Linux 与 Windows 共用 Electron 无系统装饰窗口及应用内标题栏；macOS 保留 hiddenInset 与原生交通灯。浏览器预览不模拟原生标题栏。
 
 - 标题栏背景与目录侧栏共用 `--sidebar` / `--sidebar-surface`，底层均为 `--surface-main`。不复制明暗色值；外观设置及系统主题变化由现有 appearance runtime 同步，包含自定义配色、半透明侧栏和 UI 字号。
 - 标题栏最小高度 36px，随字号增大自然增长。工作台占剩余高度，不增加页面滚动。中间标题保持居中，左侧菜单和右侧窗口按钮不参与拖动。

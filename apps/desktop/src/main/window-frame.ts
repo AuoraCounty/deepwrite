@@ -9,11 +9,15 @@ import {
 } from "@deepwrite/contracts";
 import { createId } from "@deepwrite/shared";
 
+export function usesCustomWindowFrame(platform = process.platform): boolean {
+  return platform === "linux" || platform === "win32";
+}
+
 /** Window-local handler: subframes and embedded webviews cannot control the host. */
 export function installWindowFrame(window: BrowserWindow): void {
   const contents = window.webContents;
   const state = (): WindowFrameState => ({
-    customTitlebar: process.platform === "linux",
+    customTitlebar: usesCustomWindowFrame(),
     maximized: window.isMaximized(),
     fullscreen: window.isFullScreen()
   });
