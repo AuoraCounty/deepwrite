@@ -2,6 +2,8 @@
 import { computed, ref } from "vue";
 import {
   type AppLanguage,
+  type BodyTextFormats,
+  type BodyTextFormatChange,
   type CreativePlotStage,
   type GeneralPermissionMode,
   type LearningImitationSettings,
@@ -27,6 +29,7 @@ import {
 import AppIcon from "./AppIcon.vue";
 import AppearanceSettingsPanel from "./AppearanceSettingsPanel.vue";
 import FreeModelsPanel from "./FreeModelsPanel.vue";
+import BodyTextSettingsPanel from "./BodyTextSettingsPanel.vue";
 import GeneralSettingsPanel from "./GeneralSettingsPanel.vue";
 import LearningImitationSettingsPanel from "./LearningImitationSettingsPanel.vue";
 import LibraryAgentSettingsPanel from "./LibraryAgentSettingsPanel.vue";
@@ -69,6 +72,7 @@ const props = defineProps<{
   useNetworkProxy: boolean;
   workspacePaneLayout: WorkspacePaneLayout;
   defaultTextViewMode: TextViewMode;
+  bodyTextFormats: BodyTextFormats;
   workspaceAgentSettings: readonly WorkspaceAgentSettings[];
   creativePlotStages: readonly CreativePlotStage[];
   longAgentSettings: LongAgentSettings | null;
@@ -114,6 +118,7 @@ const emit = defineEmits<{
   updateUseNetworkProxy: [enabled: boolean];
   updateWorkspacePaneLayout: [layout: WorkspacePaneLayout];
   updateDefaultTextViewMode: [mode: TextViewMode];
+  updateBodyTextFormat: [change: BodyTextFormatChange];
   saveWorkspaceAgents: [settings: WorkspaceAgentSettingsInput];
   retryLongAgents: [];
   saveLongAgents: [settings: LongAgentSettingsInput];
@@ -171,6 +176,7 @@ const sections: SettingsSection[] = [
     label: "个人",
     categories: [
       { id: "general", label: "常规", icon: "settings" },
+      { id: "body-text", label: "正文文本", icon: "wand" },
       { id: "profile", label: "个人资料", icon: "user" },
       { id: "appearance", label: "外观", icon: "sparkles" },
       { id: "voice", label: "语音", icon: "brain" },
@@ -386,7 +392,6 @@ async function selectCategory(id: string): Promise<void> {
           :show-in-menu-bar="showInMenuBar"
           :use-network-proxy="useNetworkProxy"
           :workspace-pane-layout="workspacePaneLayout"
-          :default-text-view-mode="defaultTextViewMode"
           @update-permission-mode="emit('updatePermissionMode', $event)"
           @update-auto-approve-cross-stage-operations="
             emit('updateAutoApproveCrossStageOperations', $event)
@@ -399,9 +404,16 @@ async function selectCategory(id: string): Promise<void> {
           @update-workspace-pane-layout="
             emit('updateWorkspacePaneLayout', $event)
           "
+        />
+
+        <BodyTextSettingsPanel
+          v-else-if="activeCategory === 'body-text'"
+          :default-text-view-mode="defaultTextViewMode"
+          :body-text-formats="bodyTextFormats"
           @update-default-text-view-mode="
             emit('updateDefaultTextViewMode', $event)
           "
+          @update-body-text-format="emit('updateBodyTextFormat', $event)"
         />
 
         <AppearanceSettingsPanel v-else-if="activeCategory === 'appearance'" />

@@ -5,6 +5,9 @@
  * in the browser evaluates that whole Zod graph. Keep the complete public type
  * surface here, but expose only runtime values that Renderer code uses.
  */
+export type * from "./book-templates";
+export { DEFAULT_NEW_BOOK_ENABLED_PLOT_STAGE_IDS } from "./catalog";
+export { loadBookTemplateDraftSchema } from "./load-book-template-schema";
 export type * from "./appearance";
 export type * from "./app-alert";
 export type * from "./agent-team";
@@ -15,6 +18,7 @@ export type * from "./cloud-backup";
 export type * from "./envelope";
 export type * from "./expert-draft";
 export type * from "./general-settings";
+export type * from "./body-text-format";
 export type * from "./learning-imitation";
 export type * from "./library-agent";
 export type * from "./long-agent-settings";
@@ -268,7 +272,6 @@ export {
   longWorldbuildingItemFileId,
   longWorldbuildingOverviewContentPath,
   longWorldbuildingOverviewFileId,
-  longLinkedResourceIsEnabledForStage,
   LONG_WORKSPACE_ROOTS,
   resolveLongAgentIdForRoot
 } from "./long-workspace";
@@ -286,8 +289,7 @@ export {
   DEFAULT_SCRIPT_AGENT_WELCOME_SHORTCUTS,
   DEFAULT_SCRIPT_WORKSPACE_AGENT_PROFILES,
   DEFAULT_SCRIPT_WORKSPACE_AGENT_SETTINGS,
-  ScriptWorkspaceAgentSettingsInputSchema,
-  resolveScriptWorkspaceStageReadAccess
+  ScriptWorkspaceAgentSettingsInputSchema
 } from "./script-agent-settings";
 export {
   SCRIPT_WORKSPACE_AGENT_IDS,
@@ -333,7 +335,6 @@ export {
   DEFAULT_SHORT_AGENT_WELCOME_SHORTCUTS,
   DEFAULT_SHORT_WORKSPACE_AGENT_PROFILES,
   DEFAULT_SHORT_WORKSPACE_AGENT_SETTINGS,
-  DEFAULT_SHORT_STAGE_READ_ACCESS,
   SHORT_DEFAULT_PLOT_STAGE_IDS,
   SHORT_WORKSPACE_AGENT_IDS,
   SHORT_WORKSPACE_CONVERSATION_LANE_IDS,
@@ -346,8 +347,7 @@ export {
   isProvisionalExpertDraftSectionId,
   resolveShortWorkspaceAgentIdForStage,
   resolveShortWorkspaceConversationLaneIdForStage,
-  resolveShortWorkspacePhaseId,
-  resolveShortWorkspaceStageReadAccess
+  resolveShortWorkspacePhaseId
 } from "./workspace";
 export {
   WRITING_CONTEXT_MAX_CHARACTERS,

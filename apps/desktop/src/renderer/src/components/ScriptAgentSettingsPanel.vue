@@ -23,11 +23,6 @@ const emit = defineEmits<{
 }>();
 
 const draft = ref<EditableAgent | null>(null);
-const STAGE_POLICY = [
-  "人物：人物素材；通用、剧情、其他技能",
-  "剧情：卖点、人物、剧情素材；通用、剧情、其他技能",
-  "正文：全部素材；文风、通用、其他技能"
-];
 
 function cloneAgent(
   agent: ScriptWorkspaceAgentSettings["agents"][number]
@@ -111,7 +106,6 @@ function save(): void {
     :disabled="saving || !runtimeAvailable"
     :saving="saving"
     save-label="保存剧本智能体设置"
-    :stage-policy="STAGE_POLICY"
     @prompt="draft.systemPrompt = $event"
     @shortcut="patchShortcut"
     @access="patchAccess"

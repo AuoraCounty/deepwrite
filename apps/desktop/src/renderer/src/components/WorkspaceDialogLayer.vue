@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CreateBookFromTemplateDialog from "./CreateBookFromTemplateDialog.vue";
 import DialogHost from "./DialogHost.vue";
 import {
   BookResourceDialog,
@@ -123,6 +124,13 @@ const emit = defineEmits<WorkspaceDialogLayerEmits>();
       @confirm="emit('confirmLibraryRemoval')"
     />
 
+    <CreateBookFromTemplateDialog
+      v-else-if="module.kind === 'create-book' && module.fromTemplate"
+      :submitting="module.submitting"
+      @close="emit('closeCreateBook')"
+      @submit="emit('submitCreateBook', $event)"
+      @settings="emit('openTemplateSettings')"
+    />
     <CreateBookDialog
       v-else-if="module.kind === 'create-book'"
       open

@@ -137,8 +137,8 @@ describe("long-form renderer vertical slice: bindings-and-structure", () => {
     expect(bindingsSource).toContain("<PopupSelect");
     expect(bindingsSource).toContain("create-short-binding-panel");
     expect(bindingsSource).toContain("create-short-kind-grid");
-    expect(bindingsSource).toContain("生效阶段");
-    expect(bindingsSource).toContain("<LongBindingStageScopes");
+    expect(bindingsSource).not.toContain("生效阶段");
+    expect(bindingsSource).not.toContain("<LongBindingStageScopes");
     expect(longBookLifecycleSource).toContain("linkedResourceStageScopes:");
     expect(bindingsSource).toContain("Catalog 中缺失");
     expect(bindingsSource).not.toContain('library.materialType === "long"');

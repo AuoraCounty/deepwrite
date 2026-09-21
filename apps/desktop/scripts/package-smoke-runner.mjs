@@ -1,9 +1,12 @@
+import { prepareSmokeWorkspace } from "./smoke-workspace.mjs";
 import { spawn } from "node:child_process";
 
 export function validateSmokeSummary(summary, reopened) {
   if (
     summary.health?.status !== "ok" ||
     summary.health?.workers?.length !== 3 ||
+    summary.bookTemplates?.status !== "ok" ||
+    summary.bookTemplates?.created !== 4 ||
     summary.agent?.status !== "ok" ||
     summary.agent?.runtime?.mode !== "local-faux" ||
     summary.agent?.completed !== true ||
@@ -26,6 +29,7 @@ export async function runPackagedSmoke(
   profile,
   targetPlatform
 ) {
+  await prepareSmokeWorkspace(profile);
   let output = "";
   const result = await new Promise((resolveResult) => {
     let timedOut = false;

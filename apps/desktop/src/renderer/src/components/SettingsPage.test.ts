@@ -5,6 +5,7 @@ import featureModulesSource from "./WorkspaceFeatureModules.vue?raw";
 import featureHostCoordinatorSource from "../composables/useWorkspaceFeatureHostCoordinator.ts?raw";
 import featureHostModuleSource from "../composables/workspaceFeatureHostModule.ts?raw";
 import settingsFeatureModuleSource from "../composables/settingsFeatureModule.ts?raw";
+import bodyTextSource from "./BodyTextSettingsPanel.vue?raw";
 import generalPanelSource from "./GeneralSettingsPanel.vue?raw";
 import fontSource from "./AppearanceFontSettings.vue?raw";
 import appearancePanelSource from "./AppearanceSettingsPanel.vue?raw";
@@ -127,21 +128,12 @@ describe("SettingsPage", () => {
   });
 
   it("offers a persisted default text view mode with both choices", () => {
-    expectSourceToContain(
-      generalSettingsSource,
-      "<strong>默认文本模式</strong>"
-    );
-    expect(generalSettingsSource).toContain('{ value: "edit", label: "编辑" }');
-    expect(generalSettingsSource).toContain(
-      '{ value: "preview", label: "预览" }'
-    );
-    expect(generalSettingsSource).toContain(
-      ':model-value="defaultTextViewMode"'
-    );
-    expectSourceToContain(
-      generalSettingsSource,
-      "emit('updateDefaultTextViewMode'"
-    );
+    expect(generalPanelSource).not.toContain("默认文本模式");
+    expectSourceToContain(bodyTextSource, "<strong>默认文本模式</strong>");
+    expect(bodyTextSource).toContain('{ value: "edit", label: "编辑" }');
+    expect(bodyTextSource).toContain('{ value: "preview", label: "预览" }');
+    expect(bodyTextSource).toContain(':model-value="defaultTextViewMode"');
+    expectSourceToContain(bodyTextSource, "emit('updateDefaultTextViewMode'");
     expect(featureModulesSource).toContain(
       ':default-text-view-mode="module.defaultTextViewMode"'
     );

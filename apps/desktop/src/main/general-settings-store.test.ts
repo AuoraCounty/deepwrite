@@ -43,6 +43,7 @@ describe("GeneralSettingsStore", () => {
   it("persists all general preferences including the workspace layout", async () => {
     const { root, store } = await createStore();
     const settings = {
+      ...createDefaultGeneralSettings(),
       permissionMode: "auto-approve" as const,
       autoApproveCrossStageOperations: true,
       autoSave: true,
@@ -67,6 +68,33 @@ describe("GeneralSettingsStore", () => {
         await readFile(join(root, "config", "general-settings.json"), "utf8")
       )
     ).toEqual({ version: 2, ...settings });
+  });
+
+  it("preserves older view preferences and persists independent body formats across restart", async () => {
+    const { root, store } = await createStore();
+    const { bodyTextFormats: _, ...legacy } = createDefaultGeneralSettings();
+    await mkdir(join(root, "config"));
+    await writeFile(
+      store.settingsPath,
+      JSON.stringify({ version: 2, ...legacy, defaultTextViewMode: "preview" })
+    );
+    const loaded = await store.list();
+    expect(loaded.settings.defaultTextViewMode).toBe("preview");
+    expect(loaded.settings.bodyTextFormats).toEqual(
+      createDefaultGeneralSettings().bodyTextFormats
+    );
+    const settings = {
+      ...loaded.settings,
+      bodyTextFormats: {
+        short: "indent-compact" as const,
+        script: "flush-compact" as const,
+        long: "indent-spaced" as const
+      }
+    };
+    await store.save(settings);
+    expect((await new GeneralSettingsStore(root).list()).settings).toEqual(
+      settings
+    );
   });
 
   it("migrates v1 approval defaults without discarding other preferences", async () => {
@@ -95,7 +123,8 @@ describe("GeneralSettingsStore", () => {
         showContextUsage: true,
         useNetworkProxy: false,
         workspacePaneLayout: "agent-editor",
-        defaultTextViewMode: "edit"
+        defaultTextViewMode: "edit",
+        bodyTextFormats: createDefaultGeneralSettings().bodyTextFormats
       }
     });
   });

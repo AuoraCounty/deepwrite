@@ -1,3 +1,5 @@
+import creationSource from "../composables/useCreativeBookCreation.ts?raw";
+import bindingSource from "./BookLibraryBindings.vue?raw";
 import treeNodeFactorySource from "../utils/longWorkspaceTreeNode.ts?raw";
 import continuityTreeSource from "../utils/longWorkspaceContinuityTree.ts?raw";
 import {
@@ -86,13 +88,16 @@ describe("long-form renderer vertical slice: navigation-and-characters", () => {
     expect(leftSidebarSource).toContain('label: "新建书籍"');
     expect(leftSidebarSource).toContain('emit("createBook")');
     expect(appSource).toContain('@create-book="openCreateBookDialog"');
-    expect(appSource).toContain("function openCreateBookDialog(): void {");
-    expect(appSource).toContain("createBookDialogOpen.value = true");
+    expect(creationSource).toContain(
+      "function openCreateBookDialog(fromTemplate = false)"
+    );
+    expect(creationSource).toContain("options.open.value = true");
     expect(sectionSource).toContain('"新建作品"');
     expect(sectionSource).not.toContain('id: "create-long-book"');
     expect(dialogSource).toContain('role="tablist"');
     expect(dialogSource).toContain('label: "长篇"');
-    expect(dialogSource).toContain("<PopupSelect");
+    expect(dialogSource).toContain("<BookLibraryBindings");
+    expect(bindingSource).toContain("<PopupSelect");
     expect(dialogSource).not.toContain("<select");
     expect(dialogSource).toContain("uiMessage.warning");
     expect(dialogSource).toContain('<Teleport to="body">');

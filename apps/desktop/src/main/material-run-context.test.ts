@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_SHORT_WORKSPACE_AGENT_PROFILES,
+  DEFAULT_SCRIPT_WORKSPACE_AGENT_PROFILES,
   type CommandEnvelope,
   type MaterialCatalogEntry,
   type MaterialReadScope
@@ -38,6 +39,31 @@ const entry: MaterialCatalogEntry = {
 };
 
 describe("Main-owned material queries", () => {
+  it.each(["character_design", "plot_design", "draft", "custom-stage"])(
+    "keeps profile material kinds in short and script stage %s",
+    (activeStageId) => {
+      const workspace = fixtureWorkspace(activeStageId);
+      for (const bookType of ["short", "script"] as const) {
+        const agentProfile =
+          bookType === "short"
+            ? DEFAULT_SHORT_WORKSPACE_AGENT_PROFILES[0]!
+            : DEFAULT_SCRIPT_WORKSPACE_AGENT_PROFILES[0]!;
+        const workspaceContext =
+          bookType === "short"
+            ? { shortWorkspace: workspace }
+            : {
+                scriptWorkspace: {
+                  ...workspace,
+                  activeAgentId: "script" as const
+                }
+              };
+        expect(
+          resolveMaterialReadScope({ workspaceContext, agentProfile })?.kinds
+        ).toEqual(agentProfile.readAccess.material);
+      }
+    }
+  );
+
   it("derives kind restrictions from the profile and ignores a supplied catalog scope", async () => {
     const workspace = fixtureWorkspace();
     const agentProfile = DEFAULT_SHORT_WORKSPACE_AGENT_PROFILES.find(

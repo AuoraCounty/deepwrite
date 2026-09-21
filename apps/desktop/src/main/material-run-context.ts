@@ -4,8 +4,6 @@ import {
   MaterialQueryResultSchema,
   MaterialReadScopeSchema,
   createEnvelope,
-  resolveScriptWorkspaceStageReadAccess,
-  resolveShortWorkspaceStageReadAccess,
   type CommandEnvelope,
   type CommandResult,
   type LongAgentProfile,
@@ -36,16 +34,11 @@ export function resolveMaterialReadScope(
   }
   const writing = workspace?.scriptWorkspace ?? workspace?.shortWorkspace;
   if (!writing || !input.agentProfile) return undefined;
-  const stage = workspace?.scriptWorkspace
-    ? resolveScriptWorkspaceStageReadAccess(writing.activeStageId)
-    : resolveShortWorkspaceStageReadAccess(writing.activeStageId);
   return MaterialReadScopeSchema.parse({
     bookId: writing.id,
     bookType: workspace?.scriptWorkspace ? "script" : "short",
     stageId: writing.activeStageId,
-    kinds: input.agentProfile.readAccess.material.filter(
-      (kind) => !stage || stage.material.includes(kind)
-    )
+    kinds: input.agentProfile.readAccess.material
   });
 }
 

@@ -29,6 +29,17 @@ describe("withShortBookDefaultPlotStages", () => {
     });
   });
 
+  it("preserves explicit template stages instead of global defaults", () => {
+    const input = {
+      workspaceType: "short" as const,
+      title: "模板作品",
+      genre: "其他" as const,
+      defaultPlotStageIds: ["outline"]
+    };
+    expect(withShortBookDefaultPlotStages(input, settings, plotStages)).toBe(
+      input
+    );
+  });
   it("leaves script creation inputs unchanged", () => {
     const input = {
       workspaceType: "script",

@@ -1,3 +1,7 @@
+import type {
+  BookTemplatesApi,
+  CreateBookFromTemplate
+} from "./book-templates";
 import type { WindowFrameApi } from "./window-frame";
 import type {
   MarketplaceEmailCodeInput,
@@ -222,7 +226,9 @@ export interface DeepWriteApi
     previewRestore(machineKey: string): Promise<CloudBackupPreview>;
     applyRestore(previewId: string): Promise<CloudBackupApplyResult>;
   };
+  bookTemplates: BookTemplatesApi;
   catalog: {
+    createBookFromTemplate: CreateBookFromTemplate;
     index(): Promise<CatalogIndexSnapshot>;
     readDocument(
       input: CatalogReadDocumentInput

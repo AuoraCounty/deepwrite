@@ -65,8 +65,8 @@ export type BookBindingPayload =
     };
 
 export type CreateCreativeBookPayload =
-  | ({ workspaceType: "short" } & CreateShortBookInput)
-  | ({ workspaceType: "script" } & CreateScriptBookInput)
+  | ({ workspaceType: "short"; templateId?: string } & CreateShortBookInput)
+  | ({ workspaceType: "script"; templateId?: string } & CreateScriptBookInput)
   | ({ workspaceType: "long" } & CreateLongBookInput);
 
 export type LibraryDomain = "material" | "skill";
@@ -131,6 +131,7 @@ export interface LibraryRemovalDialogModule {
 
 export interface CreateBookDialogModule {
   kind: "create-book";
+  fromTemplate?: boolean;
   materials: readonly MaterialLibrary[];
   materialGroups: readonly MaterialLibraryGroup[];
   skills: readonly SkillLibrary[];
@@ -409,6 +410,7 @@ export interface WorkspaceDialogLayerEmits {
   closeLibraryRemoval: [];
   confirmLibraryRemoval: [];
   closeCreateBook: [];
+  openTemplateSettings: [];
   submitCreateBook: [payload: CreateCreativeBookPayload];
   closeBookTransfer: [];
   selectBookTransfer: [action: BookTransferAction];

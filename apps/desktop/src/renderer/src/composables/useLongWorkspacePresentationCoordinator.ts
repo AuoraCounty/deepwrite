@@ -1,8 +1,11 @@
 import {
-  MATERIAL_KINDS,
-  SKILL_KINDS,
+  buildLongLibraryAttachmentsForProfile,
+  filterLongReadableAttachmentsForProfile,
+  buildLongReadableAttachmentsForProfile,
+  longCatalogContextDocuments
+} from "../utils/longLibraryAttachments";
+import {
   getDefaultLongAgentProfile,
-  longLinkedResourceIsEnabledForStage,
   resolveLongAgentIdForRoot,
   type CatalogSnapshot,
   type LongAgentProfile,
@@ -20,10 +23,7 @@ import type { LongWorkspaceSelection } from "../types/longWorkspace";
 import { nextWritableLongChapterId } from "../types/longWorkspace";
 import type { WorkspaceDocument } from "../types/workspace";
 import { agentRunScopeForDocument } from "../utils/agentRunPreferences";
-import {
-  buildLibraryAttachments,
-  type LibraryAttachmentBuildResult
-} from "../utils/libraryAttachments";
+import { type LibraryAttachmentBuildResult } from "../utils/libraryAttachments";
 import { buildLongWorldbuildingDirectorySnapshot } from "../utils/longWorldbuildingAgentContext";
 
 type LongReadableAttachments = Pick<
@@ -187,131 +187,6 @@ export function useLongWorkspacePresentationCoordinator(
       ) ?? getDefaultLongAgentProfile(agentId)
     );
   });
-
-  function buildLongLibraryAttachmentsForProfile(
-    summary: LongBookSummary,
-    snapshot: CatalogSnapshot,
-    profile: LongAgentProfile
-  ): LibraryAttachmentBuildResult {
-    const skillKinds = new Set(profile.readAccess.skillKinds);
-    const materialKinds = new Set(profile.readAccess.materialKinds);
-    const activeStage = activeLongRoot.value;
-    const materialIds = (kind: (typeof MATERIAL_KINDS)[number]) =>
-      summary.linkedMaterialIdsByKind[kind].filter((libraryId) =>
-        longLinkedResourceIsEnabledForStage(
-          summary.linkedResourceStageScopes,
-          "material",
-          libraryId,
-          activeStage
-        )
-      );
-    const skillIds = (kind: (typeof SKILL_KINDS)[number]) =>
-      summary.linkedSkillIdsByKind[kind].filter((libraryId) =>
-        longLinkedResourceIsEnabledForStage(
-          summary.linkedResourceStageScopes,
-          "skill",
-          libraryId,
-          activeStage
-        )
-      );
-    return buildLibraryAttachments(snapshot, {
-      id: summary.id,
-      bookType: "long",
-      linkedMaterialIdsByKind: {
-        character: materialKinds.has("character")
-          ? materialIds("character")
-          : [],
-        gimmick: materialKinds.has("gimmick") ? materialIds("gimmick") : [],
-        plot: materialKinds.has("plot") ? materialIds("plot") : [],
-        draft: materialKinds.has("draft") ? materialIds("draft") : [],
-        other: materialKinds.has("other") ? materialIds("other") : []
-      },
-      linkedSkillIdsByKind: {
-        general: skillKinds.has("general") ? skillIds("general") : [],
-        plot: skillKinds.has("plot") ? skillIds("plot") : [],
-        style: skillKinds.has("style") ? skillIds("style") : [],
-        other: skillKinds.has("other") ? skillIds("other") : []
-      }
-    });
-  }
-
-  function filterLongReadableAttachmentsForProfile(
-    attachments: LibraryAttachmentBuildResult,
-    profile: LongAgentProfile
-  ): LongReadableAttachments {
-    const skillKinds = new Set(profile.readAccess.skillKinds);
-    const materialKinds = new Set(profile.readAccess.materialKinds);
-    return {
-      attachedSkills: attachments.attachedSkills.filter(
-        (skill) => skill.kind !== undefined && skillKinds.has(skill.kind)
-      ),
-      attachedMaterials: attachments.attachedMaterials.filter(
-        (material) =>
-          material.kind !== undefined && materialKinds.has(material.kind)
-      )
-    };
-  }
-
-  function buildLongReadableAttachmentsForProfile(
-    summary: LongBookSummary,
-    snapshot: CatalogSnapshot | null,
-    profile: LongAgentProfile
-  ): LongReadableAttachments {
-    if (!snapshot) {
-      return {
-        attachedSkills: [],
-        attachedMaterials: []
-      };
-    }
-    return filterLongReadableAttachmentsForProfile(
-      buildLongLibraryAttachmentsForProfile(summary, snapshot, profile),
-      profile
-    );
-  }
-
-  function longCatalogContextDocuments(
-    summary: LongBookSummary,
-    profile: LongAgentProfile
-  ): WorkspaceDocument[] {
-    const libraryIds = new Set<string>();
-    const materialKinds = new Set(profile.readAccess.materialKinds);
-    const skillKinds = new Set(profile.readAccess.skillKinds);
-    const activeStage = activeLongRoot.value;
-    for (const kind of MATERIAL_KINDS) {
-      if (materialKinds.has(kind)) {
-        summary.linkedMaterialIdsByKind[kind]
-          .filter((id) =>
-            longLinkedResourceIsEnabledForStage(
-              summary.linkedResourceStageScopes,
-              "material",
-              id,
-              activeStage
-            )
-          )
-          .forEach((id) => libraryIds.add(id));
-      }
-    }
-    for (const kind of SKILL_KINDS) {
-      if (skillKinds.has(kind)) {
-        summary.linkedSkillIdsByKind[kind]
-          .filter((id) =>
-            longLinkedResourceIsEnabledForStage(
-              summary.linkedResourceStageScopes,
-              "skill",
-              id,
-              activeStage
-            )
-          )
-          .forEach((id) => libraryIds.add(id));
-      }
-    }
-    // Filtering the source array preserves the context ordering used by
-    // previous sends; gathering from per-library buckets would reorder it.
-    return options.catalog.documents.value.filter(
-      (document) =>
-        document.libraryId !== undefined && libraryIds.has(document.libraryId)
-    );
-  }
 
   const activeLongRuntimeContext = computed<LongWorkspaceRuntimeContext | null>(
     () => {
@@ -502,7 +377,12 @@ export function useLongWorkspacePresentationCoordinator(
     buildLongLibraryAttachmentsForProfile,
     filterLongReadableAttachmentsForProfile,
     buildLongReadableAttachmentsForProfile,
-    longCatalogContextDocuments,
+    longCatalogContextDocuments: (summary, profile) =>
+      longCatalogContextDocuments(
+        summary,
+        profile,
+        options.catalog.documents.value
+      ),
     agentRunScopeHasWriteBarrier,
     agentRunScopeIsBusy,
     agentRunScopeHasPendingEditReview,

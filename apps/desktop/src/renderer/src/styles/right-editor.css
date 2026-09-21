@@ -260,38 +260,6 @@ html[data-platform="darwin"] .editor-header {
   gap: 3px;
 }
 
-.format-button {
-  display: grid;
-  place-items: center;
-  width: 27px;
-  height: 27px;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.format-button:hover {
-  background: var(--surface-hover);
-  color: var(--neutral-solid);
-}
-
-.format-button.is-active {
-  background: var(--surface-selected);
-  color: var(--accent);
-}
-
-.format-button:disabled {
-  color: var(--text-tertiary);
-  cursor: default;
-  opacity: 0.42;
-}
-
-.format-button:disabled:hover {
-  background: transparent;
-  color: var(--text-tertiary);
-}
-
 .editor-find-panel {
   position: absolute;
   z-index: 100;

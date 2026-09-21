@@ -4,11 +4,7 @@ import {
 } from "../material-catalog";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "typebox";
-import {
-  SHORT_MATERIAL_KINDS,
-  resolveScriptWorkspaceStageReadAccess,
-  resolveShortWorkspaceStageReadAccess
-} from "@deepwrite/contracts";
+import { SHORT_MATERIAL_KINDS } from "@deepwrite/contracts";
 import {
   LOAD_SKILL_NAME_PARAMETER,
   LOAD_SKILL_TOOL_DESCRIPTION,
@@ -22,13 +18,7 @@ import { textResult, type BuildWritingWorkspaceToolsInput } from "./shared";
 export function buildQueryLinkedMaterialEntriesTool(
   input: BuildWritingWorkspaceToolsInput
 ): AgentTool {
-  const stageAccess =
-    input.workspaceType === "script"
-      ? resolveScriptWorkspaceStageReadAccess(input.workspace.activeStageId)
-      : resolveShortWorkspaceStageReadAccess(input.workspace.activeStageId);
-  const allowedKinds = input.profile.readAccess.material.filter(
-    (kind) => !stageAccess || stageAccess.material.includes(kind)
-  );
+  const allowedKinds = input.profile.readAccess.material;
   return defineTool({
     name: "query_linked_material_entries",
     label: "查询关联素材条目",
@@ -63,13 +53,7 @@ export function buildQueryLinkedMaterialEntriesTool(
 export function buildLoadSkillTool(
   input: BuildWritingWorkspaceToolsInput
 ): AgentTool {
-  const stageAccess =
-    input.workspaceType === "script"
-      ? resolveScriptWorkspaceStageReadAccess(input.workspace.activeStageId)
-      : resolveShortWorkspaceStageReadAccess(input.workspace.activeStageId);
-  const allowedKinds = input.profile.readAccess.skill.filter(
-    (kind) => !stageAccess || stageAccess.skill.includes(kind)
-  );
+  const allowedKinds = input.profile.readAccess.skill;
   return defineTool({
     name: "load_skill",
     label: "加载技能",

@@ -21,7 +21,6 @@ const props = defineProps<{
   disabled: boolean;
   saving: boolean;
   saveLabel: string;
-  stagePolicy?: readonly string[];
   defaultPlotStages?: readonly DefaultPlotStageOption[];
 }>();
 
@@ -106,7 +105,7 @@ function checked(scope: "material" | "skill", id: string): boolean {
       <div class="section-heading">
         <div>
           <h4>读取范围</h4>
-          <p>未勾选的素材或技能不会提供给智能体。</p>
+          <p>已勾选并绑定的素材和技能可在所有阶段按需加载。</p>
         </div>
       </div>
       <fieldset>
@@ -157,19 +156,6 @@ function checked(scope: "material" | "skill", id: string): boolean {
           </label>
         </div>
       </fieldset>
-    </section>
-
-    <section v-if="stagePolicy?.length" class="profile-card policy-card">
-      <div class="section-heading">
-        <div>
-          <h4>阶段加载边界</h4>
-          <p>实际资源范围为全局读取范围与当前阶段固定范围的交集。</p>
-        </div>
-        <span>固定</span>
-      </div>
-      <ul>
-        <li v-for="item in stagePolicy" :key="item">{{ item }}</li>
-      </ul>
     </section>
 
     <section
@@ -346,12 +332,6 @@ legend {
 .option-grid small {
   color: var(--text-tertiary);
   font-size: 0.785714rem;
-}
-.policy-card ul {
-  margin: 0;
-  padding: 14px 36px 17px;
-  color: var(--text-secondary);
-  line-height: 1.7;
 }
 .default-stage-list {
   display: grid;

@@ -1,3 +1,4 @@
+import { createGeneralSettingsTestApi } from "./generalSettingsTestApi";
 import { createBookAnalysisTestApi } from "./book-analysis.test-support";
 import { createUnusedLongApi } from "./unusedLongApi.test-support";
 import { createModelApiTestFixture } from "./modelApiTestFixture";
@@ -237,6 +238,13 @@ function createDeferredApi(): {
   const prompts: SessionPromptCommandPayload[] = [];
   const aborts: SessionAbortCommandPayload[] = [];
   const api: DeepWriteApi = {
+    bookTemplates: {
+      list: vi.fn(async () => []),
+      save: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      delete: vi.fn(async () => {})
+    },
     system: {
       async health() {
         return {
@@ -350,6 +358,7 @@ function createDeferredApi(): {
       }
     },
     catalog: {
+      createBookFromTemplate: vi.fn(async () => null),
       loadDraftRecovery: vi.fn(async () => ({})),
       saveDraftRecovery: vi.fn(async () => undefined),
       index: vi.fn(async () => {
@@ -631,27 +640,7 @@ function createDeferredApi(): {
         }
       }
     },
-    generalSettings: {
-      async list() {
-        return {
-          persisted: false,
-          settings: {
-            permissionMode: "request-approval" as const,
-            autoApproveCrossStageOperations: false,
-            autoSave: false,
-            language: "auto" as const,
-            showInMenuBar: true,
-            showContextUsage: true,
-            useNetworkProxy: false,
-            workspacePaneLayout: "agent-editor" as const,
-            defaultTextViewMode: "edit" as const
-          }
-        };
-      },
-      async save(settings) {
-        return { persisted: true, settings };
-      }
-    },
+    generalSettings: createGeneralSettingsTestApi(),
     manuscript: {
       async exportLong() {
         throw new Error(

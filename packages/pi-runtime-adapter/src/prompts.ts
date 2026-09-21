@@ -5,11 +5,7 @@ import {
   buildWorkspaceMaterialContext,
   materialCatalogNotes
 } from "./prompts-material";
-import {
-  resolveScriptWorkspaceStageReadAccess,
-  resolveShortWorkspaceStageReadAccess,
-  type LongAgentProfile
-} from "@deepwrite/contracts";
+import { type LongAgentProfile } from "@deepwrite/contracts";
 import {
   buildLongFixedContextLines,
   buildLongFollowUpContextLines
@@ -62,18 +58,11 @@ export function buildRuntimeUserPrompt(input: AgentRunInput): string {
   const isLongRun = Boolean(longWorkspace && longProfile);
   const learningContext = input.workspaceContext?.learningImitation;
   const longBookAnalysisContext = input.workspaceContext?.longBookAnalysis;
-  const writingStageReadAccess = scriptWorkspace
-    ? resolveScriptWorkspaceStageReadAccess(scriptWorkspace.activeStageId)
-    : shortWorkspace
-      ? resolveShortWorkspaceStageReadAccess(shortWorkspace.activeStageId)
-      : undefined;
   const readableSkills = writingProfile
     ? skills.filter(
         (item) =>
           item.kind !== undefined &&
-          writingProfile.readAccess.skill.includes(item.kind) &&
-          (!writingStageReadAccess ||
-            writingStageReadAccess.skill.includes(item.kind))
+          writingProfile.readAccess.skill.includes(item.kind)
       )
     : longProfile
       ? skills.filter(

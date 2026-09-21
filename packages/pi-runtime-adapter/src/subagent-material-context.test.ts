@@ -43,7 +43,7 @@ const definition = {
 };
 
 describe("subagent material context", () => {
-  it("passes the permission-filtered material directory through the actual team tool wiring", async () => {
+  it("passes the cross-stage material directory through the actual team tool wiring", async () => {
     const runtime = harness();
     const tools = buildRunTools(
       {
@@ -65,7 +65,7 @@ describe("subagent material context", () => {
             },
             {
               id: "plot-reference",
-              title: "不可见剧情参考",
+              title: "跨阶段剧情参考",
               kind: "plot",
               source: "attached-material",
               content: "剧情"
@@ -99,7 +99,7 @@ describe("subagent material context", () => {
     expect(text).toContain("测试读取提示");
     expect(text).toContain("mode=read");
     expect(text).toContain("检查人物");
-    expect(text).not.toContain("不可见剧情参考");
+    expect(text).toContain("跨阶段剧情参考");
     expect(text).not.toContain("父对话私有内容");
     expect(text).not.toContain("不应全文注入".repeat(100));
     expect(context.tools?.map((tool) => tool.name)).toContain(

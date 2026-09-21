@@ -1,5 +1,6 @@
 import type {
   AppLanguage,
+  BodyTextFormats,
   AgentTeamCatalogSnapshot,
   CatalogSnapshot,
   CreativePlotStage,
@@ -34,6 +35,7 @@ export interface SettingsFeatureModule {
   useNetworkProxy: boolean;
   workspacePaneLayout: WorkspacePaneLayout;
   defaultTextViewMode: TextViewMode;
+  bodyTextFormats: BodyTextFormats;
   workspaceAgentSettings: readonly WorkspaceAgentSettings[];
   creativePlotStages: readonly CreativePlotStage[];
   longAgentSettings: LongAgentSettings | null;

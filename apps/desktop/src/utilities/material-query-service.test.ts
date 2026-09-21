@@ -53,7 +53,7 @@ async function fixture(count = 1) {
 }
 
 describe("Core material catalog and on-demand reads", () => {
-  it("honors persisted long-form stage scopes and removes deleted entries from a warm catalog", async () => {
+  it("ignores legacy long-form stage scopes and removes deleted entries from a warm catalog", async () => {
     const { root, store } = await fixture();
     const longStore = new LongProjectStore();
     const created = await longStore.createBook(root, {
@@ -89,7 +89,15 @@ describe("Core material catalog and on-demand reads", () => {
         })
       );
     expect((await query("character_design")).total).toBe(1);
-    expect((await query("plot_design", "read")).status).toBe("not_found");
+    for (const stage of [
+      "worldbuilding",
+      "plot_design",
+      "draft",
+      "continuity_ledger"
+    ]) {
+      expect((await query(stage)).total).toBe(1);
+      expect((await query(stage, "read")).content).toContain("旧素材正文0");
+    }
     await store.removeLibraryEntry({
       domain: "material",
       libraryId: "material-existing",

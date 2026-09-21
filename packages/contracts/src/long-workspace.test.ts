@@ -32,7 +32,6 @@ import {
   longCharacterHistoryFileId,
   longCharacterRelationshipsFileId,
   longLedgerCommitFileId,
-  longLinkedResourceIsEnabledForStage,
   longWorldbuildingFileId,
   resolveLongAgentIdForRoot
 } from "./index";
@@ -294,37 +293,6 @@ function longBook() {
 }
 
 describe("independent long-form workspace contracts", () => {
-  it("treats missing resource scopes as all stages and honors configured overrides", () => {
-    expect(
-      longLinkedResourceIsEnabledForStage(
-        undefined,
-        "skill",
-        "skill-style",
-        "worldbuilding"
-      )
-    ).toBe(true);
-    const scopes = {
-      materials: { "material-plot": ["plot_design" as const] },
-      skills: { "skill-style": ["draft" as const] }
-    };
-    expect(
-      longLinkedResourceIsEnabledForStage(
-        scopes,
-        "skill",
-        "skill-style",
-        "draft"
-      )
-    ).toBe(true);
-    expect(
-      longLinkedResourceIsEnabledForStage(
-        scopes,
-        "skill",
-        "skill-style",
-        "plot_design"
-      )
-    ).toBe(false);
-  });
-
   it("ships a default AGENTS.md that explains the five long-form stages", () => {
     expect(LONG_AGENTS_MD_PATH).toBe("AGENTS.md");
     expect(DEFAULT_LONG_AGENTS_MD).toContain("# 长篇上下文");

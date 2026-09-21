@@ -48,8 +48,8 @@ const LongResourceStageScopeMapSchema = z.record(
 );
 
 /**
- * Per-library stage overrides. Missing libraries intentionally mean all long
- * workspace stages so existing projects retain their previous behaviour.
+ * Legacy per-library stage overrides, retained only for manifest compatibility.
+ * Resource loading no longer uses stages.
  */
 export const LongLinkedResourceStageScopesSchema = z
   .object({
@@ -65,17 +65,6 @@ export const EMPTY_LONG_LINKED_RESOURCE_STAGE_SCOPES = {
   materials: {},
   skills: {}
 } as const satisfies LongLinkedResourceStageScopes;
-
-export function longLinkedResourceIsEnabledForStage(
-  scopes: LongLinkedResourceStageScopes | undefined,
-  domain: "material" | "skill",
-  libraryId: string,
-  stage: LongWorkspaceRoot
-): boolean {
-  const configured =
-    scopes?.[domain === "material" ? "materials" : "skills"][libraryId];
-  return configured === undefined || configured.includes(stage);
-}
 
 const LongBookSharedShape = {
   id: LongBookIdSchema,

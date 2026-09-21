@@ -6,10 +6,7 @@ import {
   ScriptMaterialKindSchema,
   ScriptSkillKindSchema,
   ScriptWorkspaceAgentIdSchema,
-  resolveScriptWorkspacePhaseId,
-  type ScriptWorkspaceAgentId,
-  type ScriptWorkspacePhaseId,
-  type ScriptWorkspaceStageId
+  type ScriptWorkspaceAgentId
 } from "./script-workspace";
 import { DEFAULT_SCRIPT_SYSTEM_PROMPT } from "./writing-agent-prompts";
 
@@ -69,32 +66,6 @@ export const ScriptAgentReadAccessSchema = z
   })
   .strict();
 export type ScriptAgentReadAccess = z.infer<typeof ScriptAgentReadAccessSchema>;
-
-export const DEFAULT_SCRIPT_STAGE_READ_ACCESS: Record<
-  ScriptWorkspacePhaseId,
-  ScriptAgentReadAccess
-> = {
-  character: {
-    material: ["character"],
-    skill: ["general", "plot", "other"]
-  },
-  plot: {
-    material: ["gimmick", "character", "plot"],
-    skill: ["general", "plot", "other"]
-  },
-  draft: {
-    material: ["character", "gimmick", "plot", "draft", "other"],
-    skill: ["style", "general", "other"]
-  }
-};
-
-export function resolveScriptWorkspaceStageReadAccess(
-  stageId: ScriptWorkspaceStageId
-): ScriptAgentReadAccess {
-  return DEFAULT_SCRIPT_STAGE_READ_ACCESS[
-    resolveScriptWorkspacePhaseId(stageId)
-  ];
-}
 
 export const DEFAULT_SCRIPT_AGENT_READ_ACCESS: Record<
   ScriptWorkspaceAgentId,

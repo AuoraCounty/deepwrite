@@ -27,11 +27,6 @@ const emit = defineEmits<{
 
 const draft = ref<EditableAgent | null>(null);
 const defaultPlotStageIds = ref<string[]>([]);
-const STAGE_POLICY = [
-  "人物：人物素材；通用、剧情、其他技能",
-  "剧情：卖点、人物、剧情素材；通用、剧情、其他技能",
-  "正文：全部素材；文风、通用、其他技能"
-];
 const selectedDefaultPlotStageIds = computed(() => {
   const availableIds = new Set(props.plotStages.map(({ id }) => id));
   return defaultPlotStageIds.value.filter((id) => availableIds.has(id));
@@ -146,7 +141,6 @@ function save(): void {
     :disabled="saving || !runtimeAvailable"
     :saving="saving"
     save-label="保存短篇智能体设置"
-    :stage-policy="STAGE_POLICY"
     :default-plot-stages="defaultPlotStages"
     @prompt="draft.systemPrompt = $event"
     @shortcut="patchShortcut"

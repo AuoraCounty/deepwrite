@@ -1,13 +1,13 @@
+import {
+  longSkillReferences,
+  longMaterialReferences
+} from "../utils/longLibraryReferences";
 import { createConversationHistorySelection } from "./conversationHistorySelection";
 import {
   withoutMaterialBindings,
   withoutMaterialBodies
 } from "../utils/library-attachments/sending";
 import {
-  ATTACHED_CONTEXT_MAX_ITEMS,
-  MATERIAL_KINDS,
-  SKILL_KINDS,
-  longLinkedResourceIsEnabledForStage,
   type AgentTeamRunMode,
   type CatalogIndexSnapshot,
   type CatalogSnapshot,
@@ -24,15 +24,7 @@ import type {
   AgentConversationController,
   AgentRunSettings
 } from "./useAgentConversation";
-import {
-  MATERIAL_KIND_LABELS,
-  MATERIAL_STAGE_KINDS,
-  SKILL_KIND_LABELS
-} from "../data/catalogWorkspace";
-import type {
-  ComposerReferenceOption,
-  ConversationMessageRewriteRequest
-} from "../types/conversation";
+import type { ConversationMessageRewriteRequest } from "../types/conversation";
 import type {
   LongForeshadowingFocus,
   LongWorkspaceRendererApi,
@@ -146,107 +138,6 @@ export interface LongConversationCoordinatorOptions {
   notifications: LongConversationNotifications;
 }
 
-function catalogAttachmentId(
-  domain: "material" | "skill",
-  libraryId: string,
-  entryId: string
-): string {
-  return `${domain}:${libraryId}:${entryId}`;
-}
-
-function longSkillReferences(
-  snapshot: CatalogIndexSnapshot | null,
-  summary: LongBookSummary | null,
-  profile: LongAgentProfile | null,
-  activeRoot: LongWorkspaceRuntimeContext["activeRoot"]
-): ComposerReferenceOption[] {
-  if (!snapshot || !summary || !profile) return [];
-  const readableKinds = new Set(profile.readAccess.skillKinds);
-  const libraries = new Map(
-    snapshot.skills.map((library) => [library.id, library])
-  );
-  const seenLibraries = new Set<string>();
-  const references: ComposerReferenceOption[] = [];
-  for (const selectedKind of SKILL_KINDS) {
-    if (!readableKinds.has(selectedKind)) continue;
-    for (const libraryId of summary.linkedSkillIdsByKind[selectedKind]) {
-      if (
-        !longLinkedResourceIsEnabledForStage(
-          summary.linkedResourceStageScopes,
-          "skill",
-          libraryId,
-          activeRoot
-        )
-      ) {
-        continue;
-      }
-      if (seenLibraries.has(libraryId)) continue;
-      seenLibraries.add(libraryId);
-      const library = libraries.get(libraryId);
-      if (!library || !readableKinds.has(library.skillKind)) continue;
-      for (const entry of library.entries) {
-        if (entry.contentBytes <= 0) continue;
-        references.push({
-          id: catalogAttachmentId("skill", library.id, entry.id),
-          label: `${library.title} · ${entry.title}`,
-          detail: `${SKILL_KIND_LABELS[library.skillKind]} · 当前长篇已绑定`
-        });
-        if (references.length >= ATTACHED_CONTEXT_MAX_ITEMS) {
-          return references;
-        }
-      }
-    }
-  }
-  return references;
-}
-
-function longMaterialReferences(
-  snapshot: CatalogIndexSnapshot | null,
-  summary: LongBookSummary | null,
-  profile: LongAgentProfile | null,
-  activeRoot: LongWorkspaceRuntimeContext["activeRoot"]
-): ComposerReferenceOption[] {
-  if (!snapshot || !summary || !profile) return [];
-  const readableKinds = new Set(profile.readAccess.materialKinds);
-  const libraries = new Map(
-    snapshot.materials.map((library) => [library.id, library])
-  );
-  const seenLibraries = new Set<string>();
-  const references: ComposerReferenceOption[] = [];
-  for (const selectedKind of MATERIAL_KINDS) {
-    if (!readableKinds.has(selectedKind)) continue;
-    for (const libraryId of summary.linkedMaterialIdsByKind[selectedKind]) {
-      if (
-        !longLinkedResourceIsEnabledForStage(
-          summary.linkedResourceStageScopes,
-          "material",
-          libraryId,
-          activeRoot
-        )
-      ) {
-        continue;
-      }
-      if (seenLibraries.has(libraryId)) continue;
-      seenLibraries.add(libraryId);
-      const library = libraries.get(libraryId);
-      if (!library) continue;
-      for (const entry of library.entries) {
-        const entryKind = MATERIAL_STAGE_KINDS[entry.stageId];
-        if (entryKind !== selectedKind || entry.contentBytes <= 0) continue;
-        references.push({
-          id: catalogAttachmentId("material", library.id, entry.id),
-          label: `${library.title} · ${entry.title}`,
-          detail: `${MATERIAL_KIND_LABELS[entryKind]} · 当前长篇已绑定`
-        });
-        if (references.length >= ATTACHED_CONTEXT_MAX_ITEMS) {
-          return references;
-        }
-      }
-    }
-  }
-  return references;
-}
-
 function activeFileId(
   bookId: string | null,
   selection: LongWorkspaceSelection | null,
@@ -323,16 +214,14 @@ export function useLongConversationCoordinator(
     longSkillReferences(
       options.catalog.indexSnapshot.value,
       options.state.activeBookSummary.value,
-      options.state.activeAgentProfile.value,
-      options.state.activeRoot.value
+      options.state.activeAgentProfile.value
     )
   );
   const availableMaterialReferences = computed(() =>
     longMaterialReferences(
       options.catalog.indexSnapshot.value,
       options.state.activeBookSummary.value,
-      options.state.activeAgentProfile.value,
-      options.state.activeRoot.value
+      options.state.activeAgentProfile.value
     )
   );
   const activeSemanticSignature = computed(() => {

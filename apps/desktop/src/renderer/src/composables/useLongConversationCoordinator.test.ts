@@ -348,6 +348,10 @@ describe("useLongConversationCoordinator", () => {
     const test = createHarness();
     test.summary.value = {
       ...test.summary.value!,
+      linkedResourceStageScopes: {
+        materials: { "material-library": ["draft"] },
+        skills: { "skill-library": ["draft"] }
+      },
       linkedMaterialIdsByKind: {
         ...test.summary.value!.linkedMaterialIdsByKind,
         character: ["material-library"]

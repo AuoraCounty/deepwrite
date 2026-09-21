@@ -1,3 +1,8 @@
+import {
+  ShortAgentReadAccessSchema,
+  DEFAULT_SHORT_AGENT_READ_ACCESS
+} from "./short-agent-read-access";
+export * from "./short-agent-read-access";
 import { z } from "zod";
 import {
   CreativePlotStageIdSchema,
@@ -169,20 +174,6 @@ export function createExpertDraftDirectoryRevision(
   );
 }
 
-export const SHORT_MATERIAL_KINDS = [
-  "character",
-  "gimmick",
-  "plot",
-  "draft",
-  "other"
-] as const;
-export const ShortMaterialKindSchema = z.enum(SHORT_MATERIAL_KINDS);
-export type ShortMaterialKind = z.infer<typeof ShortMaterialKindSchema>;
-
-export const SHORT_SKILL_KINDS = ["general", "plot", "style", "other"] as const;
-export const ShortSkillKindSchema = z.enum(SHORT_SKILL_KINDS);
-export type ShortSkillKind = z.infer<typeof ShortSkillKindSchema>;
-
 /**
  * These defaults are copied byte-for-byte from write-claw's
  * app/prompt_defaults/short/shared/*.txt files, including the final newline.
@@ -311,81 +302,6 @@ export const DEFAULT_SHORT_WORKSPACE_AGENT_SYSTEM_PROMPTS: Record<
 > = {
   short: DEFAULT_SHORT_SYSTEM_PROMPT
 };
-
-const UniqueShortMaterialKindsSchema = z
-  .array(ShortMaterialKindSchema)
-  .max(SHORT_MATERIAL_KINDS.length)
-  .superRefine((values, context) => {
-    values.forEach((value, index) => {
-      if (values.indexOf(value) !== index) {
-        context.addIssue({
-          code: "custom",
-          path: [index],
-          message: `Duplicate material kind: ${value}`
-        });
-      }
-    });
-  });
-
-const UniqueShortSkillKindsSchema = z
-  .array(ShortSkillKindSchema)
-  .max(SHORT_SKILL_KINDS.length)
-  .superRefine((values, context) => {
-    values.forEach((value, index) => {
-      if (values.indexOf(value) !== index) {
-        context.addIssue({
-          code: "custom",
-          path: [index],
-          message: `Duplicate skill kind: ${value}`
-        });
-      }
-    });
-  });
-
-export const ShortAgentReadAccessSchema = z
-  .object({
-    material: UniqueShortMaterialKindsSchema,
-    skill: UniqueShortSkillKindsSchema
-  })
-  .strict();
-export type ShortAgentReadAccess = z.infer<typeof ShortAgentReadAccessSchema>;
-
-export const DEFAULT_SHORT_STAGE_READ_ACCESS: Record<
-  ShortWorkspacePhaseId,
-  ShortAgentReadAccess
-> = {
-  character: {
-    material: ["character"],
-    skill: ["general", "plot", "other"]
-  },
-  plot: {
-    material: ["gimmick", "character", "plot"],
-    skill: ["general", "plot", "other"]
-  },
-  draft: {
-    material: ["character", "gimmick", "plot", "draft", "other"],
-    skill: ["style", "general", "other"]
-  }
-};
-
-export function resolveShortWorkspaceStageReadAccess(
-  stageId: ShortWorkspaceStageId
-): ShortAgentReadAccess {
-  return DEFAULT_SHORT_STAGE_READ_ACCESS[resolveShortWorkspacePhaseId(stageId)];
-}
-
-export const DEFAULT_SHORT_AGENT_READ_ACCESS: Record<
-  ShortWorkspaceAgentId,
-  ShortAgentReadAccess
-> = {
-  short: {
-    material: ["character", "gimmick", "plot", "draft", "other"],
-    skill: ["general", "plot", "style", "other"]
-  }
-};
-
-export const DEFAULT_SHORT_WORKSPACE_AGENT_READ_ACCESS =
-  DEFAULT_SHORT_AGENT_READ_ACCESS;
 
 const ShortSystemPromptSchema = z
   .string()

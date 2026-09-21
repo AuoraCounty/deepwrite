@@ -1,3 +1,4 @@
+import toolsSource from "./EditorTextTools.vue?raw";
 import metadataSource from "./EditorDocumentMetadata.vue?raw";
 import { describe, expect, it } from "vitest";
 import { expectSourceToContain } from "../../../test-utils/sourceText";
@@ -288,10 +289,10 @@ describe("RightEditorPane expert draft navigation", () => {
   });
 
   it("provides working text undo, redo, find, and replace controls", () => {
-    expect(source).toContain('aria-label="撤销"');
-    expect(source).toContain('aria-label="还原"');
-    expect(source).toContain('aria-label="查找"');
-    expect(source).toContain('aria-label="替换"');
+    expect(toolsSource).toContain('aria-label="撤销"');
+    expect(toolsSource).toContain('aria-label="还原"');
+    expect(toolsSource).toContain('aria-label="查找"');
+    expect(toolsSource).toContain('aria-label="替换"');
     expect(source).toContain('@beforeinput="handleEditorBeforeInput"');
     expect(source).toContain('@input="handleEditorInput"');
     expect(source).toContain('@keydown="handleEditorKeydown"');

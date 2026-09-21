@@ -463,7 +463,7 @@ describe("unified short workspace tools", () => {
     ).rejects.toThrow("快照已截断");
   });
 
-  it("filters linked resources by the current stage and loads bodies on demand", async () => {
+  it("loads linked resources across stages on demand", async () => {
     const tools = buildShortWorkspaceTools({
       workspace: shortWorkspace("character_design"),
       profile: shortProfile(),
@@ -512,7 +512,7 @@ describe("unified short workspace tools", () => {
       "query_linked_material_entries"
     ).execute("list-material", { mode: "list" });
     expect(resultText(materialList)).toContain("人物素材");
-    expect(resultText(materialList)).not.toContain("剧情素材");
+    expect(resultText(materialList)).toContain("剧情素材");
     const ambiguousMaterial = await toolByName(
       tools,
       "query_linked_material_entries"
@@ -534,10 +534,9 @@ describe("unified short workspace tools", () => {
       { name: "通用检查" }
     );
     expect(resultText(loaded)).toContain("通用技能正文");
-    const blocked = await toolByName(tools, "load_skill").execute(
-      "load-style",
-      { name: "风格润色" }
-    );
-    expect(resultText(blocked)).not.toContain("风格技能正文");
+    const style = await toolByName(tools, "load_skill").execute("load-style", {
+      name: "风格润色"
+    });
+    expect(resultText(style)).toContain("风格技能正文");
   });
 });

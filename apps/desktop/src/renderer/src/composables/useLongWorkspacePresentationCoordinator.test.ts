@@ -433,7 +433,7 @@ describe("useLongWorkspacePresentationCoordinator", () => {
     ).toEqual(["material", "skill"]);
   });
 
-  it("loads bound resource documents only in their configured stage", () => {
+  it("loads resources in every stage despite saved legacy scopes", () => {
     const { coordinator, summary, documents, activeSelection } =
       createHarness();
     summary.linkedResourceStageScopes = {
@@ -441,29 +441,24 @@ describe("useLongWorkspacePresentationCoordinator", () => {
       skills: { skill_style: ["draft"] }
     };
     documents.value = [
-      document("material", {
-        domain: "material",
-        libraryId: "material_plot"
-      }),
+      document("material", { domain: "material", libraryId: "material_plot" }),
       document("skill", { domain: "skill", libraryId: "skill_style" })
     ];
     const profile = getDefaultLongAgentProfile("long");
-
-    expect(coordinator.longCatalogContextDocuments(summary, profile)).toEqual(
-      []
-    );
-    activeSelection.value = selection("plot_design");
-    expect(
-      coordinator
-        .longCatalogContextDocuments(summary, profile)
-        .map(({ id }) => id)
-    ).toEqual(["material"]);
-    activeSelection.value = selection("draft");
-    expect(
-      coordinator
-        .longCatalogContextDocuments(summary, profile)
-        .map(({ id }) => id)
-    ).toEqual(["skill"]);
+    for (const root of [
+      "worldbuilding",
+      "character_design",
+      "plot_design",
+      "draft",
+      "continuity_ledger"
+    ] as const) {
+      activeSelection.value = selection(root);
+      expect(
+        coordinator
+          .longCatalogContextDocuments(summary, profile)
+          .map(({ id }) => id)
+      ).toEqual(["material", "skill"]);
+    }
   });
 
   it("does not expose the removed rollback presentation state", () => {

@@ -134,6 +134,7 @@ export interface WorkspaceDialogShortLifecycleState {
   exportTarget: Readonly<Ref<ShortBookLifecycleTarget | null>>;
   manuscriptExportPending: Readonly<Ref<boolean>>;
   createDialogOpen: Readonly<Ref<boolean>>;
+  createFromTemplate?: Readonly<Ref<boolean>>;
   transferMode: Readonly<Ref<DialogModule<"book-transfer">["mode"] | null>>;
   resourceMode: Readonly<Ref<DialogModule<"book-resource">["mode"] | null>>;
   activeBookTarget: Readonly<Ref<ShortBookLifecycleTarget | null>>;
@@ -510,6 +511,7 @@ export function useWorkspaceDialogModuleCoordinator(
       const snapshot = options.catalog.snapshot.value;
       return {
         kind: "create-book",
+        fromTemplate: options.shortLifecycle.createFromTemplate?.value ?? false,
         materials: snapshot?.materials ?? [],
         materialGroups: snapshot?.materialGroups ?? [],
         skills: snapshot?.skills ?? [],

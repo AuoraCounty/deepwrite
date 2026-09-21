@@ -2,7 +2,6 @@
 import type {
   AppLanguage,
   GeneralPermissionMode,
-  TextViewMode,
   WorkspacePaneLayout
 } from "@deepwrite/contracts";
 import PopupSelect from "./PopupSelect.vue";
@@ -16,7 +15,6 @@ defineProps<{
   showInMenuBar: boolean;
   useNetworkProxy: boolean;
   workspacePaneLayout: WorkspacePaneLayout;
-  defaultTextViewMode: TextViewMode;
 }>();
 
 const emit = defineEmits<{
@@ -28,7 +26,6 @@ const emit = defineEmits<{
   updateShowInMenuBar: [enabled: boolean];
   updateUseNetworkProxy: [enabled: boolean];
   updateWorkspacePaneLayout: [layout: WorkspacePaneLayout];
-  updateDefaultTextViewMode: [mode: TextViewMode];
 }>();
 
 const languageOptions: Array<{ value: AppLanguage; label: string }> = [
@@ -41,10 +38,6 @@ const workspacePaneLayoutOptions: Array<{
 }> = [
   { value: "agent-editor", label: "目录｜智能体｜文本内容" },
   { value: "editor-agent", label: "目录｜文本内容｜智能体" }
-];
-const textViewModeOptions: Array<{ value: TextViewMode; label: string }> = [
-  { value: "edit", label: "编辑" },
-  { value: "preview", label: "预览" }
 ];
 </script>
 
@@ -165,25 +158,6 @@ const textViewModeOptions: Array<{ value: TextViewMode; label: string }> = [
               'updateWorkspacePaneLayout',
               String($event) as WorkspacePaneLayout
             )
-          "
-        />
-      </div>
-      <div class="settings-item settings-select-item">
-        <span class="settings-item-text"
-          ><strong>默认文本模式</strong
-          ><small
-            >打开软件或切换文本时的默认显示方式，文本页内仍可随时手动切换</small
-          ></span
-        >
-        <PopupSelect
-          class="general-select-control"
-          :model-value="defaultTextViewMode"
-          :options="textViewModeOptions"
-          accessible-label="选择默认文本模式"
-          align="end"
-          :menu-min-width="210"
-          @update:model-value="
-            emit('updateDefaultTextViewMode', String($event) as TextViewMode)
           "
         />
       </div>

@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  BodyTextFormatsSchema,
+  createDefaultBodyTextFormats
+} from "./body-text-format";
 import { EnvelopeBaseSchema } from "./envelope";
 
 export const GeneralPermissionModeSchema = z.enum([
@@ -28,7 +32,8 @@ export const GeneralSettingsSchema = z.object({
   showContextUsage: z.boolean().default(true),
   useNetworkProxy: z.boolean().default(false),
   workspacePaneLayout: WorkspacePaneLayoutSchema.default("agent-editor"),
-  defaultTextViewMode: TextViewModeSchema.default("edit")
+  defaultTextViewMode: TextViewModeSchema.default("edit"),
+  bodyTextFormats: BodyTextFormatsSchema.default(createDefaultBodyTextFormats)
 });
 export type GeneralSettings = z.infer<typeof GeneralSettingsSchema>;
 
@@ -50,7 +55,8 @@ export function createDefaultGeneralSettings(): GeneralSettings {
     showContextUsage: true,
     useNetworkProxy: false,
     workspacePaneLayout: "agent-editor",
-    defaultTextViewMode: "edit"
+    defaultTextViewMode: "edit",
+    bodyTextFormats: createDefaultBodyTextFormats()
   };
 }
 

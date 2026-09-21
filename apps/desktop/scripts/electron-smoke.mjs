@@ -1,3 +1,4 @@
+import { prepareSmokeWorkspace } from "./smoke-workspace.mjs";
 import { access, mkdtemp, rm } from "node:fs/promises";
 import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -35,6 +36,7 @@ const hasXvfb =
 const smokeUserData = await mkdtemp(
   join(tmpdir(), "deepwrite-electron-smoke-")
 );
+await prepareSmokeWorkspace(smokeUserData);
 const command = !hasDisplay && hasXvfb ? "xvfb-run" : electronBinary;
 const args =
   !hasDisplay && hasXvfb
@@ -61,7 +63,7 @@ child.stderr.on("data", (chunk) => {
 
 const timeout = setTimeout(() => {
   child.kill("SIGKILL");
-}, 20_000);
+}, 40_000);
 
 child.on("close", async (code) => {
   clearTimeout(timeout);
@@ -88,6 +90,8 @@ child.on("close", async (code) => {
   }
 
   if (
+    summary.bookTemplates?.status !== "ok" ||
+    summary.bookTemplates?.created !== 4 ||
     summary.agent?.status !== "ok" ||
     summary.agent?.runtime?.mode !== "local-faux" ||
     summary.agent?.deltaCount < 2 ||
@@ -108,6 +112,6 @@ child.on("close", async (code) => {
   }
 
   console.log(
-    "Electron smoke passed: healthy utilities, Pi/Faux completion, and Renderer-to-SQLite chunked persistence with preserved metadata and proposals."
+    "Electron smoke passed: healthy utilities, Pi/Faux completion, and Renderer-to-SQLite chunked persistence with preserved metadata and proposals; template CRUD and short/script creation through real IPC."
   );
 });

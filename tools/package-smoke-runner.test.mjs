@@ -5,6 +5,7 @@ function summary() {
   return {
     health: { status: "ok", workers: ["core", "agent", "tool"] },
     agent: { status: "ok", runtime: { mode: "local-faux" }, completed: true },
+    bookTemplates: { status: "ok", created: 4 },
     conversation: {
       status: "ok",
       staged: true,
@@ -24,6 +25,17 @@ describe("packaged persistence smoke acceptance", () => {
       "invalid smoke summary"
     );
     expect(() => validateSmokeSummary(summary(), false)).not.toThrow();
+  });
+  it("requires template creation to cross the real application IPC routes", () => {
+    const { bookTemplates: _templates, ...missing } = summary();
+    expect(() => validateSmokeSummary(missing, false)).toThrow(
+      "invalid smoke summary"
+    );
+    const incomplete = summary();
+    incomplete.bookTemplates.created = 2;
+    expect(() => validateSmokeSummary(incomplete, false)).toThrow(
+      "invalid smoke summary"
+    );
   });
   it("requires the second application launch to read the previously committed profile", () => {
     const result = summary();

@@ -25,8 +25,7 @@ import {
   createExpertDraftDirectoryRevision,
   createShortWorkspaceContentRevision,
   resolveScriptWorkspaceAgentIdForStage,
-  resolveScriptWorkspaceConversationLaneIdForStage,
-  resolveScriptWorkspaceStageReadAccess
+  resolveScriptWorkspaceConversationLaneIdForStage
 } from "./index";
 
 function scriptDraftFile(documentId: string, title: string, content: string) {
@@ -96,10 +95,6 @@ describe("script workspace contracts", () => {
     expect(DEFAULT_SCRIPT_AGENT_READ_ACCESS.script).toEqual({
       material: ["character", "gimmick", "plot", "draft", "other"],
       skill: ["general", "plot", "style", "other"]
-    });
-    expect(resolveScriptWorkspaceStageReadAccess("draft")).toEqual({
-      material: ["character", "gimmick", "plot", "draft", "other"],
-      skill: ["style", "general", "other"]
     });
     const legacy = structuredClone(DEFAULT_SCRIPT_WORKSPACE_AGENT_SETTINGS);
     Object.assign(legacy.agents[0]!.readAccess, {

@@ -8,7 +8,7 @@ import typesSource from "./WorkspaceDialogLayer.types.ts?raw";
 import source from "./WorkspaceDialogLayer.vue?raw";
 
 describe("WorkspaceDialogLayer boundary", () => {
-  it("maps every dialog kind to exactly one mutually exclusive branch", () => {
+  it("maps dialog kinds and the template creation variant to mutually exclusive branches", () => {
     const componentsByKind: Record<
       (typeof WORKSPACE_DIALOG_KINDS)[number],
       string
@@ -57,7 +57,11 @@ describe("WorkspaceDialogLayer boundary", () => {
       );
     }
     expect(source.match(/v-if="module\.kind ===/gu)).toHaveLength(1);
-    expect(source.match(/v-else-if="module\.kind ===/gu)).toHaveLength(29);
+    expect(source.match(/v-else-if="module\.kind ===/gu)).toHaveLength(30);
+    expect(source).toContain(
+      "module.kind === 'create-book' && module.fromTemplate"
+    );
+    expect(source).toContain("<CreateBookFromTemplateDialog");
   });
 
   it("does not instantiate a host or dialog branch without a module", () => {

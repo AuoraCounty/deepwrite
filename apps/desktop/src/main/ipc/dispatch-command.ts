@@ -1,3 +1,4 @@
+import { handleBookTemplateCommands } from "./book-template-commands";
 import { handleChatAssistantConfigCommands } from "./chat-assistant-config-commands";
 import { handleConversationExportCommands } from "./conversation-export-commands";
 import {
@@ -40,6 +41,7 @@ export async function dispatchCommand(
   }
 
   const result =
+    (await handleBookTemplateCommands(ctx, command)) ??
     (await handleManuscriptCommands(ctx, command)) ??
     (await handleSettingsCommands(ctx, command)) ??
     (await handleChatAssistantConfigCommands(ctx, command)) ??

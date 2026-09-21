@@ -85,6 +85,11 @@ const actionItems = computed<
       icon: "plus"
     },
     ...(props.section.id === "creation"
+      ? ([
+          { id: "create-from-template", label: "按模板新建", icon: "plus" }
+        ] as const)
+      : []),
+    ...(props.section.id === "creation"
       ? []
       : ([{ id: "create-group", label: "新建分组", icon: "folder" }] as const)),
     {

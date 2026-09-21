@@ -1,3 +1,5 @@
+import creationSubmitSource from "../composables/submitCreativeBook.ts?raw";
+import creationSource from "../composables/useCreativeBookCreation.ts?raw";
 import {
   appSource,
   continuityNavigationSource,
@@ -311,8 +313,8 @@ describe("long-form renderer vertical slice: editor-and-layout", () => {
     expect(writingWorkspaceSource).toContain("<RightEditorPane");
     expect(workspaceDialogLayerSource).toContain("<CreateBookDialog");
     expect(appSource).toContain('@submit-create-book="createCreativeBook"');
-    expect(appSource).toContain("async function createCreativeBook(");
-    expect(appSource).toContain("withShortBookDefaultPlotStages(");
+    expect(creationSource).toContain("async function createCreativeBook(");
+    expect(creationSubmitSource).toContain("withShortBookDefaultPlotStages(");
     expect(workspaceTypeSource).toContain(
       'workspaceType?: "short" | "script" | "long";'
     );

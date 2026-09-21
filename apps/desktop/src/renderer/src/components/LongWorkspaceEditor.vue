@@ -34,6 +34,9 @@ import {
   type LongWorkspaceSelection
 } from "../types/longWorkspace";
 import AppIcon from "./AppIcon.vue";
+import EditorTextTools from "./EditorTextTools.vue";
+import { useBodyTextFormatting } from "../composables/useBodyTextFormatting";
+import { longBodyTextKind } from "../utils/bodyTextTarget";
 import DocumentMetaRow from "./DocumentMetaRow.vue";
 import EditorSearchHighlight from "./EditorSearchHighlight.vue";
 import LongCharacterNavigation from "./LongCharacterNavigation.vue";
@@ -1174,6 +1177,30 @@ const {
   scheduleRecoveryWrite
 });
 
+const {
+  visible: bodyFormatVisible,
+  disabled: bodyFormatDisabled,
+  format: formatBody
+} = useBodyTextFormatting({
+  kind: () =>
+    longBodyTextKind(props.selection?.root, currentSelectionFile.value?.role),
+  content: () => currentVisibleContent.value,
+  disabled: () =>
+    currentReadOnly.value ||
+    currentSaving.value ||
+    isDocumentContentBusy.value ||
+    isDocumentSwitchPending.value ||
+    !canUseTextTools.value,
+  documentKey: () =>
+    `${props.bookId}:${currentSelectionFile.value?.file.id ?? ""}`,
+  editorInput: () => editorInput.value,
+  recordChange: recordProgrammaticChange,
+  updateContent: (content, delta) => {
+    updateVisibleContent(content);
+    updateVisibleCharacterCount(content, delta);
+  }
+});
+
 const findApi = useLongEditorFindReplace({
   currentVisibleContent,
   currentReadOnly,
@@ -1834,58 +1861,19 @@ onBeforeUnmount(() => {
           role="group"
           aria-label="文本操作"
         >
-          <button
-            class="long-format-button"
-            type="button"
-            aria-label="撤销"
-            title="撤销（⌘/Ctrl+Z）"
-            :disabled="!canUndo"
-            @mousedown.prevent
-            @click="undo"
-          >
-            <AppIcon name="undo" :size="16" />
-          </button>
-          <button
-            class="long-format-button"
-            type="button"
-            aria-label="还原"
-            title="还原（⌘/Ctrl+Shift+Z）"
-            :disabled="!canRedo"
-            @mousedown.prevent
-            @click="redo"
-          >
-            <AppIcon name="redo" :size="16" />
-          </button>
-          <button
-            class="long-format-button"
-            :class="{
-              'is-active': findPanelOpen && findPanelMode === 'find'
-            }"
-            type="button"
-            aria-label="查找"
-            title="查找（⌘/Ctrl+F）"
+          <EditorTextTools
+            :can-undo="canUndo"
+            :can-redo="canRedo"
             :disabled="!canUseTextTools"
-            :aria-pressed="findPanelOpen && findPanelMode === 'find'"
-            @mousedown.prevent
-            @click="toggleFindPanel('find')"
-          >
-            <AppIcon name="search" :size="16" />
-          </button>
-          <button
-            class="long-format-button"
-            :class="{
-              'is-active': findPanelOpen && findPanelMode === 'replace'
-            }"
-            type="button"
-            aria-label="替换"
-            title="替换（⌘⌥F / Ctrl+H）"
-            :disabled="!canUseTextTools"
-            :aria-pressed="findPanelOpen && findPanelMode === 'replace'"
-            @mousedown.prevent
-            @click="toggleFindPanel('replace')"
-          >
-            <AppIcon name="replace" :size="16" />
-          </button>
+            :find-panel-open="findPanelOpen"
+            :find-panel-mode="findPanelMode"
+            :format-visible="bodyFormatVisible"
+            :format-disabled="bodyFormatDisabled"
+            @undo="undo"
+            @redo="redo"
+            @toggle-find="toggleFindPanel"
+            @format="formatBody"
+          />
 
           <LongEditorFindReplaceBar
             v-if="findPanelOpen"
@@ -2072,61 +2060,19 @@ onBeforeUnmount(() => {
                     role="group"
                     aria-label="文本操作"
                   >
-                    <button
-                      class="long-format-button"
-                      type="button"
-                      aria-label="撤销"
-                      title="撤销（⌘/Ctrl+Z）"
-                      :disabled="!canUndo"
-                      @mousedown.prevent
-                      @click="undo"
-                    >
-                      <AppIcon name="undo" :size="16" />
-                    </button>
-                    <button
-                      class="long-format-button"
-                      type="button"
-                      aria-label="还原"
-                      title="还原（⌘/Ctrl+Shift+Z）"
-                      :disabled="!canRedo"
-                      @mousedown.prevent
-                      @click="redo"
-                    >
-                      <AppIcon name="redo" :size="16" />
-                    </button>
-                    <button
-                      class="long-format-button"
-                      :class="{
-                        'is-active': findPanelOpen && findPanelMode === 'find'
-                      }"
-                      type="button"
-                      aria-label="查找"
-                      title="查找（⌘/Ctrl+F）"
+                    <EditorTextTools
+                      :can-undo="canUndo"
+                      :can-redo="canRedo"
                       :disabled="!canUseTextTools"
-                      :aria-pressed="findPanelOpen && findPanelMode === 'find'"
-                      @mousedown.prevent
-                      @click="toggleFindPanel('find')"
-                    >
-                      <AppIcon name="search" :size="16" />
-                    </button>
-                    <button
-                      class="long-format-button"
-                      :class="{
-                        'is-active':
-                          findPanelOpen && findPanelMode === 'replace'
-                      }"
-                      type="button"
-                      aria-label="替换"
-                      title="替换（⌘⌥F / Ctrl+H）"
-                      :disabled="!canUseTextTools"
-                      :aria-pressed="
-                        findPanelOpen && findPanelMode === 'replace'
-                      "
-                      @mousedown.prevent
-                      @click="toggleFindPanel('replace')"
-                    >
-                      <AppIcon name="replace" :size="16" />
-                    </button>
+                      :find-panel-open="findPanelOpen"
+                      :find-panel-mode="findPanelMode"
+                      :format-visible="bodyFormatVisible"
+                      :format-disabled="bodyFormatDisabled"
+                      @undo="undo"
+                      @redo="redo"
+                      @toggle-find="toggleFindPanel"
+                      @format="formatBody"
+                    />
 
                     <LongEditorFindReplaceBar
                       v-if="findPanelOpen"
@@ -2959,38 +2905,6 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   align-items: center;
   gap: 3px;
-}
-
-.long-format-button {
-  display: grid;
-  place-items: center;
-  width: 27px;
-  height: 27px;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.long-format-button:hover {
-  background: var(--surface-hover);
-  color: var(--neutral-solid);
-}
-
-.long-format-button.is-active {
-  background: var(--surface-selected);
-  color: var(--accent);
-}
-
-.long-format-button:disabled {
-  color: var(--text-tertiary);
-  cursor: default;
-  opacity: 0.42;
-}
-
-.long-format-button:disabled:hover {
-  background: transparent;
-  color: var(--text-tertiary);
 }
 
 .long-editor-save-button {

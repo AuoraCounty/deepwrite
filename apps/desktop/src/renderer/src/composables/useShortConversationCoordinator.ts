@@ -1,3 +1,7 @@
+import {
+  creationSkillReferences,
+  creationMaterialReferences
+} from "../utils/shortLibraryReferences";
 import { createConversationHistorySelection } from "./conversationHistorySelection";
 import {
   withoutMaterialBindings,
@@ -5,8 +9,6 @@ import {
 } from "../utils/library-attachments/sending";
 import {
   ATTACHED_CONTEXT_MAX_ITEMS,
-  resolveScriptWorkspaceStageReadAccess,
-  resolveShortWorkspaceStageReadAccess,
   resolveScriptWorkspaceAgentIdForStage,
   resolveShortWorkspaceAgentIdForStage,
   type Book,
@@ -16,8 +18,6 @@ import {
   type GeneralPermissionMode,
   type LibraryAgentDomain,
   type LibraryAgentSettings,
-  type MaterialKind,
-  type SkillKind,
   type ThinkingLevel,
   type UserPromptAttachment,
   type WorkspaceAgentId,
@@ -28,11 +28,6 @@ import type {
   AgentConversationController,
   AgentRunSettings
 } from "./useAgentConversation";
-import {
-  MATERIAL_KIND_LABELS,
-  MATERIAL_STAGE_KINDS,
-  SKILL_KIND_LABELS
-} from "../data/catalogWorkspace";
 import type {
   ComposerReferenceOption,
   ConversationMessageRewriteRequest,
@@ -219,80 +214,6 @@ function catalogDocumentId(
     .join(":");
 }
 
-function creationSkillReferences(
-  snapshot: CatalogIndexSnapshot | null,
-  book: Book | undefined,
-  allowedKinds: readonly SkillKind[]
-): ComposerReferenceOption[] {
-  if (!snapshot || !book || allowedKinds.length === 0) return [];
-  const allowed = new Set(allowedKinds);
-  const libraries = new Map(
-    snapshot.skills.map((library) => [library.id, library])
-  );
-  const seenLibraries = new Set<string>();
-  const references: ComposerReferenceOption[] = [];
-  for (const boundIds of Object.values(book.linkedSkillIdsByKind)) {
-    for (const libraryId of boundIds) {
-      if (seenLibraries.has(libraryId)) continue;
-      seenLibraries.add(libraryId);
-      const library = libraries.get(libraryId);
-      if (!library || !allowed.has(library.skillKind)) continue;
-      for (const entry of library.entries) {
-        if (entry.contentBytes <= 0) continue;
-        references.push({
-          id: catalogDocumentId("skill", library.id, entry.id),
-          label: `${library.title} · ${entry.title}`,
-          detail: `${SKILL_KIND_LABELS[library.skillKind]} · 当前书籍已绑定`
-        });
-        if (references.length >= ATTACHED_CONTEXT_MAX_ITEMS) return references;
-      }
-    }
-  }
-  return references;
-}
-
-function creationMaterialReferences(
-  snapshot: CatalogIndexSnapshot | null,
-  book: Book | undefined,
-  allowedKinds: readonly MaterialKind[]
-): ComposerReferenceOption[] {
-  if (!snapshot || !book || allowedKinds.length === 0) return [];
-  const allowed = new Set(allowedKinds);
-  const libraries = new Map(
-    snapshot.materials.map((library) => [library.id, library])
-  );
-  const references: ComposerReferenceOption[] = [];
-  const seenEntries = new Set<string>();
-  for (const [boundKind, libraryIds] of Object.entries(
-    book.linkedMaterialIdsByKind
-  ) as [MaterialKind, string[]][]) {
-    if (!allowed.has(boundKind)) continue;
-    for (const libraryId of libraryIds) {
-      const library = libraries.get(libraryId);
-      if (!library) continue;
-      for (const entry of library.entries) {
-        const entryKind = MATERIAL_STAGE_KINDS[entry.stageId];
-        const entryKey = `${library.id}\u0000${entry.id}`;
-        if (
-          entryKind !== boundKind ||
-          entry.contentBytes <= 0 ||
-          seenEntries.has(entryKey)
-        ) {
-          continue;
-        }
-        seenEntries.add(entryKey);
-        references.push({
-          id: catalogDocumentId("material", library.id, entry.id),
-          label: `${library.title} · ${entry.title}`,
-          detail: `${MATERIAL_KIND_LABELS[entryKind]} · 当前书籍已绑定`
-        });
-        if (references.length >= ATTACHED_CONTEXT_MAX_ITEMS) return references;
-      }
-    }
-  }
-  return references;
-}
-
 function libraryEntryReferences(
   snapshot: CatalogIndexSnapshot | null,
   descriptor: ShortConversationDocumentDescriptor,
@@ -395,26 +316,6 @@ export function useShortConversationCoordinator(
           ?.agents.find(({ id }) => id === agentId)
       : undefined;
   });
-  const effectiveShortReadAccess = computed(() => {
-    const profile = activeShortAgentProfile.value;
-    const descriptor = activeDescriptor.value;
-    if (!profile) return undefined;
-    if (!descriptor.stageId) {
-      return profile.readAccess;
-    }
-    const stage =
-      descriptor.workspaceType === "script"
-        ? resolveScriptWorkspaceStageReadAccess(descriptor.stageId)
-        : resolveShortWorkspaceStageReadAccess(descriptor.stageId);
-    return {
-      material: profile.readAccess.material.filter((kind) =>
-        stage.material.includes(kind)
-      ),
-      skill: profile.readAccess.skill.filter((kind) =>
-        stage.skill.includes(kind)
-      )
-    };
-  });
   const activeLibraryAgentProfile = computed(() => {
     const domain = activeLibraryDomain.value;
     return domain
@@ -437,7 +338,7 @@ export function useShortConversationCoordinator(
     return creationSkillReferences(
       options.catalog.snapshot.value,
       workspaceId ? options.catalog.findBook(workspaceId) : undefined,
-      effectiveShortReadAccess.value?.skill ?? []
+      activeShortAgentProfile.value?.readAccess?.skill ?? []
     );
   });
   const availableMaterialReferences = computed<ComposerReferenceOption[]>(
@@ -453,7 +354,7 @@ export function useShortConversationCoordinator(
       return creationMaterialReferences(
         options.catalog.snapshot.value,
         workspaceId ? options.catalog.findBook(workspaceId) : undefined,
-        effectiveShortReadAccess.value?.material ?? []
+        activeShortAgentProfile.value?.readAccess?.material ?? []
       );
     }
   );
@@ -655,7 +556,7 @@ export function useShortConversationCoordinator(
     sendPreflightPending.value = true;
     const operation = (async () => {
       try {
-        const readAccess = effectiveShortReadAccess.value;
+        const readAccess = activeShortAgentProfile.value?.readAccess;
         const contextDocuments = options.resource
           .contextDocuments()
           .filter((document) => {

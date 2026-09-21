@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SHORT_AGENT_READ_ACCESS,
   DEFAULT_SHORT_SYSTEM_PROMPT,
-  DEFAULT_SHORT_STAGE_READ_ACCESS,
   DEFAULT_SHORT_WORKSPACE_AGENT_SYSTEM_PROMPTS,
   DEFAULT_SHORT_WORKSPACE_AGENT_PROFILES,
   DEFAULT_SHORT_WORKSPACE_AGENT_SETTINGS,
@@ -20,8 +19,7 @@ import {
   createEnvelope,
   createDefaultCreativePlotStages,
   resolveShortWorkspaceAgentIdForStage,
-  resolveShortWorkspaceConversationLaneIdForStage,
-  resolveShortWorkspaceStageReadAccess
+  resolveShortWorkspaceConversationLaneIdForStage
 } from "./index";
 
 function expertDraftFile(documentId: string, title: string, content: string) {
@@ -185,24 +183,6 @@ describe("short workspace contracts", () => {
         skill: ["general", "plot", "style", "other"]
       }
     });
-    expect(DEFAULT_SHORT_STAGE_READ_ACCESS).toEqual({
-      character: {
-        material: ["character"],
-        skill: ["general", "plot", "other"]
-      },
-      plot: {
-        material: ["gimmick", "character", "plot"],
-        skill: ["general", "plot", "other"]
-      },
-      draft: {
-        material: ["character", "gimmick", "plot", "draft", "other"],
-        skill: ["style", "general", "other"]
-      }
-    });
-    expect(resolveShortWorkspaceStageReadAccess("outline")).toEqual(
-      DEFAULT_SHORT_STAGE_READ_ACCESS.plot
-    );
-
     const legacy = structuredClone(DEFAULT_SHORT_WORKSPACE_AGENT_SETTINGS);
     Object.assign(legacy.agents[0]!.readAccess, {
       workspace: ["character_design"]

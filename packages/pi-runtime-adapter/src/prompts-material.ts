@@ -1,7 +1,3 @@
-import {
-  resolveScriptWorkspaceStageReadAccess,
-  resolveShortWorkspaceStageReadAccess
-} from "@deepwrite/contracts";
 import { buildMaterialCatalogPrompt } from "./material-catalog";
 import { materialCatalogEntries } from "./material-query-runtime";
 import type { AgentRunInput } from "./runtime-types";
@@ -13,21 +9,11 @@ export function buildWorkspaceMaterialContext(input: AgentRunInput): string {
     ? materialCatalogEntries(context.materialCatalog)
     : (context?.attachedMaterials ?? []);
   const profile = input.scriptAgentProfile ?? input.agentProfile;
-  const stageAccess = context?.scriptWorkspace
-    ? resolveScriptWorkspaceStageReadAccess(
-        context.scriptWorkspace.activeStageId
-      )
-    : context?.shortWorkspace
-      ? resolveShortWorkspaceStageReadAccess(
-          context.shortWorkspace.activeStageId
-        )
-      : undefined;
   const readable = profile
     ? materials.filter(
         (item) =>
           item.kind !== undefined &&
-          profile.readAccess.material.includes(item.kind) &&
-          (!stageAccess || stageAccess.material.includes(item.kind))
+          profile.readAccess.material.includes(item.kind)
       )
     : input.longAgentProfile
       ? materials.filter(

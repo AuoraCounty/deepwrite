@@ -9,6 +9,7 @@ import type {
   WorkspaceAgentSettingsInput
 } from "@deepwrite/contracts";
 import { computed, ref } from "vue";
+import BookTemplateSettings from "./BookTemplateSettings.vue";
 import LongAgentSettingsPanel from "./LongAgentSettingsPanel.vue";
 import ScriptAgentSettingsPanel from "./ScriptAgentSettingsPanel.vue";
 import UnifiedShortAgentSettingsPanel from "./UnifiedShortAgentSettingsPanel.vue";
@@ -98,6 +99,17 @@ const scriptSettings = computed(
       :runtime-available="runtimeAvailable"
       @retry="emit('retryLong')"
       @save="emit('saveLong', $event)"
+    />
+    <BookTemplateSettings
+      v-if="activeType !== 'long'"
+      :key="activeType"
+      :workspace-type="activeType"
+      :default-stage-ids="shortSettings?.defaultPlotStageIds ?? []"
+      :disabled="
+        !runtimeAvailable ||
+        loading ||
+        (activeType === 'short' && !shortSettings)
+      "
     />
   </section>
 </template>

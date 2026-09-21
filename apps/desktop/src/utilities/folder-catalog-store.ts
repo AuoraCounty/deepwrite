@@ -1,4 +1,10 @@
 import {
+  DEFAULT_SHORT_DOCUMENTS,
+  createNewShortBook,
+  createNewScriptBook,
+  assertCreationPlotStages
+} from "./folder-catalog-store/book-creation";
+import {
   mergeCreativePlotStageDefinitions,
   sameCreativePlotStageDefinitions
 } from "./folder-catalog-store/plot-stage-definitions";
@@ -65,21 +71,18 @@ import {
   SkillLibrarySchema,
   SkillLibraryProjectManifestSchema,
   ShortBookSchema,
-  ScriptBookSchema,
   UpdateBookInputSchema,
   UpdateLibraryGroupInputSchema,
   WriteWritingContextInputSchema,
   WriteWritingContextResultSchema,
   catalogDraftBodyDocumentId,
   catalogDraftCharacterStateDocumentId,
-  createCatalogDraftDirectory,
   createDefaultBookCharacterStructure,
   BookPlotStagesSchema,
   CreativePlotStagesSchema,
   DEFAULT_NEW_BOOK_ENABLED_PLOT_STAGE_IDS,
   createDefaultBookPlotStages,
   createDefaultCreativePlotStages,
-  createScriptCatalogDraftDirectory,
   createShortWorkspaceContentRevision,
   isBuiltinCreativePlotStageId,
   migrateCatalogDraftDocument,
@@ -696,32 +699,7 @@ export class FolderCatalogStore {
       this.defaultProjectParents.book;
     return await this.createBookProject(
       parent,
-      (now) =>
-        ShortBookSchema.parse({
-          id: createCatalogId("book"),
-          title: input.title,
-          bookType: "short",
-          genre: input.genre,
-          status: "editing",
-          linkedMaterialIdsByKind: linkedMaterialIdsFromInput(
-            input.linkedMaterialIdsByKind
-          ),
-          linkedSkillIdsByKind: linkedSkillIdsFromInput(
-            input.linkedSkillIdsByKind
-          ),
-          characterStructure: createDefaultBookCharacterStructure(),
-          plotStages: createDefaultBookPlotStages(),
-          documents: DEFAULT_SHORT_DOCUMENTS.map(([id, title]) => ({
-            id,
-            title,
-            content: "",
-            createdAt: now,
-            updatedAt: now
-          })),
-          draft: createCatalogDraftDirectory(now),
-          createdAt: now,
-          updatedAt: now
-        }),
+      (now) => createNewShortBook(input, now),
       input.defaultPlotStageIds
     );
   }
@@ -744,32 +722,10 @@ export class FolderCatalogStore {
     const parent =
       (wrapped ? rawInput.parentDirectory : parentDirectory)?.trim() ||
       this.defaultProjectParents.book;
-    return await this.createBookProject(parent, (now) =>
-      ScriptBookSchema.parse({
-        id: createCatalogId("book"),
-        title: input.title,
-        bookType: "script",
-        genre: input.genre,
-        status: "editing",
-        linkedMaterialIdsByKind: linkedMaterialIdsFromInput(
-          input.linkedMaterialIdsByKind
-        ),
-        linkedSkillIdsByKind: linkedSkillIdsFromInput(
-          input.linkedSkillIdsByKind
-        ),
-        characterStructure: createDefaultBookCharacterStructure(),
-        plotStages: createDefaultBookPlotStages(),
-        documents: DEFAULT_SCRIPT_DOCUMENTS.map(([id, title]) => ({
-          id,
-          title,
-          content: "",
-          createdAt: now,
-          updatedAt: now
-        })),
-        draft: createScriptCatalogDraftDirectory(now),
-        createdAt: now,
-        updatedAt: now
-      })
+    return await this.createBookProject(
+      parent,
+      (now) => createNewScriptBook(input, now),
+      input.defaultPlotStageIds
     );
   }
 
@@ -781,6 +737,10 @@ export class FolderCatalogStore {
     return await this.mutate(async () => {
       const now = this.now();
       const registry = await this.ensureRegistry();
+      assertCreationPlotStages(
+        defaultPlotStageIds,
+        registry.creativePlotStages
+      );
       const book = applyGlobalPlotStagesToNewBook(
         createBook(now),
         registry.creativePlotStages,
@@ -5073,53 +5033,6 @@ function nextMarketplaceTitle(
     suffix += 1;
   }
   return `${baseTitle} (${suffix})`;
-}
-
-const DEFAULT_SHORT_DOCUMENTS = [
-  ["character_design", "人物设计"],
-  ["worldbuilding", "世界观"],
-  ["plot_design", "剧情设计"],
-  ["intro_design", "导语设计"],
-  ["plot_refine", "剧情细化"],
-  ["narrative_perspective", "叙事视角"],
-  ["outline", "大纲"]
-] as const;
-
-const DEFAULT_SCRIPT_DOCUMENTS = [
-  ["character_design", "人物设计"],
-  ["worldbuilding", "世界观"],
-  ["plot_design", "剧情设计"],
-  ["intro_design", "导语设计"],
-  ["plot_refine", "剧情细化"],
-  ["narrative_perspective", "叙事视角"],
-  ["outline", "大纲"]
-] as const;
-
-function linkedMaterialIdsFromInput(
-  value:
-    | CreateShortBookInput["linkedMaterialIdsByKind"]
-    | CreateScriptBookInput["linkedMaterialIdsByKind"]
-): Book["linkedMaterialIdsByKind"] {
-  return {
-    character: [...(value?.character ?? [])],
-    gimmick: [...(value?.gimmick ?? [])],
-    plot: [...(value?.plot ?? [])],
-    draft: [...(value?.draft ?? [])],
-    other: [...(value?.other ?? [])]
-  };
-}
-
-function linkedSkillIdsFromInput(
-  value:
-    | CreateShortBookInput["linkedSkillIdsByKind"]
-    | CreateScriptBookInput["linkedSkillIdsByKind"]
-): Book["linkedSkillIdsByKind"] {
-  return {
-    general: [...(value?.general ?? [])],
-    plot: [...(value?.plot ?? [])],
-    style: [...(value?.style ?? [])],
-    other: [...(value?.other ?? [])]
-  };
 }
 
 const DRAFT_CHARACTER_STATE_TITLE_SUFFIX = " · 人物状态";

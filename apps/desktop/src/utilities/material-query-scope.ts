@@ -2,8 +2,6 @@ import {
   MATERIAL_KINDS,
   materialPreview,
   MATERIAL_STAGE_KINDS,
-  LongWorkspaceRootSchema,
-  longLinkedResourceIsEnabledForStage,
   type CatalogIndexSnapshot,
   type LongBookSummary,
   type MaterialReadScope,
@@ -40,16 +38,6 @@ export function scopedMaterialCandidates(
   for (const kind of MATERIAL_KINDS) {
     if (!scope.kinds.includes(kind)) continue;
     for (const libraryId of new Set(book.linkedMaterialIdsByKind[kind])) {
-      if (
-        longBook &&
-        !longLinkedResourceIsEnabledForStage(
-          longBook.linkedResourceStageScopes,
-          "material",
-          libraryId,
-          LongWorkspaceRootSchema.parse(scope.stageId)
-        )
-      )
-        continue;
       const library = index.materials.find((item) => item.id === libraryId);
       if (
         !library ||

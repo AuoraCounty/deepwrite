@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   onBeforeUpdate,
@@ -48,10 +49,16 @@ import {
 } from "../composables/useEditorEntrySearch";
 import { useTextViewMode } from "../composables/useTextViewMode";
 import AppIcon from "./AppIcon.vue";
+import EditorTextTools from "./EditorTextTools.vue";
+import { useBodyTextFormatting } from "../composables/useBodyTextFormatting";
+import { catalogBodyTextKind } from "../utils/bodyTextTarget";
 import EditorDocumentMetadata from "./EditorDocumentMetadata.vue";
-import EditorEntrySearchRow from "./EditorEntrySearchRow.vue";
 import EditorSearchHighlight from "./EditorSearchHighlight.vue";
 import MarkdownContent from "./MarkdownContent.vue";
+
+const EditorFindReplacePanel = defineAsyncComponent(
+  () => import("./EditorFindReplacePanel.vue")
+);
 
 const props = defineProps<{
   document: WorkspaceDocument;
@@ -95,8 +102,8 @@ const emit = defineEmits<{
 const editorInput = ref<HTMLTextAreaElement>();
 const documentPreview = ref<HTMLElement | null>(null);
 const editorToolsElement = ref<HTMLElement>();
-const findPanelElement = ref<HTMLElement>();
-const findInput = ref<HTMLInputElement>();
+const findPanelElement = ref<HTMLElement | null>(null);
+const findInput = ref<HTMLInputElement | null>(null);
 const title = ref(
   resolveWorkspaceDocumentTitle(props.document, props.draftState?.title)
 );
@@ -335,6 +342,23 @@ function markDirty(): void {
     content: content.value
   });
 }
+
+const {
+  visible: bodyFormatVisible,
+  disabled: bodyFormatDisabled,
+  format: formatBody
+} = useBodyTextFormatting({
+  kind: () => catalogBodyTextKind(props.document),
+  content: () => content.value,
+  disabled: () =>
+    editorReadOnly.value ||
+    Boolean(props.saving || props.manualSaving) ||
+    props.document.catalogContentLoaded === false,
+  documentKey: () => activeScrollMemoryKey.value,
+  editorInput: () => editorInput.value,
+  recordChange: recordProgrammaticChange,
+  updateContent
+});
 
 function applyLibraryMetadata(nextContent: string): void {
   if (editorReadOnly.value) return;
@@ -946,146 +970,43 @@ onBeforeUnmount(() => {
         role="group"
         aria-label="文本操作"
       >
-        <button
-          class="format-button"
-          type="button"
-          aria-label="撤销"
-          title="撤销（⌘/Ctrl+Z）"
-          :disabled="!canUndo"
-          @mousedown.prevent
-          @click="undo"
-        >
-          <AppIcon name="undo" :size="16" />
-        </button>
-        <button
-          class="format-button"
-          type="button"
-          aria-label="还原"
-          title="还原（⌘/Ctrl+Shift+Z）"
-          :disabled="!canRedo"
-          @mousedown.prevent
-          @click="redo"
-        >
-          <AppIcon name="redo" :size="16" />
-        </button>
-        <button
-          class="format-button"
-          :class="{ 'is-active': findPanelOpen && findPanelMode === 'find' }"
-          type="button"
-          aria-label="查找"
-          title="查找（⌘/Ctrl+F）"
-          :aria-pressed="findPanelOpen && findPanelMode === 'find'"
-          @mousedown.prevent
-          @click="toggleFindPanel('find')"
-        >
-          <AppIcon name="search" :size="16" />
-        </button>
-        <button
-          class="format-button"
-          :class="{ 'is-active': findPanelOpen && findPanelMode === 'replace' }"
-          type="button"
-          aria-label="替换"
-          title="替换（⌘⌥F / Ctrl+H）"
-          :aria-pressed="findPanelOpen && findPanelMode === 'replace'"
-          @mousedown.prevent
-          @click="toggleFindPanel('replace')"
-        >
-          <AppIcon name="replace" :size="16" />
-        </button>
-      </div>
-
-      <div
-        v-if="findPanelOpen"
-        ref="findPanelElement"
-        class="editor-find-panel"
-        role="dialog"
-        :aria-label="findPanelMode === 'replace' ? '查找和替换' : '查找文字'"
-        @keydown.esc.stop="closeFindPanel"
-      >
-        <div class="editor-find-row">
-          <label class="editor-find-field">
-            <AppIcon name="search" :size="14" />
-            <input
-              ref="findInput"
-              v-model="searchQuery"
-              type="text"
-              aria-label="查找文字"
-              placeholder="查找"
-              @input="handleFindInput"
-              @keydown.enter.prevent="findMatch($event.shiftKey ? -1 : 1)"
-            />
-            <span class="editor-find-count" aria-live="polite">{{
-              searchResultLabel
-            }}</span>
-          </label>
-          <button
-            class="editor-find-icon-button is-previous"
-            type="button"
-            aria-label="查找上一个"
-            title="查找上一个"
-            @click="findMatch(-1)"
-          >
-            <AppIcon name="chevron" :size="14" />
-          </button>
-          <button
-            class="editor-find-icon-button"
-            type="button"
-            aria-label="查找下一个"
-            title="查找下一个"
-            @click="findMatch(1)"
-          >
-            <AppIcon name="chevron" :size="14" />
-          </button>
-          <button
-            class="editor-find-icon-button"
-            type="button"
-            aria-label="关闭查找"
-            title="关闭"
-            @click="closeFindPanel"
-          >
-            <AppIcon name="close" :size="14" />
-          </button>
-        </div>
-        <div v-if="findPanelMode === 'replace'" class="editor-replace-row">
-          <label class="editor-find-field">
-            <AppIcon name="replace" :size="14" />
-            <input
-              v-model="replacementText"
-              type="text"
-              aria-label="替换为"
-              placeholder="替换为"
-              :disabled="editorReadOnly"
-              @keydown.enter.prevent="replaceCurrentMatch"
-            />
-          </label>
-          <button
-            class="editor-find-action"
-            type="button"
-            :disabled="editorReadOnly"
-            @click="replaceCurrentMatch"
-          >
-            替换
-          </button>
-          <button
-            class="editor-find-action"
-            type="button"
-            :disabled="editorReadOnly"
-            @click="replaceAllMatches"
-          >
-            全部
-          </button>
-        </div>
-        <EditorEntrySearchRow
-          v-model:query="entrySearchQuery"
-          :results="entrySearchResults"
-          :active-index="activeEntrySearchIndex"
-          :pending="entrySearchPending"
-          :result-label="entrySearchResultLabel"
-          @input="handleEntrySearchInput"
-          @move="moveActiveEntrySearchResult"
-          @select="selectEntrySearchResult"
+        <EditorTextTools
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :find-panel-open="findPanelOpen"
+          :find-panel-mode="findPanelMode"
+          :format-visible="bodyFormatVisible"
+          :format-disabled="bodyFormatDisabled"
+          @undo="undo"
+          @redo="redo"
+          @toggle-find="toggleFindPanel"
+          @format="formatBody"
         />
       </div>
+
+      <EditorFindReplacePanel
+        v-if="findPanelOpen"
+        v-model:find-panel-element="findPanelElement"
+        v-model:find-input="findInput"
+        v-model:search-query="searchQuery"
+        v-model:replacement-text="replacementText"
+        v-model:entry-search-query="entrySearchQuery"
+        :find-panel-mode="findPanelMode"
+        :search-result-label="searchResultLabel"
+        :current-read-only="editorReadOnly"
+        :entry-search-results="entrySearchResults"
+        :active-entry-search-index="activeEntrySearchIndex"
+        :entry-search-pending="entrySearchPending"
+        :entry-search-result-label="entrySearchResultLabel"
+        @find-input="handleFindInput"
+        @find-match="findMatch"
+        @close="closeFindPanel"
+        @replace-current="replaceCurrentMatch"
+        @replace-all="replaceAllMatches"
+        @entry-search-input="handleEntrySearchInput"
+        @move-entry-search="moveActiveEntrySearchResult"
+        @select-entry-search="selectEntrySearchResult"
+      />
     </div>
 
     <div class="editor-document" :class="{ 'is-readonly': document.readOnly }">

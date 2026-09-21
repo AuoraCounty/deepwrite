@@ -1,5 +1,6 @@
 import {
   createDefaultGeneralSettings,
+  type BodyTextFormatChange,
   type DeepWriteApi,
   type GeneralPermissionMode,
   type GeneralSettings,
@@ -53,6 +54,7 @@ export function useGeneralSettingsCoordinator(
   let loading = false;
   let saveRequestedWhileLoading = false;
   let localPatch: Partial<GeneralSettings> = {};
+  let bodyTextPatch: Partial<GeneralSettings["bodyTextFormats"]> = {};
 
   function applyLanguage(language: GeneralSettings["language"]): void {
     const browserLanguage = options.browserLanguage();
@@ -112,12 +114,17 @@ export function useGeneralSettingsCoordinator(
         loading = false;
         return;
       }
-      const effectiveSettings = { ...settings, ...localPatch };
+      const effectiveSettings = {
+        ...settings,
+        ...localPatch,
+        bodyTextFormats: { ...settings.bodyTextFormats, ...bodyTextPatch }
+      };
       const shouldSave =
         shouldPersistLegacyAutoSave || saveRequestedWhileLoading;
       loading = false;
       saveRequestedWhileLoading = false;
       localPatch = {};
+      bodyTextPatch = {};
       options.settings.value = effectiveSettings;
       options.autoSaveEnabled.value = effectiveSettings.autoSave;
       options.publishLoaded(effectiveSettings);
@@ -201,6 +208,17 @@ export function useGeneralSettingsCoordinator(
     queueSave();
   }
 
+  function updateBodyTextFormat({ kind, format }: BodyTextFormatChange): void {
+    bodyTextPatch = { ...bodyTextPatch, [kind]: format };
+    applyLocalPatch({
+      bodyTextFormats: {
+        ...options.settings.value.bodyTextFormats,
+        [kind]: format
+      }
+    });
+    queueSave();
+  }
+
   async function drain(): Promise<void> {
     await saveChain;
   }
@@ -219,6 +237,7 @@ export function useGeneralSettingsCoordinator(
     updateAutoApproveCrossStageOperations,
     updateAutoSave,
     updateDefaultTextViewMode,
+    updateBodyTextFormat,
     updateLanguage,
     updatePermissionMode,
     updateShowContextUsage,

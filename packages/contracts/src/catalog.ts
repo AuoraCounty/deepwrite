@@ -1,3 +1,9 @@
+import {
+  createBookCreationSchema,
+  createBookCreationEnvelope,
+  createBookAtPathSchema
+} from "./book-creation";
+
 import { LibraryManagementScopeSchema } from "./library-management-scope";
 import { z } from "zod";
 import { EnvelopeBaseSchema } from "./envelope";
@@ -1893,25 +1899,25 @@ export type CatalogReadDocumentResult = z.infer<
   typeof CatalogReadDocumentResultSchema
 >;
 
-export const CreateShortBookInputSchema = z.object({
+const bookCreationSchemaFields = {
   title: CatalogTitleSchema,
-  genre: ShortBookGenreSchema,
-  defaultPlotStageIds: z
-    .array(CreativePlotStageIdSchema)
-    .min(1)
-    .max(CREATIVE_PLOT_STAGE_MAX_COUNT)
-    .optional(),
-  linkedMaterialIdsByKind: LinkedMaterialIdsByKindInputSchema.optional(),
-  linkedSkillIdsByKind: LinkedSkillIdsByKindInputSchema.optional()
-});
+  characterFormat: BookCharacterFormatSchema,
+  stageId: CreativePlotStageIdSchema,
+  stageLimit: CREATIVE_PLOT_STAGE_MAX_COUNT,
+  materialLinks: LinkedMaterialIdsByKindInputSchema,
+  skillLinks: LinkedSkillIdsByKindInputSchema
+};
+export const CreateShortBookInputSchema =
+  /* @__PURE__ */ createBookCreationSchema(
+    bookCreationSchemaFields,
+    ShortBookGenreSchema
+  );
+export const CreateScriptBookInputSchema =
+  /* @__PURE__ */ createBookCreationSchema(
+    bookCreationSchemaFields,
+    ScriptBookGenreSchema
+  );
 export type CreateShortBookInput = z.infer<typeof CreateShortBookInputSchema>;
-
-export const CreateScriptBookInputSchema = z.object({
-  title: CatalogTitleSchema,
-  genre: ScriptBookGenreSchema,
-  linkedMaterialIdsByKind: LinkedMaterialIdsByKindInputSchema.optional(),
-  linkedSkillIdsByKind: LinkedSkillIdsByKindInputSchema.optional()
-});
 export type CreateScriptBookInput = z.infer<typeof CreateScriptBookInputSchema>;
 
 export const CatalogOpenProjectInputSchema = z.object({
@@ -1921,18 +1927,14 @@ export type CatalogOpenProjectInput = z.infer<
   typeof CatalogOpenProjectInputSchema
 >;
 
-export const CreateShortBookAtPathInputSchema = z.object({
-  parentDirectory: z.string().trim().min(1),
-  input: CreateShortBookInputSchema
-});
+export const CreateShortBookAtPathInputSchema =
+  /* @__PURE__ */ createBookAtPathSchema(CreateShortBookInputSchema);
 export type CreateShortBookAtPathInput = z.infer<
   typeof CreateShortBookAtPathInputSchema
 >;
 
-export const CreateScriptBookAtPathInputSchema = z.object({
-  parentDirectory: z.string().trim().min(1),
-  input: CreateScriptBookInputSchema
-});
+export const CreateScriptBookAtPathInputSchema =
+  /* @__PURE__ */ createBookAtPathSchema(CreateScriptBookInputSchema);
 export type CreateScriptBookAtPathInput = z.infer<
   typeof CreateScriptBookAtPathInputSchema
 >;
@@ -2638,16 +2640,16 @@ export const CatalogSaveDraftRecoveryCommandEnvelopeSchema =
   });
 
 export const CatalogCreateShortBookCommandEnvelopeSchema =
-  EnvelopeBaseSchema.extend({
-    type: z.literal("catalog.createShortBook"),
-    payload: CreateShortBookInputSchema
-  });
+  /* @__PURE__ */ createBookCreationEnvelope(
+    "catalog.createShortBook",
+    CreateShortBookInputSchema
+  );
 
 export const CatalogCreateScriptBookCommandEnvelopeSchema =
-  EnvelopeBaseSchema.extend({
-    type: z.literal("catalog.createScriptBook"),
-    payload: CreateScriptBookInputSchema
-  });
+  /* @__PURE__ */ createBookCreationEnvelope(
+    "catalog.createScriptBook",
+    CreateScriptBookInputSchema
+  );
 
 export const CatalogCreateLibraryCommandEnvelopeSchema =
   EnvelopeBaseSchema.extend({
@@ -2686,16 +2688,16 @@ export const CatalogImportLegacyLibraryCommandEnvelopeSchema =
   });
 
 export const CatalogCreateShortBookAtPathCommandEnvelopeSchema =
-  EnvelopeBaseSchema.extend({
-    type: z.literal("catalog.createShortBookAtPath"),
-    payload: CreateShortBookAtPathInputSchema
-  });
+  /* @__PURE__ */ createBookCreationEnvelope(
+    "catalog.createShortBookAtPath",
+    CreateShortBookAtPathInputSchema
+  );
 
 export const CatalogCreateScriptBookAtPathCommandEnvelopeSchema =
-  EnvelopeBaseSchema.extend({
-    type: z.literal("catalog.createScriptBookAtPath"),
-    payload: CreateScriptBookAtPathInputSchema
-  });
+  /* @__PURE__ */ createBookCreationEnvelope(
+    "catalog.createScriptBookAtPath",
+    CreateScriptBookAtPathInputSchema
+  );
 
 export const CatalogCreateLibraryAtPathCommandEnvelopeSchema =
   EnvelopeBaseSchema.extend({
@@ -2843,48 +2845,50 @@ export const CatalogImportLibraryEntriesCommandEnvelopeSchema =
     payload: ImportLibraryEntriesInputSchema
   });
 
-export const CatalogCommandEnvelopeSchema = z.discriminatedUnion("type", [
-  CatalogIndexCommandEnvelopeSchema,
-  CatalogReadDocumentCommandEnvelopeSchema,
-  CatalogReadWritingContextCommandEnvelopeSchema,
-  CatalogSnapshotCommandEnvelopeSchema,
-  CatalogLoadDraftRecoveryCommandEnvelopeSchema,
-  CatalogSaveDraftRecoveryCommandEnvelopeSchema,
-  CatalogCreateShortBookCommandEnvelopeSchema,
-  CatalogCreateScriptBookCommandEnvelopeSchema,
-  CatalogCreateLibraryCommandEnvelopeSchema,
-  CatalogUpdateLibraryCommandEnvelopeSchema,
-  CatalogCreateLibraryGroupCommandEnvelopeSchema,
-  CatalogOpenProjectCommandEnvelopeSchema,
-  CatalogImportLegacyLibraryCommandEnvelopeSchema,
-  CatalogCreateShortBookAtPathCommandEnvelopeSchema,
-  CatalogCreateScriptBookAtPathCommandEnvelopeSchema,
-  CatalogCreateLibraryAtPathCommandEnvelopeSchema,
-  CatalogCreateLibraryGroupAtPathCommandEnvelopeSchema,
-  CatalogOpenProjectAtPathCommandEnvelopeSchema,
-  CatalogImportLegacyLibraryAtPathCommandEnvelopeSchema,
-  CatalogUpdateBookCommandEnvelopeSchema,
-  CatalogMutatePlotStructureCommandEnvelopeSchema,
-  CatalogMutateCharacterStructureCommandEnvelopeSchema,
-  CatalogUpdateLibraryGroupCommandEnvelopeSchema,
-  CatalogDeleteBookCommandEnvelopeSchema,
-  CatalogSaveDocumentCommandEnvelopeSchema,
-  CatalogCreateDraftSectionCommandEnvelopeSchema,
-  CatalogCreateDraftSectionsCommandEnvelopeSchema,
-  CatalogDeleteDraftSectionCommandEnvelopeSchema,
-  CatalogMoveDraftSectionCommandEnvelopeSchema,
-  CatalogSaveLibraryEntryCommandEnvelopeSchema,
-  CatalogCreateLibraryEntryCommandEnvelopeSchema,
-  CatalogRemoveLibraryEntryCommandEnvelopeSchema,
-  CatalogMoveLibraryEntryCommandEnvelopeSchema,
-  CatalogUnregisterProjectCommandEnvelopeSchema,
-  CatalogDeleteProjectCommandEnvelopeSchema,
-  CatalogDuplicateProjectCommandEnvelopeSchema,
-  CatalogInstallMarketplaceSkillContentCommandEnvelopeSchema,
-  CatalogChooseExternalLibraryEntriesCommandEnvelopeSchema,
-  CatalogImportLibraryEntriesCommandEnvelopeSchema,
-  CatalogWriteWritingContextCommandEnvelopeSchema
-]);
+// Schema construction has no registration side effects; Renderer does not need command envelopes.
+export const CatalogCommandEnvelopeSchema =
+  /* @__PURE__ */ z.discriminatedUnion("type", [
+    CatalogIndexCommandEnvelopeSchema,
+    CatalogReadDocumentCommandEnvelopeSchema,
+    CatalogReadWritingContextCommandEnvelopeSchema,
+    CatalogSnapshotCommandEnvelopeSchema,
+    CatalogLoadDraftRecoveryCommandEnvelopeSchema,
+    CatalogSaveDraftRecoveryCommandEnvelopeSchema,
+    CatalogCreateShortBookCommandEnvelopeSchema,
+    CatalogCreateScriptBookCommandEnvelopeSchema,
+    CatalogCreateLibraryCommandEnvelopeSchema,
+    CatalogUpdateLibraryCommandEnvelopeSchema,
+    CatalogCreateLibraryGroupCommandEnvelopeSchema,
+    CatalogOpenProjectCommandEnvelopeSchema,
+    CatalogImportLegacyLibraryCommandEnvelopeSchema,
+    CatalogCreateShortBookAtPathCommandEnvelopeSchema,
+    CatalogCreateScriptBookAtPathCommandEnvelopeSchema,
+    CatalogCreateLibraryAtPathCommandEnvelopeSchema,
+    CatalogCreateLibraryGroupAtPathCommandEnvelopeSchema,
+    CatalogOpenProjectAtPathCommandEnvelopeSchema,
+    CatalogImportLegacyLibraryAtPathCommandEnvelopeSchema,
+    CatalogUpdateBookCommandEnvelopeSchema,
+    CatalogMutatePlotStructureCommandEnvelopeSchema,
+    CatalogMutateCharacterStructureCommandEnvelopeSchema,
+    CatalogUpdateLibraryGroupCommandEnvelopeSchema,
+    CatalogDeleteBookCommandEnvelopeSchema,
+    CatalogSaveDocumentCommandEnvelopeSchema,
+    CatalogCreateDraftSectionCommandEnvelopeSchema,
+    CatalogCreateDraftSectionsCommandEnvelopeSchema,
+    CatalogDeleteDraftSectionCommandEnvelopeSchema,
+    CatalogMoveDraftSectionCommandEnvelopeSchema,
+    CatalogSaveLibraryEntryCommandEnvelopeSchema,
+    CatalogCreateLibraryEntryCommandEnvelopeSchema,
+    CatalogRemoveLibraryEntryCommandEnvelopeSchema,
+    CatalogMoveLibraryEntryCommandEnvelopeSchema,
+    CatalogUnregisterProjectCommandEnvelopeSchema,
+    CatalogDeleteProjectCommandEnvelopeSchema,
+    CatalogDuplicateProjectCommandEnvelopeSchema,
+    CatalogInstallMarketplaceSkillContentCommandEnvelopeSchema,
+    CatalogChooseExternalLibraryEntriesCommandEnvelopeSchema,
+    CatalogImportLibraryEntriesCommandEnvelopeSchema,
+    CatalogWriteWritingContextCommandEnvelopeSchema
+  ]);
 export type CatalogCommandEnvelope = z.infer<
   typeof CatalogCommandEnvelopeSchema
 >;

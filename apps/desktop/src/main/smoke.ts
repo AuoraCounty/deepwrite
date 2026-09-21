@@ -8,6 +8,7 @@ import {
 } from "@deepwrite/contracts";
 import { createId } from "@deepwrite/shared";
 import type { UtilitySupervisor } from "./supervisor";
+import { runBookTemplateSmoke } from "./smoke-book-templates";
 import { runConversationSmoke } from "./smoke-conversation";
 
 export async function runApplicationSmoke(
@@ -112,10 +113,12 @@ export async function runApplicationSmoke(
     }
 
     const conversation = await runConversationSmoke(window);
+    const bookTemplates = await runBookTemplateSmoke(window);
     console.log(
       `DEEPWRITE_SMOKE_OK ${JSON.stringify({
         health,
         conversation,
+        bookTemplates,
         agent: {
           status: "ok",
           runtime: accepted.runtime,

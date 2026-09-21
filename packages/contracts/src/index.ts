@@ -1,3 +1,5 @@
+export * from "./book-templates";
+export { loadBookTemplateDraftSchema } from "./load-book-template-schema";
 export * from "./appearance";
 export * from "./app-alert";
 export * from "./agent-team";
@@ -9,6 +11,7 @@ export * from "./cloud-backup";
 export * from "./envelope";
 export * from "./expert-draft";
 export * from "./general-settings";
+export * from "./body-text-format";
 export * from "./learning-imitation";
 export * from "./library-agent";
 export * from "./long-agent-settings";

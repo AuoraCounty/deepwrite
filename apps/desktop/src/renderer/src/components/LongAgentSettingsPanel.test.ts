@@ -62,10 +62,10 @@ describe("long agent settings UI", () => {
     expect(profileFormSource).not.toContain("<legend>创作空间</legend>");
     expect(profileFormSource).not.toContain("REQUIRED_WORKSPACE_STAGES");
     expect(profileFormSource).not.toContain("readAccess.workspace");
-    expect(shortPanelSource).toContain("STAGE_POLICY");
-    expect(shortPanelSource).toContain("人物：人物素材");
-    expect(scriptPanelSource).toContain("STAGE_POLICY");
-    expect(scriptPanelSource).toContain("人物：人物素材");
+    expect(shortPanelSource).not.toContain("STAGE_POLICY");
+    expect(shortPanelSource).not.toContain("人物：人物素材");
+    expect(scriptPanelSource).not.toContain("STAGE_POLICY");
+    expect(scriptPanelSource).not.toContain("人物：人物素材");
     expect(longPanelSource).not.toContain("<legend>长篇工作区</legend>");
     expect(longPanelSource).not.toContain(
       "handleCheckboxChange('workspaceRoots'"

@@ -104,6 +104,53 @@ function harness(
 }
 
 describe("general settings coordinator", () => {
+  it("merges edited body kinds over persisted choices during initial loading", async () => {
+    const pending = deferred<{
+      persisted: boolean;
+      settings: GeneralSettings;
+    }>();
+    const api = {
+      list: vi.fn(() => pending.promise),
+      save: vi.fn(async (settings: GeneralSettings) => ({
+        persisted: true,
+        settings
+      }))
+    };
+    const { coordinator, settings } = harness({ api });
+    const loading = coordinator.load();
+    coordinator.updateBodyTextFormat({
+      kind: "short",
+      format: "indent-compact"
+    });
+    pending.resolve({
+      persisted: true,
+      settings: {
+        ...createDefaultGeneralSettings(),
+        defaultTextViewMode: "preview",
+        bodyTextFormats: {
+          short: "flush-compact",
+          script: "indent-spaced",
+          long: "indent-compact"
+        }
+      }
+    });
+    await loading;
+    await coordinator.drain();
+    expect(settings.value.bodyTextFormats).toEqual({
+      short: "indent-compact",
+      script: "indent-spaced",
+      long: "indent-compact"
+    });
+    expect(settings.value.defaultTextViewMode).toBe("preview");
+    expect(api.save).toHaveBeenCalledWith(settings.value);
+    coordinator.updateBodyTextFormat({ kind: "long", format: "flush-compact" });
+    await coordinator.drain();
+    expect(api.save.mock.calls[0]![0].bodyTextFormats.long).toBe(
+      "indent-compact"
+    );
+    expect(settings.value.bodyTextFormats.long).toBe("flush-compact");
+  });
+
   it("applies local defaults when the desktop API is unavailable", async () => {
     const { coordinator, applyApprovalMode, root } = harness({ api: null });
     await coordinator.load();

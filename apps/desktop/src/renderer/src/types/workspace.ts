@@ -65,6 +65,7 @@ export type ResourceDomain = "creation" | "skill" | "material";
 
 export type ResourceSectionAction =
   | "create"
+  | "create-from-template"
   | "choose-open-book"
   | "choose-import-book"
   | "create-group"

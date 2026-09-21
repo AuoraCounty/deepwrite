@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import source from "./CreateBookDialog.vue?raw";
+import selectionSource from "../composables/useBookLibrarySelection.ts?raw";
+import dialogSource from "./CreateBookDialog.vue?raw";
+const source = selectionSource + dialogSource;
 
 describe("CreateBookDialog shared libraries", () => {
   it("offers one material and skill pool to short, script, and long books", () => {

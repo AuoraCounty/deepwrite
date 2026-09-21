@@ -48,7 +48,12 @@ describe("IPC command requestId handling", () => {
     expect(preloadSource).toContain("async function createScriptBook");
     expect(preloadSource).toContain('"catalog.createScriptBook"');
     expect(mainSource).toContain('"catalog.createScriptBookAtPath"');
-    expect(mainSource).toContain("ScriptBookSchema.parse(result.payload)");
+    const creationSource = readFileSync(
+      new URL("./ipc/catalog-project-commands.ts", import.meta.url),
+      "utf8"
+    );
+    expect(mainSource).toContain("await handleCatalogProjectCommands(");
+    expect(creationSource).toContain("ScriptBookSchema.parse(result.payload)");
     expect(coreSource).toContain(
       'command.type === "catalog.createScriptBookAtPath"'
     );

@@ -1,3 +1,4 @@
+import { bookTemplates, createBookFromTemplate } from "./book-templates-api";
 import { desktopEvents } from "./desktop-events-api";
 import {
   chatAssistantProjectConfig,
@@ -1083,7 +1084,9 @@ const api: DeepWriteApi = {
 
   deviceSync,
   cloudBackup,
+  bookTemplates,
   catalog: {
+    createBookFromTemplate,
     index: getCatalogIndex,
     readDocument: readCatalogDocument,
     readWritingContext,

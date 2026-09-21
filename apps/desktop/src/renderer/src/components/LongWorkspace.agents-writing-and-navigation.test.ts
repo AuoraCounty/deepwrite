@@ -1,3 +1,4 @@
+import longLibraryReferencesSource from "../utils/longLibraryReferences.ts?raw";
 import treeNodeFactorySource from "../utils/longWorkspaceTreeNode.ts?raw";
 import {
   agentConversationSource,
@@ -164,8 +165,10 @@ describe("long-form renderer vertical slice: agents-writing-and-navigation", () 
     expect(longConversationSource).toContain(
       "options.catalog.filterReadableAttachments("
     );
-    expect(longConversationSource).toContain("profile.readAccess.skillKinds");
-    expect(longConversationSource).toContain(
+    expect(longLibraryReferencesSource).toContain(
+      "profile.readAccess.skillKinds"
+    );
+    expect(longLibraryReferencesSource).toContain(
       "profile.readAccess.materialKinds"
     );
     expect(appSource).not.toContain("<LongProposalReview");

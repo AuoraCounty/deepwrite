@@ -12,15 +12,12 @@ import type {
   LinkedMaterialIdsByKind,
   LinkedSkillIdsByKind,
   LongLinkedResourceStageScopes,
-  LongWorkspaceRoot,
   MaterialKind,
   MaterialLibrary,
   SkillKind,
   SkillLibrary
 } from "@deepwrite/contracts";
-import { LONG_WORKSPACE_ROOTS } from "@deepwrite/contracts";
 import AppIcon from "./AppIcon.vue";
-import LongBindingStageScopes from "./LongBindingStageScopes.vue";
 import PopupSelect from "./PopupSelect.vue";
 import {
   LONG_MATERIAL_BINDING_KINDS,
@@ -74,11 +71,6 @@ const selectedSkills = reactive<Record<SkillKind, string[]>>({
   style: [],
   other: []
 });
-const activeTab = ref<"bindings" | "stages">("bindings");
-const selectedStageScopes = reactive<LongLinkedResourceStageScopes>({
-  materials: {},
-  skills: {}
-});
 const materialCandidates = reactive<Record<MaterialKind, string>>({
   character: "",
   gimmick: "",
@@ -102,8 +94,8 @@ const heading = computed(() =>
 );
 const description = computed(() =>
   props.mode === "skill"
-    ? "智能体只会按当前阶段和读取范围加载已绑定技能；每类可绑定多个技能库。"
-    : "按用途关联当前长篇使用的素材库；每类可关联多个素材库。"
+    ? "已绑定技能可在所有阶段按需加载；每类可绑定多个技能库。"
+    : "已关联素材可在所有阶段按需加载；每类可关联多个素材库。"
 );
 
 function materialOptions(kind: MaterialKind): Array<{
@@ -145,7 +137,6 @@ function skillOptions(kind: SkillKind): Array<{
 }
 
 function reset(): void {
-  activeTab.value = "bindings";
   for (const { id } of materialKinds) {
     selectedMaterials[id] = [...props.linkedMaterialIdsByKind[id]];
     materialCandidates[id] = "";
@@ -154,55 +145,6 @@ function reset(): void {
     selectedSkills[id] = [...props.linkedSkillIdsByKind[id]];
     skillCandidates[id] = "";
   }
-  selectedStageScopes.materials = structuredClone(
-    props.linkedResourceStageScopes?.materials ?? {}
-  );
-  selectedStageScopes.skills = structuredClone(
-    props.linkedResourceStageScopes?.skills ?? {}
-  );
-}
-
-function stagesFor(
-  domain: LongBindingDomain,
-  libraryId: string
-): LongWorkspaceRoot[] {
-  const map = domain === "material" ? "materials" : "skills";
-  return [...(selectedStageScopes[map][libraryId] ?? LONG_WORKSPACE_ROOTS)];
-}
-
-function setStages(
-  domain: LongBindingDomain,
-  libraryId: string,
-  stages: readonly LongWorkspaceRoot[]
-): void {
-  const map = domain === "material" ? "materials" : "skills";
-  selectedStageScopes[map][libraryId] = [...stages];
-}
-
-const scopedLibraries = computed(() => {
-  if (props.mode === "material") {
-    return materialKinds.flatMap(({ id: kind }) =>
-      selectedMaterials[kind].map((id) => ({ id, label: materialLabel(id) }))
-    );
-  }
-  return skillKinds.flatMap(({ id: kind }) =>
-    selectedSkills[kind].map((id) => ({ id, label: skillLabel(id) }))
-  );
-});
-
-function selectedStageScopePayload(): LongLinkedResourceStageScopes {
-  const materialIds = new Set(
-    materialKinds.flatMap(({ id }) => selectedMaterials[id])
-  );
-  const skillIds = new Set(skillKinds.flatMap(({ id }) => selectedSkills[id]));
-  return {
-    materials: Object.fromEntries(
-      [...materialIds].map((id) => [id, stagesFor("material", id)])
-    ),
-    skills: Object.fromEntries(
-      [...skillIds].map((id) => [id, stagesFor("skill", id)])
-    )
-  };
 }
 
 function selectedMaterialLinks(): LinkedMaterialIdsByKind {
@@ -222,7 +164,6 @@ function addMaterial(kind: MaterialKind, value: unknown): void {
   materialCandidates[kind] = "";
   if (!id || selectedMaterials[kind].includes(id)) return;
   selectedMaterials[kind] = [...selectedMaterials[kind], id];
-  selectedStageScopes.materials[id] = [...LONG_WORKSPACE_ROOTS];
 }
 
 function addSkill(kind: SkillKind, value: unknown): void {
@@ -230,7 +171,6 @@ function addSkill(kind: SkillKind, value: unknown): void {
   skillCandidates[kind] = "";
   if (!id || selectedSkills[kind].includes(id)) return;
   selectedSkills[kind] = [...selectedSkills[kind], id];
-  selectedStageScopes.skills[id] = [...LONG_WORKSPACE_ROOTS];
 }
 
 function materialLabel(id: string): string {
@@ -254,7 +194,7 @@ function submit(): void {
   emit("submit", {
     linkedMaterialIdsByKind: selectedMaterialLinks(),
     linkedSkillIdsByKind: selectedSkillLinks(),
-    linkedResourceStageScopes: selectedStageScopePayload()
+    linkedResourceStageScopes: { materials: {}, skills: {} }
   });
 }
 
@@ -323,31 +263,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
               </div>
             </div>
 
-            <div class="long-binding-tabs" role="tablist" aria-label="绑定设置">
-              <button
-                type="button"
-                role="tab"
-                :aria-selected="activeTab === 'bindings'"
-                :class="{ 'is-active': activeTab === 'bindings' }"
-                @click="activeTab = 'bindings'"
-              >
-                {{ mode === "skill" ? "选择技能" : "选择素材" }}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                :aria-selected="activeTab === 'stages'"
-                :class="{ 'is-active': activeTab === 'stages' }"
-                @click="activeTab = 'stages'"
-              >
-                生效阶段
-              </button>
-            </div>
-
-            <div
-              v-if="activeTab === 'bindings' && mode === 'material'"
-              class="create-short-kind-grid"
-            >
+            <div v-if="mode === 'material'" class="create-short-kind-grid">
               <div
                 v-for="kind in materialKinds"
                 :key="kind.id"
@@ -395,10 +311,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
               </div>
             </div>
 
-            <div
-              v-else-if="activeTab === 'bindings'"
-              class="create-short-kind-grid"
-            >
+            <div v-else class="create-short-kind-grid">
               <div
                 v-for="kind in skillKinds"
                 :key="kind.id"
@@ -445,15 +358,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
                 />
               </div>
             </div>
-            <LongBindingStageScopes
-              v-else
-              :domain="mode ?? 'skill'"
-              :libraries="scopedLibraries"
-              :stages-for="stagesFor"
-              :disabled="submitting"
-              @update-stages="setStages"
-            />
-            <p v-if="activeTab === 'bindings'" class="create-short-stable-hint">
+            <p class="create-short-stable-hint">
               Catalog
               中暂时缺失的已有绑定仍会保留，只有点击移除才会解除已有绑定。
             </p>

@@ -16,7 +16,11 @@ export function withShortBookDefaultPlotStages<
   settings: readonly WorkspaceAgentSettings[],
   plotStages: readonly CreativePlotStage[]
 ): Input {
-  if (input.workspaceType !== "short") return input;
+  if (
+    input.workspaceType !== "short" ||
+    input.defaultPlotStageIds !== undefined
+  )
+    return input;
   const shortSettings = settings.find(
     (candidate) => candidate.workspaceType === "short"
   );

@@ -13,12 +13,14 @@ interface DiskGeneralSettings extends Omit<
   | "permissionMode"
   | "autoApproveCrossStageOperations"
   | "defaultTextViewMode"
+  | "bodyTextFormats"
   | "showContextUsage"
   | "useNetworkProxy"
 > {
   version: 1 | 2;
   permissionMode: GeneralSettings["permissionMode"] | "full-access";
   autoApproveCrossStageOperations?: boolean;
+  bodyTextFormats?: GeneralSettings["bodyTextFormats"];
   defaultTextViewMode?: GeneralSettings["defaultTextViewMode"];
   showContextUsage?: boolean;
   useNetworkProxy?: boolean;
@@ -87,7 +89,8 @@ export class GeneralSettingsStore {
         showContextUsage: candidate.showContextUsage,
         useNetworkProxy: candidate.useNetworkProxy,
         workspacePaneLayout: candidate.workspacePaneLayout,
-        defaultTextViewMode: candidate.defaultTextViewMode
+        defaultTextViewMode: candidate.defaultTextViewMode,
+        bodyTextFormats: candidate.bodyTextFormats
       });
       if (!parsed.success) {
         return GeneralSettingsSnapshotSchema.parse({

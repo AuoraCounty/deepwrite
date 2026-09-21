@@ -1,3 +1,4 @@
+import { BookTemplateCommandSchemas } from "./book-templates";
 import { ChatAssistantRoleplayCommandSchemas } from "./chat-assistant-config-api";
 import { ConversationExportCommandEnvelopeSchemas } from "./conversation-export";
 import { SiteOfficialModelCommandSchemas } from "./site-official-models";
@@ -238,6 +239,7 @@ export const SystemHealthCommandEnvelopeSchema = EnvelopeBaseSchema.extend({
 });
 
 export const CommandEnvelopeSchema = z.discriminatedUnion("type", [
+  ...BookTemplateCommandSchemas,
   DeviceSyncWorkspaceCommandEnvelopeSchema,
   CatalogQueryMaterialsCommandEnvelopeSchema,
   SystemHealthCommandEnvelopeSchema,

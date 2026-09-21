@@ -6,6 +6,7 @@ import type {
   AgentTeamProfileSetEnabledInput,
   AgentTeamProfileTargetInput,
   AppLanguage,
+  BodyTextFormatChange,
   GeneralPermissionMode,
   LearningImitationSettingsInput,
   LearningImitationStageId,
@@ -61,6 +62,7 @@ const emit = defineEmits<{
   updateUseNetworkProxy: [enabled: boolean];
   updateWorkspacePaneLayout: [layout: WorkspacePaneLayout];
   updateDefaultTextViewMode: [mode: TextViewMode];
+  updateBodyTextFormat: [change: BodyTextFormatChange];
   saveWorkspaceAgents: [settings: WorkspaceAgentSettingsInput];
   retryLongAgents: [];
   saveLongAgents: [settings: LongAgentSettingsInput];
@@ -113,6 +115,7 @@ const emit = defineEmits<{
     :use-network-proxy="module.useNetworkProxy"
     :workspace-pane-layout="module.workspacePaneLayout"
     :default-text-view-mode="module.defaultTextViewMode"
+    :body-text-formats="module.bodyTextFormats"
     :workspace-agent-settings="module.workspaceAgentSettings"
     :creative-plot-stages="module.creativePlotStages"
     :long-agent-settings="module.longAgentSettings"
@@ -157,6 +160,7 @@ const emit = defineEmits<{
     @update-use-network-proxy="emit('updateUseNetworkProxy', $event)"
     @update-workspace-pane-layout="emit('updateWorkspacePaneLayout', $event)"
     @update-default-text-view-mode="emit('updateDefaultTextViewMode', $event)"
+    @update-body-text-format="emit('updateBodyTextFormat', $event)"
     @save-workspace-agents="emit('saveWorkspaceAgents', $event)"
     @retry-long-agents="emit('retryLongAgents')"
     @save-long-agents="emit('saveLongAgents', $event)"

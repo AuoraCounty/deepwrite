@@ -12,12 +12,7 @@ import {
   watch
 } from "vue";
 import { storeToRefs } from "pinia";
-import type {
-  CreateLongBookInput,
-  CreateScriptBookInput,
-  CreateShortBookInput,
-  GeneralPermissionMode
-} from "@deepwrite/contracts";
+import type { GeneralPermissionMode } from "@deepwrite/contracts";
 import { createShortWorkspaceContentRevision } from "@deepwrite/contracts";
 import type {
   BookTransferAction,
@@ -114,7 +109,7 @@ import {
 import type { ApprovalNavigationTarget } from "./utils/approvalNavigation";
 import { loadGeneralPreferences } from "./utils/generalPreferences";
 import { longNavigationNodeId } from "./utils/longWorkspaceResourceTree";
-import { withShortBookDefaultPlotStages } from "./utils/shortBookDefaultPlotStages";
+import { useCreativeBookCreation } from "./composables/useCreativeBookCreation";
 import {
   LEFT_PANE_MAX,
   LEFT_PANE_MIN,
@@ -318,6 +313,7 @@ const {
   updateAutoApproveCrossStageOperations,
   updateAutoSave: updateEditorAutoSave,
   updateDefaultTextViewMode,
+  updateBodyTextFormat,
   updateLanguage: updateAppLanguage,
   updatePermissionMode,
   updateShowContextUsage,
@@ -434,10 +430,6 @@ const {
   disposeLibraryConversation,
   notifications: uiMessage
 });
-type CreateCreativeBookPayload =
-  | ({ workspaceType: "short" } & CreateShortBookInput)
-  | ({ workspaceType: "script" } & CreateScriptBookInput)
-  | ({ workspaceType: "long" } & CreateLongBookInput);
 
 const conversationStore = useConversationStore();
 const {
@@ -1292,6 +1284,21 @@ const materialLibraries = computed<ResourceTreeNode[]>(() => {
       ?.nodes ?? []
   );
 });
+const {
+  createFromTemplate,
+  closeCreateBookDialog,
+  openCreateBookDialog,
+  createCreativeBook,
+  openTemplateSettings
+} = useCreativeBookCreation({
+  open: createBookDialogOpen,
+  pending: () => catalogMutationPending.value || longMutationPending.value,
+  settings: workspaceAgentSettings,
+  catalog: catalogSnapshot,
+  createShort: (input) => shortBookLifecycle.createBook(input),
+  createLong: createLongBook,
+  openSettings: featureHost.openSettings
+});
 const workspaceDialogModule = useWorkspaceDialogModuleCoordinator({
   startup: {
     messages: startupAlertMessages
@@ -1343,6 +1350,7 @@ const workspaceDialogModule = useWorkspaceDialogModuleCoordinator({
     exportTarget: exportBookTarget,
     manuscriptExportPending,
     createDialogOpen: createBookDialogOpen,
+    createFromTemplate,
     transferMode: bookTransferDialogMode,
     resourceMode: bookDialogMode,
     activeBookTarget: activeBook
@@ -1720,37 +1728,6 @@ function disposeLibraryConversation(
   conversationStore.removeController(key);
   removeAgentRunPreferences(key);
 }
-function closeCreateBookDialog(): void {
-  if (catalogMutationPending.value || longMutationPending.value) return;
-  createBookDialogOpen.value = false;
-}
-function openCreateBookDialog(): void {
-  if (!window.deepwrite) {
-    uiMessage.warning("浏览器预览不能保存作品，请使用桌面客户端创建。");
-    return;
-  }
-  createBookDialogOpen.value = true;
-}
-async function createCreativeBook(
-  input: CreateCreativeBookPayload
-): Promise<void> {
-  if (input.workspaceType === "long") {
-    await createLongBook({
-      title: input.title,
-      genre: input.genre,
-      linkedMaterialIdsByKind: input.linkedMaterialIdsByKind,
-      linkedSkillIdsByKind: input.linkedSkillIdsByKind
-    });
-    return;
-  }
-  await shortBookLifecycle.createBook(
-    withShortBookDefaultPlotStages(
-      input,
-      workspaceAgentSettings.value,
-      catalogSnapshot.value?.creativePlotStages ?? []
-    )
-  );
-}
 async function refreshImportedCatalog(): Promise<void> {
   await featureHost.loadWorkspaceDirectory();
   await loadCatalogSnapshot();
@@ -1808,8 +1785,11 @@ async function handleResourceAction(
     return;
   }
 
-  if (payload.domain === "creation" && payload.action === "create") {
-    openCreateBookDialog();
+  if (
+    payload.domain === "creation" &&
+    (payload.action === "create" || payload.action === "create-from-template")
+  ) {
+    openCreateBookDialog(payload.action === "create-from-template");
     return;
   }
 
@@ -2433,6 +2413,7 @@ onBeforeUnmount(() => {
     @update-use-network-proxy="updateUseNetworkProxy"
     @update-workspace-pane-layout="updateWorkspacePaneLayout"
     @update-default-text-view-mode="updateDefaultTextViewMode"
+    @update-body-text-format="updateBodyTextFormat"
     @save-workspace-agents="saveWorkspaceAgentSettings"
     @retry-long-agents="loadLongAgentSettings"
     @save-long-agents="saveLongAgentSettings"
@@ -2687,6 +2668,7 @@ onBeforeUnmount(() => {
     @export-long="exportLongBookManuscript"
     @close-library-removal="libraryRemovalDialog = null"
     @confirm-library-removal="confirmLibraryRemoval"
+    @open-template-settings="openTemplateSettings"
     @close-create-book="closeCreateBookDialog"
     @submit-create-book="createCreativeBook"
     @close-book-transfer="bookTransferDialogMode = null"

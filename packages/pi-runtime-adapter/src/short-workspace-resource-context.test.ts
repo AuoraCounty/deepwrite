@@ -99,7 +99,7 @@ function scriptPromptFor(
 }
 
 describe("short workspace on-demand resource context", () => {
-  it("injects only the current-stage intersection as an index", () => {
+  it("indexes linked resources across every short-story stage", () => {
     const character = promptFor("character_design");
     expect(character).toContain(
       "方法库 · 通用检查 [general]（id=skill-general）"
@@ -107,15 +107,15 @@ describe("short workspace on-demand resource context", () => {
     expect(character).toContain(
       "素材库 · 人物档案 [character]（id=material-character）"
     );
-    expect(character).not.toContain("风格库 · 冷峻文风");
-    expect(character).not.toContain("素材库 · 反转桥段");
+    expect(character).toContain("风格库 · 冷峻文风");
+    expect(character).toContain("素材库 · 反转桥段");
     expect(character).toContain("正文摘录：人物关系设计参考。");
     expect(character).not.toContain("不应直接注入");
 
     const plot = promptFor("plot_design");
     expect(plot).toContain("素材库 · 人物档案");
     expect(plot).toContain("素材库 · 反转桥段");
-    expect(plot).not.toContain("风格库 · 冷峻文风");
+    expect(plot).toContain("风格库 · 冷峻文风");
 
     const draft = promptFor("draft");
     expect(draft).toContain("风格库 · 冷峻文风");
@@ -124,11 +124,11 @@ describe("short workspace on-demand resource context", () => {
     expect(draft).not.toContain("不应直接注入");
   });
 
-  it("applies the same on-demand stage intersection to scripts", () => {
+  it("indexes linked resources across every script stage", () => {
     const character = scriptPromptFor("character_design");
     expect(character).toContain("素材库 · 人物档案");
-    expect(character).not.toContain("素材库 · 反转桥段");
-    expect(character).not.toContain("风格库 · 冷峻文风");
+    expect(character).toContain("素材库 · 反转桥段");
+    expect(character).toContain("风格库 · 冷峻文风");
     expect(character).toContain("正文摘录：人物关系设计参考。");
     expect(character).not.toContain("不应直接注入");
 
