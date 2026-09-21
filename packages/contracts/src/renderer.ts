@@ -66,7 +66,11 @@ export type * from "./workspace";
 export type * from "./workspace-directory";
 export type * from "./writing-context";
 
-export { CHAT_ASSISTANT_PROJECT_PROMPT_MAX_LENGTH } from "./chat-assistant-base";
+export {
+  ChatAssistantRoleplayConfigSchema,
+  CHAT_ASSISTANT_ROLEPLAY_PROMPT_SUFFIX,
+  CHAT_ASSISTANT_PROJECT_PROMPT_MAX_LENGTH
+} from "./chat-assistant-base";
 export {
   parseMaterialMarkdown,
   resolveMaterialMetadata

@@ -1,3 +1,4 @@
+import { ChatAssistantRoleplayCommandSchemas } from "./chat-assistant-config-api";
 import { ConversationExportCommandEnvelopeSchemas } from "./conversation-export";
 import { SiteOfficialModelCommandSchemas } from "./site-official-models";
 import { DeviceSyncWorkspaceCommandEnvelopeSchema } from "./device-sync-commands";
@@ -339,6 +340,7 @@ export const CommandEnvelopeSchema = z.discriminatedUnion("type", [
   AppearanceFontsRemoveCommandEnvelopeSchema,
   GeneralSettingsListCommandEnvelopeSchema,
   GeneralSettingsSaveCommandEnvelopeSchema,
+  ...ChatAssistantRoleplayCommandSchemas,
   ChatAssistantProjectConfigListCommandEnvelopeSchema,
   ChatAssistantProjectConfigGetCommandEnvelopeSchema,
   ChatAssistantProjectConfigSaveCommandEnvelopeSchema,

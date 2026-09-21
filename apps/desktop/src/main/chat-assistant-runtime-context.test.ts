@@ -4,13 +4,9 @@ import { CommandEnvelopeSchema, createEnvelope } from "@deepwrite/contracts";
 
 describe("chat assistant runtime context", () => {
   it("uses registered Core command discriminators for every authority query", () => {
-    const mainSource = readFileSync(
-      new URL("./index.ts", import.meta.url),
+    const resolverSource = readFileSync(
+      new URL("./chat-assistant-runtime-context.ts", import.meta.url),
       "utf8"
-    );
-    const resolverSource = mainSource.slice(
-      mainSource.indexOf("async function resolveChatAssistantRuntimeContext"),
-      mainSource.indexOf("function usageRuntimeKey")
     );
 
     expect(resolverSource).toContain(

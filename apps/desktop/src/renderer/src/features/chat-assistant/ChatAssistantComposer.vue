@@ -17,6 +17,7 @@ const props = defineProps<{
   modelOptions: PopupSelectOption[];
   thinkingLevel: ThinkingLevel;
   thinkingOptions: PopupSelectOption[];
+  webSearchVisible?: boolean;
   webSearchEnabled: boolean;
   webSearchAvailable: boolean;
   webSearchDisabledReason: string;
@@ -87,6 +88,7 @@ defineExpose({ focus });
       </button>
       <span class="chat-assistant-toolbar-spacer" />
       <button
+        v-if="webSearchVisible !== false"
         class="chat-assistant-web-search"
         :class="{ 'is-active': webSearchEnabled }"
         type="button"

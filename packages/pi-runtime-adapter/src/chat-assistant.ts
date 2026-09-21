@@ -1,4 +1,7 @@
-import type { ChatAssistantRuntimeContext } from "@deepwrite/contracts";
+import {
+  CHAT_ASSISTANT_ROLEPLAY_PROMPT_SUFFIX,
+  type ChatAssistantRuntimeContext
+} from "@deepwrite/contracts";
 import { renderDeepSeekWebSearchCapabilityPrompt } from "./deepseek-web-search";
 
 function renderProjectStructure(
@@ -44,6 +47,8 @@ export function buildChatAssistantSystemPrompt(
   context: ChatAssistantRuntimeContext,
   webSearchEnabled = false
 ): string {
+  if (context.mode === "roleplay")
+    return `${context.systemPrompt.trim()}\n\n${CHAT_ASSISTANT_ROLEPLAY_PROMPT_SUFFIX}`;
   const software = [
     "【DeepWrite 软件基础情况】",
     `当前软件：${context.software.name} ${context.software.version}`,

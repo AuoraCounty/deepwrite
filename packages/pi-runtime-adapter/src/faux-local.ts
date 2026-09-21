@@ -8,6 +8,11 @@ export const DEEPWRITE_FAUX_RUNTIME: AgentRuntimeRef = {
 };
 
 export function buildLocalThinking(input: AgentRunInput): string {
+  if (
+    input.mode === "chat-assistant" &&
+    input.chatAssistantRuntimeContext?.mode === "roleplay"
+  )
+    return "正在根据人物定义组织回复。";
   if (input.mode === "chat-assistant") {
     return input.chatAssistantRuntimeContext?.mode === "project"
       ? "正在结合当前项目结构与只读查询工具核对信息。"
@@ -24,6 +29,11 @@ export function buildLocalThinking(input: AgentRunInput): string {
 }
 
 export function buildLocalWritingResponse(input: AgentRunInput): string {
+  if (
+    input.mode === "chat-assistant" &&
+    input.chatAssistantRuntimeContext?.mode === "roleplay"
+  )
+    return "人物扮演聊天链路已就绪，未装配工具。请选择真实模型开始人物扮演。";
   if (input.mode === "chat-assistant") {
     const request = input.prompt.replace(/\s+/g, " ").slice(0, 220);
     return [

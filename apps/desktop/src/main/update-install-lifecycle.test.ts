@@ -29,14 +29,19 @@ describe("update install lifecycle", () => {
   });
 
   it("does not start a normal app quit before invoking the update installer", () => {
-    const constructorStart = source.indexOf(
-      "updateService = new UpdateService("
-    );
-    const constructorEnd = source.indexOf("appAlertStore =", constructorStart);
+    const constructorStart = source.indexOf("createDesktopServices({");
+    const constructorEnd = source.indexOf("\n    );", constructorStart);
     const installRequest = source.slice(constructorStart, constructorEnd);
+    const services = readFileSync(
+      new URL("./desktop-services.ts", import.meta.url),
+      "utf8"
+    );
 
+    expect(constructorStart).toBeGreaterThanOrEqual(0);
+    expect(constructorEnd).toBeGreaterThan(constructorStart);
+    expect(services).toContain("new UpdateService(options.installUpdate)");
     expect(installRequest).toContain(
-      "beginGracefulShutdown({ installUpdate: true })"
+      "installUpdate: () => beginGracefulShutdown({ installUpdate: true })"
     );
     expect(installRequest).not.toContain("app.quit()");
   });

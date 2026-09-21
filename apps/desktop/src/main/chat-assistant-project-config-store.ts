@@ -1,3 +1,4 @@
+import { ChatAssistantRoleplayStore } from "./chat-assistant-roleplay-store";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
@@ -87,10 +88,12 @@ function normalizeDisk(raw: unknown): DiskChatAssistantProjectConfig {
 }
 
 export class ChatAssistantProjectConfigStore {
+  readonly roleplay: ChatAssistantRoleplayStore;
   private readonly path: string;
   private writeChain: Promise<void> = Promise.resolve();
 
   constructor(userDataPath: string) {
+    this.roleplay = new ChatAssistantRoleplayStore(userDataPath);
     this.path = join(userDataPath, "config", "chat-assistant-projects.json");
   }
 

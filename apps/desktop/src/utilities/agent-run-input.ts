@@ -95,6 +95,7 @@ export function createAgentRunInput(
       : {}),
     ...(payload.webSearchEnabled === true ||
     (payload.mode === "chat-assistant" &&
+      payload.chatAssistant?.mode !== "roleplay" &&
       payload.chatAssistant?.webSearchEnabled === true)
       ? { webSearchEnabled: true }
       : {}),

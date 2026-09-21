@@ -5,6 +5,14 @@ import {
 } from "../apps/desktop/scripts/package-runtime-files.mjs";
 
 describe("packaged Core storage worker inventory", () => {
+  it("requires the window icon in the packaged renderer directory", () => {
+    expect(() =>
+      validateRuntimeFiles(
+        REQUIRED_RUNTIME_FILES.filter((file) => !file.endsWith("app-icon.png")),
+        () => ""
+      )
+    ).toThrow("out/renderer/app-icon.png");
+  });
   it("requires the nested worker entry in addition to the existing three utilities", () => {
     expect(() =>
       validateRuntimeFiles(

@@ -1,3 +1,4 @@
+import { useChatAssistantRoleplays } from "./useChatAssistantRoleplays";
 import type {
   CatalogIndexSnapshot,
   ChatAssistantMode,
@@ -31,9 +32,8 @@ function projectKey(project: ChatAssistantProjectRef): string {
 
 function readMode(): ChatAssistantMode {
   try {
-    return window.localStorage.getItem(MODE_STORAGE_KEY) === "project"
-      ? "project"
-      : "normal";
+    const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
+    return stored === "project" || stored === "roleplay" ? stored : "normal";
   } catch {
     return "normal";
   }
@@ -78,6 +78,7 @@ function persistPreference(
 }
 
 export function useChatAssistantMode(options: ChatAssistantModeOptions) {
+  const roles = useChatAssistantRoleplays();
   const mode = ref<ChatAssistantMode>(readMode());
   const selectedProject = ref<ChatAssistantProjectRef | null>(readProject());
   const configuredProjects = ref<readonly ChatAssistantProjectRef[]>([]);
@@ -136,6 +137,10 @@ export function useChatAssistantMode(options: ChatAssistantModeOptions) {
   const isBusy = computed(() => controller.value?.isBusy.value ?? false);
   const requestContext = computed<ChatAssistantRequestContext | null>(() => {
     if (mode.value === "normal") return { mode: "normal" };
+    if (mode.value === "roleplay")
+      return roles.selectedRole.value
+        ? { mode: "roleplay", roleId: roles.selectedRole.value.id }
+        : null;
     if (!selectedProject.value || !projectAvailable.value) return null;
     return { mode: "project", project: selectedProject.value };
   });
@@ -144,6 +149,11 @@ export function useChatAssistantMode(options: ChatAssistantModeOptions) {
     if (mode.value === "normal") {
       return { key: "chat-assistant:normal", scope: "assistant-chat:normal" };
     }
+    if (mode.value === "roleplay")
+      return {
+        key: `chat-assistant:roleplay:${roles.selectedRoleId.value}`,
+        scope: `assistant-chat:roleplay:${roles.selectedRoleId.value}`
+      };
     const suffix = selectedProject.value
       ? projectKey(selectedProject.value)
       : "unselected";
@@ -163,6 +173,14 @@ export function useChatAssistantMode(options: ChatAssistantModeOptions) {
     if (nextMode === mode.value) return true;
     if (isBusy.value) return false;
     mode.value = nextMode;
+    persistPreference(mode.value, selectedProject.value);
+    activateController();
+    return true;
+  }
+
+  function selectRole(id: string): boolean {
+    if (isBusy.value || !roles.select(id)) return false;
+    mode.value = "roleplay";
     persistPreference(mode.value, selectedProject.value);
     activateController();
     return true;
@@ -196,7 +214,9 @@ export function useChatAssistantMode(options: ChatAssistantModeOptions) {
     const context = requestContext.value;
     if (!context || !controller.value) return;
     await controller.value.sendAssistantMessage(
-      webSearchEnabled ? { ...context, webSearchEnabled: true } : context
+      webSearchEnabled && context.mode !== "roleplay"
+        ? { ...context, webSearchEnabled: true }
+        : context
     );
   }
 
@@ -236,6 +256,11 @@ export function useChatAssistantMode(options: ChatAssistantModeOptions) {
   void refreshConfiguredProjects();
 
   return {
+    roleplays: roles.roleplays,
+    selectedRoleId: roles.selectedRoleId,
+    selectedRole: roles.selectedRole,
+    saveRole: roles.save,
+    selectRole,
     mode: mode as Readonly<Ref<ChatAssistantMode>>,
     selectedProject: selectedProject as Readonly<
       Ref<ChatAssistantProjectRef | null>

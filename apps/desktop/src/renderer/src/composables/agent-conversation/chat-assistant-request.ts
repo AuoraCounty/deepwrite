@@ -3,6 +3,8 @@ import type { ChatAssistantRequestContext } from "@deepwrite/contracts";
 export function normalizeChatAssistantRequestContext(
   context: ChatAssistantRequestContext | undefined
 ): ChatAssistantRequestContext | undefined {
+  if (context?.mode === "roleplay")
+    return { mode: "roleplay", roleId: context.roleId };
   if (context?.mode === "project") {
     return {
       mode: "project",

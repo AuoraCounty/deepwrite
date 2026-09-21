@@ -1,3 +1,7 @@
+import {
+  chatAssistantProjectConfig,
+  chatAssistantRoleplay
+} from "./chat-assistant-api";
 import { textContextMenu } from "./text-context-menu-api";
 import { analysisApis } from "./analysis-apis";
 import { conversationExport } from "./conversation-export-api";
@@ -200,13 +204,9 @@ import { appearance } from "./appearance-api";
 import { long } from "./long-api";
 import {
   abort,
-  getChatAssistantProjectConfig,
-  listChatAssistantProjectConfigs,
   models as sessionModels,
   prompt,
   queryModelUsage,
-  resetChatAssistantProjectConfig,
-  saveChatAssistantProjectConfig,
   submitUserInput
 } from "./session-models-api";
 import { marketplace } from "./marketplace-api";
@@ -1130,12 +1130,8 @@ const api: DeepWriteApi = {
   modelUsage: {
     query: queryModelUsage
   },
-  chatAssistantProjectConfig: {
-    list: listChatAssistantProjectConfigs,
-    get: getChatAssistantProjectConfig,
-    save: saveChatAssistantProjectConfig,
-    reset: resetChatAssistantProjectConfig
-  },
+  chatAssistantProjectConfig,
+  chatAssistantRoleplay,
   workspaceAgents: {
     list: listWorkspaceAgents,
     save: saveWorkspaceAgents,

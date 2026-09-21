@@ -1,5 +1,12 @@
+import { resolveChatAssistantRuntimeContext as resolveAssistantContext } from "./chat-assistant-runtime-context";
+import { handleChatAssistantConfigCommands } from "./ipc/chat-assistant-config-commands";
 import type { ModelUsageModule } from "@deepwrite/contracts";
-import { createBookAnalysisServices } from "./extras/book-analysis-services";
+import type { createBookAnalysisServices } from "./extras/book-analysis-services";
+import {
+  createDesktopServices,
+  refreshDesktopServices
+} from "./desktop-services";
+import { createDesktopStartup } from "./desktop-startup";
 import { usageModuleForPrompt } from "./usage-module";
 import {
   handleConversationExportCommands,
@@ -9,10 +16,9 @@ import { acquireConversationOperation } from "./ipc/conversation-operation-guard
 import { createRendererStateFlushCoordinator } from "./renderer-state-flush";
 import { createGracefulShutdown } from "./graceful-shutdown";
 import { guardConversationWindowClose } from "./conversation-window-close";
-import { createCloudBackupFeature } from "../extras/cloud-backup/create-service";
 import { createDesktopWindow } from "./create-desktop-window";
 import {
-  createDesktopDeviceSync,
+  type createDesktopDeviceSync,
   registerDeviceSyncIpc
 } from "../extras/device-sync";
 import { handleRendererStateCommands } from "./ipc/renderer-state-commands";
@@ -51,9 +57,6 @@ import {
   CatalogReadDocumentResultSchema,
   ReadWritingContextResultSchema,
   CatalogSnapshotSchema,
-  ChatAssistantProjectConfigSchema,
-  ChatAssistantProjectConfigListSchema,
-  ChatAssistantRuntimeContextSchema,
   CommandEnvelopeSchema,
   DeleteCatalogProjectResultSchema,
   DeleteBookResultSchema,
@@ -73,7 +76,6 @@ import {
   UPDATE_INSTALL_CHANNEL,
   UPDATE_STATE_EVENT_CHANNEL,
   LearningImitationSettingsSchema,
-  CatalogInstallMarketplaceSkillContentResultSchema,
   LibraryAgentSettingsSchema,
   LongApplyOperationsResultSchema,
   LongApplyLegacySyncResultSchema,
@@ -97,8 +99,6 @@ import {
   LongWriteChapterResultSchema,
   LongWriteDocumentResultSchema,
   LongWriteAgentsMdResultSchema,
-  ModelSettingsSchema,
-  ModelUsageDashboardSchema,
   RemoveLibraryEntryResultSchema,
   MoveLibraryEntryResultSchema,
   SessionAbortAcceptedPayloadSchema,
@@ -189,6 +189,7 @@ import {
 import { registerMarketplaceIpc } from "./ipc/marketplace-ipc";
 
 registerAppearanceFontScheme();
+const desktopStartup = createDesktopStartup();
 
 interface ActiveRun extends MainInternalCommandActiveRun {
   correlationId: string;
@@ -497,9 +498,16 @@ const supervisor = new UtilitySupervisor({
 });
 
 function createMainWindow(): BrowserWindow {
-  const window = createDesktopWindow(cachedAppearanceSettings);
+  const window = createDesktopWindow(cachedAppearanceSettings, {
+    log: desktopStartup.log,
+    fail: (error) => desktopStartup.fail(error, "window")
+  });
   const windowWebContentsId = window.webContents.id;
-  window.webContents.once("did-finish-load", () => void announceReady(window));
+  window.webContents.once("did-finish-load", () => {
+    void announceReady(window).catch((error: unknown) => {
+      desktopStartup.log.write("utilities.health.failed", { error });
+    });
+  });
   window.on("close", (event) => {
     if (cachedGeneralSettings.showInMenuBar && !quitting && !shutdownComplete) {
       event.preventDefault();
@@ -652,126 +660,15 @@ function requireChatAssistantProjectConfigStore(): ChatAssistantProjectConfigSto
   return chatAssistantProjectConfigStore;
 }
 
-async function requireCorePayload(
-  supervisor: UtilitySupervisor,
-  type: "catalog.index" | "catalog.snapshot" | "long.list",
-  schema: { parse(value: unknown): unknown }
-): Promise<unknown> {
-  const id = createId(`cmd_chat_assistant_${type.replaceAll(".", "_")}`);
-  const command = CommandEnvelopeSchema.parse(
-    createEnvelope(type, {}, { id, correlationId: id })
-  );
-  const result = await supervisor.requestCommand("core", command, 60_000);
-  if (result.status === "rejected") {
-    throw new Error(result.error.message);
-  }
-  return schema.parse(result.payload);
-}
-
-function chatAssistantUsageStart(days: number): string {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  if (days > 1) date.setDate(date.getDate() - (days - 1));
-  return date.toISOString();
-}
-
 async function resolveChatAssistantRuntimeContext(
   supervisor: UtilitySupervisor,
   payload: SessionPromptCommandPayload
 ): Promise<ChatAssistantRuntimeContext> {
-  const request = payload.chatAssistant ?? { mode: "normal" as const };
-  const [catalog, longList, settings, today, sevenDays, thirtyDays, all] =
-    await Promise.all([
-      requireCorePayload(
-        supervisor,
-        "catalog.index",
-        CatalogIndexSnapshotSchema
-      ),
-      requireCorePayload(supervisor, "long.list", LongListBooksResultSchema),
-      requireModelConfigStore().list(),
-      requireModelUsageStore().query({ startAt: chatAssistantUsageStart(1) }),
-      requireModelUsageStore().query({ startAt: chatAssistantUsageStart(7) }),
-      requireModelUsageStore().query({ startAt: chatAssistantUsageStart(30) }),
-      requireModelUsageStore().query()
-    ]);
-  const modelSettings = ModelSettingsSchema.parse(settings);
-  const base = {
-    software: {
-      name: "DeepWrite" as const,
-      version: app.getVersion(),
-      platform: process.platform,
-      arch: process.arch,
-      currentTime: new Date().toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-    },
-    catalog: CatalogIndexSnapshotSchema.parse(catalog),
-    longBooks: LongListBooksResultSchema.parse(longList).books,
-    models: modelSettings.models.map((model) => ({
-      id: model.id,
-      label: model.label,
-      provider: model.provider,
-      modelId: model.modelId,
-      api: model.api,
-      reasoning: model.reasoning,
-      defaultThinkingLevel: model.defaultThinkingLevel,
-      thinkingLevelOptions: model.thinkingLevelOptions,
-      temperatureOptions: model.temperatureOptions,
-      credentialConfigured: model.hasApiKey,
-      ...(model.managedBy ? { managedBy: model.managedBy } : {}),
-      ...(model.status !== undefined ? { status: model.status } : {}),
-      ...(model.discount !== undefined ? { discount: model.discount } : {}),
-      ...(model.input !== undefined ? { input: model.input } : {}),
-      ...(model.output !== undefined ? { output: model.output } : {}),
-      ...(model.cache !== undefined ? { cache: model.cache } : {})
-    })),
-    defaultModelId: modelSettings.defaultModelId,
-    usage: {
-      today: ModelUsageDashboardSchema.parse(today),
-      "7d": ModelUsageDashboardSchema.parse(sevenDays),
-      "30d": ModelUsageDashboardSchema.parse(thirtyDays),
-      all: ModelUsageDashboardSchema.parse(all)
-    }
-  };
-  if (request.mode === "normal") {
-    return ChatAssistantRuntimeContextSchema.parse({ ...base, mode: "normal" });
-  }
-  const config = await requireChatAssistantProjectConfigStore().get(
-    request.project
-  );
-  if (request.project.projectType === "long") {
-    const projectBook = base.longBooks.find(
-      (book) => book.id === request.project.projectId
-    );
-    if (!projectBook)
-      throw new Error("所选长篇项目不存在或暂时不可用，请刷新后重试。");
-    return ChatAssistantRuntimeContextSchema.parse({
-      ...base,
-      mode: "project",
-      project: request.project,
-      projectPrompt: config.systemPrompt,
-      projectBook
-    });
-  }
-  const snapshot = CatalogSnapshotSchema.parse(
-    await requireCorePayload(
-      supervisor,
-      "catalog.snapshot",
-      CatalogSnapshotSchema
-    )
-  );
-  const projectBook = snapshot.books.find(
-    (book) =>
-      book.id === request.project.projectId &&
-      book.bookType === request.project.projectType
-  );
-  if (!projectBook)
-    throw new Error("所选创作项目不存在或暂时不可用，请刷新后重试。");
-  return ChatAssistantRuntimeContextSchema.parse({
-    ...base,
-    mode: "project",
-    project: request.project,
-    projectPrompt: config.systemPrompt,
-    projectBook
+  return resolveAssistantContext(supervisor, payload, {
+    requireModelConfigStore,
+    requireModelUsageStore,
+    requireChatAssistantProjectConfigStore,
+    getAppVersion: () => app.getVersion()
   });
 }
 
@@ -942,7 +839,8 @@ async function loadAndSyncNativeAppearanceChrome(): Promise<void> {
   try {
     const snapshot = await requireAppearanceService().list();
     syncNativeAppearanceChrome(snapshot.settings);
-  } catch {
+  } catch (error) {
+    desktopStartup.log.write("appearance.fallback", { error });
     syncNativeAppearanceChrome(createDefaultAppearanceSettings());
   }
 }
@@ -2553,48 +2451,11 @@ function registerIpc(): void {
         }
       }
 
-      if (
-        command.type === "chatAssistantProjectConfig.list" ||
-        command.type === "chatAssistantProjectConfig.get" ||
-        command.type === "chatAssistantProjectConfig.save" ||
-        command.type === "chatAssistantProjectConfig.reset"
-      ) {
-        try {
-          const store = requireChatAssistantProjectConfigStore();
-          const payload =
-            command.type === "chatAssistantProjectConfig.list"
-              ? await store.list()
-              : command.type === "chatAssistantProjectConfig.get"
-                ? await store.get(command.payload)
-                : command.type === "chatAssistantProjectConfig.save"
-                  ? await store.save(
-                      command.payload.project,
-                      command.payload.systemPrompt
-                    )
-                  : await store.reset(command.payload);
-          return {
-            status: "accepted",
-            requestId: command.id,
-            payload:
-              command.type === "chatAssistantProjectConfig.list"
-                ? ChatAssistantProjectConfigListSchema.parse(payload)
-                : ChatAssistantProjectConfigSchema.parse(payload)
-          };
-        } catch (error: unknown) {
-          return {
-            status: "rejected",
-            requestId: command.id,
-            error: {
-              code: "chat_assistant_project_config.failed",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "处理聊天助手项目配置失败。",
-              details: safeErrorDetails(error)
-            }
-          };
-        }
-      }
+      const chatConfigResult = await handleChatAssistantConfigCommands(
+        { requireChatAssistantProjectConfigStore },
+        command
+      );
+      if (chatConfigResult) return chatConfigResult;
 
       if (command.type === "session.user_input_response") {
         try {
@@ -2987,108 +2848,68 @@ if (!hasSingleInstanceLock) {
     mainWindowStartupGate.requestShow();
   });
 
-  app.whenReady().then(async () => {
+  void desktopStartup.run(async () => {
+    await app.whenReady();
     Menu.setApplicationMenu(null);
     const userDataPath = configureBootstrapEnvironment(
       app,
       import.meta.env.MAIN_VITE_DEEPWRITE_APP_MODE
     );
-    modelConfigStore = new ModelConfigStore(userDataPath, {
-      appVersion: app.getVersion()
-    });
-    modelUsageStore = new ModelUsageStore(userDataPath);
-    softwareTokenUsageReporter = new SoftwareTokenUsageReporter(
-      userDataPath,
-      modelUsageStore
+    const services = await desktopStartup.step("services", () =>
+      createDesktopServices({
+        userDataPath,
+        appVersion: app.getVersion(),
+        command: (command) => supervisor.requestCommand("core", command, 0),
+        busy: () => activeRuns.size > 0,
+        installUpdate: () => beginGracefulShutdown({ installUpdate: true })
+      })
     );
-    void softwareTokenUsageReporter.reportAtStartup().catch(() => {
-      console.warn(
-        "DeepWrite software token usage was not reported at startup."
+    ({
+      modelConfigStore,
+      modelUsageStore,
+      softwareTokenUsageReporter,
+      workspaceAgentConfigStore,
+      agentTeamConfigStore,
+      libraryAgentConfigStore,
+      longAgentConfigStore,
+      learningImitationConfigStore,
+      bookAnalysisServices,
+      workspaceDirectoryStore,
+      appearanceService,
+      generalSettingsStore,
+      chatAssistantProjectConfigStore,
+      updateService,
+      appAlertStore,
+      cloudBackupService,
+      deviceSyncService,
+      marketplaceClient
+    } = services);
+    installAppearanceFontProtocolHandler(appearanceService);
+    await desktopStartup.step("workspace", () =>
+      services.workspaceDirectoryStore.initializeDefault(
+        app.getPath("documents")
+      )
+    );
+    await desktopStartup.step("appearance", loadAndSyncNativeAppearanceChrome);
+    await desktopStartup.step("settings", async () => {
+      syncGeneralSettings(
+        (await services.generalSettingsStore.list()).settings
       );
     });
-    void modelConfigStore.initialize();
-    void modelConfigStore
-      .list()
-      .then((settings) =>
-        modelUsageStore?.syncConfiguredModels(settings.models)
-      )
-      .catch((error: unknown) => {
-        console.warn(
-          "DeepWrite model usage registry could not initialize:",
-          error instanceof Error ? error.message : "unknown error"
-        );
-      });
-    workspaceAgentConfigStore = new WorkspaceAgentConfigStore(userDataPath);
-    agentTeamConfigStore = new AgentTeamConfigStore(userDataPath);
-    libraryAgentConfigStore = new LibraryAgentConfigStore(userDataPath);
-    longAgentConfigStore = new LongAgentConfigStore(userDataPath);
-    learningImitationConfigStore = new LearningImitationConfigStore(
-      userDataPath
-    );
-    bookAnalysisServices = createBookAnalysisServices(userDataPath);
-    workspaceDirectoryStore = new WorkspaceDirectoryStore(userDataPath);
-    appearanceService = new AppearanceService(userDataPath);
-    installAppearanceFontProtocolHandler(appearanceService);
-    generalSettingsStore = new GeneralSettingsStore(userDataPath);
-    chatAssistantProjectConfigStore = new ChatAssistantProjectConfigStore(
-      userDataPath
-    );
-    await workspaceDirectoryStore.initializeDefault(app.getPath("documents"));
-    await loadAndSyncNativeAppearanceChrome();
-    syncGeneralSettings((await generalSettingsStore.list()).settings);
-    updateService = new UpdateService(() => {
-      beginGracefulShutdown({ installUpdate: true });
-    });
-    appAlertStore = new AppAlertStore(userDataPath);
-    cloudBackupService = createCloudBackupFeature(
-      userDataPath,
-      async () => (await requireWorkspaceDirectoryStore().list()).path,
-      (command) => supervisor.requestCommand("core", command, 0)
-    );
-    deviceSyncService = createDesktopDeviceSync(userDataPath, {
-      workspaceDirectory: async () =>
-        (await requireWorkspaceDirectoryStore().list()).path,
-      command: (command) => supervisor.requestCommand("core", command, 0),
-      busy: () => activeRuns.size > 0
-    });
-    marketplaceClient = new MarketplaceClient(userDataPath, {
-      loadCatalogSnapshot: async () => {
-        const id = createId("cmd_marketplace_snapshot");
-        const command = CommandEnvelopeSchema.parse(
-          createEnvelope("catalog.snapshot", {}, { id, correlationId: id })
-        );
-        const result = await supervisor.requestCommand("core", command, 0);
-        if (result.status === "rejected") {
-          throw new Error(result.error.message);
-        }
-        return CatalogSnapshotSchema.parse(result.payload);
-      },
-      installPackage: async (input) => {
-        const id = createId("cmd_marketplace_install");
-        const command = CommandEnvelopeSchema.parse(
-          createEnvelope("catalog.installMarketplaceSkillContent", input, {
-            id,
-            correlationId: id
-          })
-        );
-        const result = await supervisor.requestCommand("core", command, 0);
-        if (result.status === "rejected") {
-          throw new Error(result.error.message);
-        }
-        return CatalogInstallMarketplaceSkillContentResultSchema.parse(
-          result.payload
-        );
-      }
-    });
+    refreshDesktopServices(services, desktopStartup.log);
     updateService.subscribe((state) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send(UPDATE_STATE_EVENT_CHANNEL, state);
       }
     });
-    registerIpc();
-    supervisor.startAll();
-    utilitiesStarted = true;
-    mainWindow = createMainWindow();
+    await desktopStartup.step("utilities", () => {
+      registerIpc();
+      supervisor.startAll();
+      utilitiesStarted = true;
+    });
+    await desktopStartup.step("window", () => {
+      mainWindow = createMainWindow();
+    });
     mainWindowStartupGate.markReady();
 
     app.on("activate", () => {

@@ -1,8 +1,5 @@
 import { siteOfficialModelsApi } from "./site-official-models-api";
 import {
-  ChatAssistantProjectConfigListSchema,
-  ChatAssistantProjectConfigSchema,
-  ChatAssistantProjectRefSchema,
   ModelCapacityResultSchema,
   ModelConfigInputSchema,
   ModelConnectionTestResultSchema,
@@ -20,8 +17,6 @@ import {
   SessionPromptAcceptedPayloadSchema,
   SessionPromptCommandPayloadSchema,
   createEnvelope,
-  type ChatAssistantProjectConfig,
-  type ChatAssistantProjectRef,
   type DeepWriteApi,
   type ModelCapacityResult,
   type ModelConfigInput,
@@ -270,72 +265,6 @@ export async function queryModelUsage(
   );
 }
 
-export async function getChatAssistantProjectConfig(
-  rawProject: ChatAssistantProjectRef
-): Promise<ChatAssistantProjectConfig> {
-  const project = ChatAssistantProjectRefSchema.parse(rawProject);
-  const id = browserId("cmd_chat_assistant_project_config_get");
-  return ChatAssistantProjectConfigSchema.parse(
-    await invokeCommand<ChatAssistantProjectConfig>(
-      createEnvelope("chatAssistantProjectConfig.get", project, {
-        id,
-        correlationId: id
-      })
-    )
-  );
-}
-
-export async function listChatAssistantProjectConfigs(): Promise<
-  ChatAssistantProjectRef[]
-> {
-  const id = browserId("cmd_chat_assistant_project_config_list");
-  return ChatAssistantProjectConfigListSchema.parse(
-    await invokeCommand<ChatAssistantProjectRef[]>(
-      createEnvelope(
-        "chatAssistantProjectConfig.list",
-        {},
-        {
-          id,
-          correlationId: id
-        }
-      )
-    )
-  );
-}
-
-export async function saveChatAssistantProjectConfig(
-  rawProject: ChatAssistantProjectRef,
-  rawSystemPrompt: string
-): Promise<ChatAssistantProjectConfig> {
-  const project = ChatAssistantProjectRefSchema.parse(rawProject);
-  const systemPrompt = String(rawSystemPrompt);
-  const id = browserId("cmd_chat_assistant_project_config_save");
-  return ChatAssistantProjectConfigSchema.parse(
-    await invokeCommand<ChatAssistantProjectConfig>(
-      createEnvelope(
-        "chatAssistantProjectConfig.save",
-        { project, systemPrompt },
-        { id, correlationId: id }
-      )
-    )
-  );
-}
-
-export async function resetChatAssistantProjectConfig(
-  rawProject: ChatAssistantProjectRef
-): Promise<ChatAssistantProjectConfig> {
-  const project = ChatAssistantProjectRefSchema.parse(rawProject);
-  const id = browserId("cmd_chat_assistant_project_config_reset");
-  return ChatAssistantProjectConfigSchema.parse(
-    await invokeCommand<ChatAssistantProjectConfig>(
-      createEnvelope("chatAssistantProjectConfig.reset", project, {
-        id,
-        correlationId: id
-      })
-    )
-  );
-}
-
 export const session: DeepWriteApi["session"] = {
   prompt,
   abort,
@@ -360,13 +289,4 @@ export const models: DeepWriteApi["models"] = {
 
 export const modelUsage: DeepWriteApi["modelUsage"] = {
   query: queryModelUsage
-};
-
-export const chatAssistantProjectConfig: NonNullable<
-  DeepWriteApi["chatAssistantProjectConfig"]
-> = {
-  list: listChatAssistantProjectConfigs,
-  get: getChatAssistantProjectConfig,
-  save: saveChatAssistantProjectConfig,
-  reset: resetChatAssistantProjectConfig
 };

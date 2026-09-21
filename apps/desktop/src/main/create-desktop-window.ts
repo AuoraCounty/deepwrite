@@ -7,6 +7,8 @@ import {
 } from "./native-appearance-chrome";
 import { loadWindowRenderer } from "./window-renderer";
 import { installTextContextMenu } from "./text-context-menu";
+import { guardWindowStartup } from "./window-startup";
+import type { StartupLog } from "./startup-log";
 
 function isSafeExternalUrl(rawUrl: string): boolean {
   try {
@@ -27,7 +29,8 @@ function isAllowedZhuqueDetectionUrl(rawUrl: string): boolean {
 }
 
 export function createDesktopWindow(
-  appearance: AppearanceSettings
+  appearance: AppearanceSettings,
+  startup: { log: StartupLog; fail: (error: unknown) => void }
 ): BrowserWindow {
   const isDarwin = process.platform === "darwin";
   const window = new BrowserWindow({
@@ -38,7 +41,7 @@ export function createDesktopWindow(
     show: false,
     backgroundColor: resolveNativeBackgroundColor(appearance),
     title: "DeepWrite",
-    icon: join(__dirname, "../../build/icon.png"),
+    icon: join(__dirname, "../renderer/app-icon.png"),
     ...(isDarwin
       ? {
           titleBarStyle: "hiddenInset" as const,
@@ -108,15 +111,17 @@ export function createDesktopWindow(
     }
   });
 
-  if (process.env.DEEPWRITE_SMOKE !== "1") {
-    window.once("ready-to-show", () => window.show());
-  }
+  const loading = guardWindowStartup(window, {
+    log: startup.log,
+    onFailure: startup.fail,
+    show: process.env.DEEPWRITE_SMOKE !== "1"
+  });
 
   void loadWindowRenderer(
     window,
     join(__dirname, "../renderer/index.html"),
     process.env.ELECTRON_RENDERER_URL
-  ).catch((error: unknown) => console.error("加载工作台失败", error));
+  ).catch(loading.fail);
 
   return window;
 }

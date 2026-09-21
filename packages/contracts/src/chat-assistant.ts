@@ -2,6 +2,7 @@ import { z } from "zod";
 import { BookSchema, CatalogIndexSnapshotSchema } from "./catalog";
 import {
   CHAT_ASSISTANT_PROJECT_PROMPT_MAX_LENGTH,
+  ChatAssistantRoleplayRuntimeContextSchema,
   ChatAssistantProjectRefSchema
 } from "./chat-assistant-base";
 import { EnvelopeBaseSchema } from "./envelope";
@@ -116,6 +117,7 @@ const ChatAssistantRuntimeBaseSchema = z.object({
 });
 
 export const ChatAssistantRuntimeContextSchema = z.discriminatedUnion("mode", [
+  ChatAssistantRoleplayRuntimeContextSchema,
   ChatAssistantRuntimeBaseSchema.extend({ mode: z.literal("normal") }).strict(),
   ChatAssistantRuntimeBaseSchema.extend({
     mode: z.literal("project"),

@@ -8,7 +8,11 @@ export const DEFAULT_CHAT_ASSISTANT_PROJECT_PROMPT = [
   "需要引用作品事实时先查询核对；不要把目录、搜索片段或未读取正文当成已经确认的事实。"
 ].join("\n");
 
-export const ChatAssistantModeSchema = z.enum(["normal", "project"]);
+export const ChatAssistantModeSchema = z.enum([
+  "normal",
+  "roleplay",
+  "project"
+]);
 export type ChatAssistantMode = z.infer<typeof ChatAssistantModeSchema>;
 
 export const ChatAssistantProjectTypeSchema = z.enum([
@@ -30,7 +34,35 @@ export type ChatAssistantProjectRef = z.infer<
   typeof ChatAssistantProjectRefSchema
 >;
 
+export const CHAT_ASSISTANT_ROLEPLAY_PROMPT_SUFFIX =
+  "上述是人物定义，请你一直扮演这个人物，用于和用户沟通，开始吧";
+export const ChatAssistantRoleplayConfigSchema = z
+  .object({
+    id: z.string().trim().min(1).max(120),
+    name: z.string().trim().min(1).max(120),
+    systemPrompt: z
+      .string()
+      .trim()
+      .min(1)
+      .max(CHAT_ASSISTANT_PROJECT_PROMPT_MAX_LENGTH)
+  })
+  .strict();
+export type ChatAssistantRoleplayConfig = z.infer<
+  typeof ChatAssistantRoleplayConfigSchema
+>;
+export const ChatAssistantRoleplayContextSchema = z
+  .object({
+    mode: z.literal("roleplay"),
+    roleId: ChatAssistantRoleplayConfigSchema.shape.id
+  })
+  .strict();
+export const ChatAssistantRoleplayRuntimeContextSchema =
+  ChatAssistantRoleplayContextSchema.extend({
+    systemPrompt: ChatAssistantRoleplayConfigSchema.shape.systemPrompt
+  }).strict();
+
 export const ChatAssistantRequestContextSchema = z.discriminatedUnion("mode", [
+  ChatAssistantRoleplayContextSchema,
   z
     .object({
       mode: z.literal("normal"),

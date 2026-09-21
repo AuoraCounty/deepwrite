@@ -10,7 +10,8 @@ export const REQUIRED_RUNTIME_FILES = [
   "out/main/utilities/tool-entry.js",
   "out/main/utilities/conversation-storage/worker-entry.js",
   "out/preload/index.js",
-  "out/renderer/index.html"
+  "out/renderer/index.html",
+  "out/renderer/app-icon.png"
 ];
 
 function relativeImports(file, source) {

@@ -69,6 +69,9 @@ const runs = computed(() => props.runs ?? props.message.subagentRuns ?? []);
             subagentRetryProgress(run)
           }}</span>
           <span>{{ run.toolCalls.length }} 个工具</span>
+          <span v-if="subagentUsageLabel(run)" aria-label="子智能体 token 用量">
+            {{ subagentUsageLabel(run) }}
+          </span>
           <span v-if="subagentReviewHint(message, run)" class="is-review">
             {{ subagentReviewHint(message, run) }}
           </span>
@@ -141,9 +144,6 @@ const runs = computed(() => props.runs ?? props.message.subagentRuns ?? []);
           >
             {{ run.errorMessage }}
           </p>
-          <small v-if="subagentUsageLabel(run)">{{
-            subagentUsageLabel(run)
-          }}</small>
         </section>
       </div>
     </ConversationDetails>

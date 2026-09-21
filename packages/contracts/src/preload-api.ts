@@ -163,12 +163,10 @@ import type {
   CloudBackupStatus
 } from "./cloud-backup";
 import type { ConversationPersistenceApi } from "./renderer-state";
-import type {
-  ChatAssistantProjectConfig,
-  ChatAssistantProjectRef
-} from "./chat-assistant";
+import type { ChatAssistantConfigApi } from "./chat-assistant-config-api";
 
-export interface DeepWriteApi extends TextContextMenuPreloadApi {
+export interface DeepWriteApi
+  extends TextContextMenuPreloadApi, ChatAssistantConfigApi {
   system: {
     health(): Promise<SystemHealthPayload>;
   };
@@ -315,17 +313,7 @@ export interface DeepWriteApi extends TextContextMenuPreloadApi {
   modelUsage: {
     query(input?: ModelUsageQueryInput): Promise<ModelUsageDashboard>;
   };
-  chatAssistantProjectConfig?: {
-    list(): Promise<ChatAssistantProjectRef[]>;
-    get(project: ChatAssistantProjectRef): Promise<ChatAssistantProjectConfig>;
-    save(
-      project: ChatAssistantProjectRef,
-      systemPrompt: string
-    ): Promise<ChatAssistantProjectConfig>;
-    reset(
-      project: ChatAssistantProjectRef
-    ): Promise<ChatAssistantProjectConfig>;
-  };
+
   workspaceAgents: {
     list(workspaceType: WorkspaceType): Promise<WorkspaceAgentSettings>;
     save(

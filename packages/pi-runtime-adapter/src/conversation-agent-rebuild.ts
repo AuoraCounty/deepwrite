@@ -19,9 +19,11 @@ export function conversationAgentKey(input: AgentRunInput): string {
   const subagentAuthoring = input.workspaceContext?.subagentAuthoring;
   return `${input.sessionId}:${
     input.mode === "chat-assistant"
-      ? input.chatAssistantRuntimeContext?.mode === "project"
-        ? `chat-assistant:project:${input.chatAssistantRuntimeContext.project.projectType}:${input.chatAssistantRuntimeContext.project.projectId}`
-        : "chat-assistant:normal"
+      ? input.chatAssistantRuntimeContext?.mode === "roleplay"
+        ? `chat-assistant:roleplay:${input.chatAssistantRuntimeContext.roleId}`
+        : input.chatAssistantRuntimeContext?.mode === "project"
+          ? `chat-assistant:project:${input.chatAssistantRuntimeContext.project.projectType}:${input.chatAssistantRuntimeContext.project.projectId}`
+          : "chat-assistant:normal"
       : subagentAuthoring
         ? `subagent-authoring:${subagentAuthoring.parentAgentId}`
         : input.learningImitationProfile

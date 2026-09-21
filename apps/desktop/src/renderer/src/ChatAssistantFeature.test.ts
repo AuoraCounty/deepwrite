@@ -11,7 +11,16 @@ import featureImportsSource from "./components/lazyFeatureImports.ts?raw";
 const lazySource = `${asyncComponentsSource}\n${featureImportsSource}`;
 import composerSource from "./features/chat-assistant/ChatAssistantComposer.vue?raw";
 import homeSource from "./features/chat-assistant/ChatAssistantHome.vue?raw";
-import overlaySource from "./features/chat-assistant/ChatAssistantOverlay.vue?raw";
+import overlayComponentSource from "./features/chat-assistant/ChatAssistantOverlay.vue?raw";
+import overlayWindowSource from "./features/chat-assistant/useChatAssistantWindow.ts?raw";
+import projectConfigSource from "./features/chat-assistant/ChatAssistantProjectConfig.vue?raw";
+import projectConfigLogicSource from "./features/chat-assistant/useChatAssistantProjectConfig.ts?raw";
+const overlaySource = [
+  overlayComponentSource,
+  overlayWindowSource,
+  projectConfigSource,
+  projectConfigLogicSource
+].join("\n");
 import headerSource from "./features/chat-assistant/ChatAssistantHeader.vue?raw";
 import featureSource from "./features/chat-assistant/useChatAssistant.ts?raw";
 import modeSource from "./features/chat-assistant/useChatAssistantMode.ts?raw";
@@ -148,7 +157,7 @@ describe("independent chat assistant feature", () => {
     expect(overlaySource).not.toContain('class="chat-assistant-mode-tabs"');
     expect(overlaySource).toContain("编辑项目");
     expect(overlaySource).toContain('actionIcon: "edit"');
-    expect(overlaySource).toContain('@edit-project="openEditProject"');
+    expect(overlaySource).toContain('@edit-project="editContext"');
     expect(overlaySource).not.toContain(
       'class="chat-assistant-project-action"'
     );

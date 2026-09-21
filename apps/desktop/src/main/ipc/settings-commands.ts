@@ -1,7 +1,5 @@
 import { handleAgentTeamCommands } from "./agent-team-commands";
 import {
-  ChatAssistantProjectConfigListSchema,
-  ChatAssistantProjectConfigSchema,
   GeneralSettingsSnapshotSchema,
   LearningImitationSettingsSchema,
   LibraryAgentSettingsSchema,
@@ -420,47 +418,5 @@ export async function handleSettingsCommands(
     }
   }
 
-  if (
-    command.type === "chatAssistantProjectConfig.list" ||
-    command.type === "chatAssistantProjectConfig.get" ||
-    command.type === "chatAssistantProjectConfig.save" ||
-    command.type === "chatAssistantProjectConfig.reset"
-  ) {
-    try {
-      const store = ctx.requireChatAssistantProjectConfigStore();
-      const payload =
-        command.type === "chatAssistantProjectConfig.list"
-          ? await store.list()
-          : command.type === "chatAssistantProjectConfig.get"
-            ? await store.get(command.payload)
-            : command.type === "chatAssistantProjectConfig.save"
-              ? await store.save(
-                  command.payload.project,
-                  command.payload.systemPrompt
-                )
-              : await store.reset(command.payload);
-      return {
-        status: "accepted",
-        requestId: command.id,
-        payload:
-          command.type === "chatAssistantProjectConfig.list"
-            ? ChatAssistantProjectConfigListSchema.parse(payload)
-            : ChatAssistantProjectConfigSchema.parse(payload)
-      };
-    } catch (error: unknown) {
-      return {
-        status: "rejected",
-        requestId: command.id,
-        error: {
-          code: "chat_assistant_project_config.failed",
-          message:
-            error instanceof Error
-              ? error.message
-              : "处理聊天助手项目配置失败。",
-          details: safeErrorDetails(error)
-        }
-      };
-    }
-  }
   return undefined;
 }

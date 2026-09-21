@@ -52,6 +52,16 @@ export async function resolveChatAssistantRuntimeContext(
   deps: ChatAssistantRuntimeContextDeps
 ): Promise<ChatAssistantRuntimeContext> {
   const request = payload.chatAssistant ?? { mode: "normal" as const };
+  if (request.mode === "roleplay") {
+    const config = await deps
+      .requireChatAssistantProjectConfigStore()
+      .roleplay.get(request.roleId);
+    return ChatAssistantRuntimeContextSchema.parse({
+      mode: "roleplay",
+      roleId: config.id,
+      systemPrompt: config.systemPrompt
+    });
+  }
   const [catalog, longList, settings, today, sevenDays, thirtyDays, all] =
     await Promise.all([
       requireCorePayload(

@@ -38,14 +38,8 @@ const smokeUserData = await mkdtemp(
 const command = !hasDisplay && hasXvfb ? "xvfb-run" : electronBinary;
 const args =
   !hasDisplay && hasXvfb
-    ? [
-        "-a",
-        electronBinary,
-        ".",
-        "--no-sandbox",
-        `--user-data-dir=${smokeUserData}`
-      ]
-    : [".", "--no-sandbox", `--user-data-dir=${smokeUserData}`];
+    ? ["-a", electronBinary, ".", `--user-data-dir=${smokeUserData}`]
+    : [".", `--user-data-dir=${smokeUserData}`];
 
 const child = spawn(command, args, {
   cwd: appDir,
