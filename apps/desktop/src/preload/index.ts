@@ -1,3 +1,4 @@
+import { desktopEvents } from "./desktop-events-api";
 import {
   chatAssistantProjectConfig,
   chatAssistantRoleplay
@@ -68,7 +69,6 @@ import {
   GeneralSettingsSchema,
   GeneralSettingsSnapshotSchema,
   ImportLegacyLibraryResultSchema,
-  IPC_EVENT_CHANNEL,
   UPDATE_CHECK_CHANNEL,
   UPDATE_DOWNLOAD_CHANNEL,
   UPDATE_GET_STATE_CHANNEL,
@@ -96,7 +96,6 @@ import {
   ScriptWorkspaceAgentIdSchema,
   ShortBookSchema,
   ShortWorkspaceAgentIdSchema,
-  SystemEventEnvelopeSchema,
   SystemHealthPayloadSchema,
   UnregisterCatalogProjectInputSchema,
   UnregisterCatalogProjectResultSchema,
@@ -184,7 +183,6 @@ import {
   type ShortWorkspaceAgentId,
   type ShortWorkspaceAgentSettings,
   type ShortWorkspaceAgentSettingsInput,
-  type SystemEventEnvelope,
   type SystemHealthPayload,
   type UnregisterCatalogProjectInput,
   type UnregisterCatalogProjectResult,
@@ -1177,23 +1175,7 @@ const api: DeepWriteApi = {
     exportLong: exportLongManuscript,
     exportShort: exportShortManuscript
   },
-  events: {
-    subscribe(listener: (event: SystemEventEnvelope) => void): () => void {
-      const handler = (
-        _event: Electron.IpcRendererEvent,
-        rawEvent: unknown
-      ): void => {
-        const parsed = SystemEventEnvelopeSchema.safeParse(rawEvent);
-        if (!parsed.success) {
-          console.warn("DeepWrite discarded an invalid desktop event.");
-          return;
-        }
-        listener(parsed.data as SystemEventEnvelope);
-      };
-      ipcRenderer.on(IPC_EVENT_CHANNEL, handler);
-      return () => ipcRenderer.removeListener(IPC_EVENT_CHANNEL, handler);
-    }
-  }
+  ...desktopEvents
 };
 
 contextBridge.exposeInMainWorld("deepwrite", api);

@@ -1,3 +1,4 @@
+import type { WindowFrameApi } from "./window-frame";
 import type {
   MarketplaceEmailCodeInput,
   MarketplaceEmailCodeResult,
@@ -167,6 +168,7 @@ import type { ChatAssistantConfigApi } from "./chat-assistant-config-api";
 
 export interface DeepWriteApi
   extends TextContextMenuPreloadApi, ChatAssistantConfigApi {
+  windowFrame?: WindowFrameApi;
   system: {
     health(): Promise<SystemHealthPayload>;
   };

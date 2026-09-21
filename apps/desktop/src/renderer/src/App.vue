@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WindowFrame from "./components/WindowFrame.vue";
 import { defineAsyncComponent } from "vue";
 
 const WorkspaceShell = defineAsyncComponent(
@@ -7,5 +8,5 @@ const WorkspaceShell = defineAsyncComponent(
 </script>
 
 <template>
-  <WorkspaceShell />
+  <WindowFrame><WorkspaceShell /></WindowFrame>
 </template>

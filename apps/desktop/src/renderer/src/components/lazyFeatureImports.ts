@@ -85,3 +85,5 @@ export const loadStyleComparisonPage = () =>
   import("../extras/style-comparison/StyleComparisonPage.vue");
 export const loadRevisionAnalysisPage = async () =>
   (await import("../extras/revision-analysis/loader")).loadPage();
+
+export const loadWindowMenuBar = () => import("./WindowMenuBar.vue");

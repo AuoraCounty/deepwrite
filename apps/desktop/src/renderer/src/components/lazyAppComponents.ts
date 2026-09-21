@@ -155,3 +155,7 @@ export const StyleComparisonPage = lazyFeature((features) =>
 export const RevisionAnalysisPage = lazyFeature((features) =>
   features.loadRevisionAnalysisPage()
 );
+
+export const WindowMenuBar = lazyFeature((features) =>
+  features.loadWindowMenuBar()
+);

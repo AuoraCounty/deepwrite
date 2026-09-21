@@ -74,3 +74,5 @@ export * from "./revision-analysis-budget";
 export * from "./text-context-menu";
 
 export { compareVersions } from "./update-version";
+
+export * from "./window-frame";

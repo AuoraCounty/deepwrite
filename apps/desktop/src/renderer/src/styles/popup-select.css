@@ -73,8 +73,9 @@
   background: var(--surface-hover, #f0f0ee);
 }
 
-.popup-select:not(.is-compact).is-open .popup-select-trigger,
-.popup-select:not(.is-compact) .popup-select-trigger:focus-visible {
+.popup-select:not(.is-compact):not(.is-menu).is-open .popup-select-trigger,
+.popup-select:not(.is-compact):not(.is-menu)
+  .popup-select-trigger:focus-visible {
   box-shadow: 0 0 0 3px var(--accent-soft, rgb(90 105 120 / 10%));
 }
 
@@ -273,4 +274,38 @@
 .popup-select-checkbox.is-checked {
   border-color: var(--accent);
   background: var(--accent);
+}
+
+/* Titlebar actions remain text-only in every interaction state. */
+.popup-select.is-menu {
+  width: auto;
+}
+.popup-select.is-menu .popup-select-trigger {
+  width: auto;
+  height: auto;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+.popup-select.is-menu .popup-select-label {
+  color: var(--text-primary);
+}
+.popup-select.is-menu .popup-select-trigger:hover:not(:disabled),
+.popup-select.is-menu.is-open .popup-select-trigger,
+.popup-select.is-menu .popup-select-trigger:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+}
+.popup-select.is-menu .popup-select-trigger:focus-visible {
+  text-decoration-thickness: 2px;
 }

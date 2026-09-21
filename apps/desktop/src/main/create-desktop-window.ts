@@ -1,3 +1,4 @@
+import { installWindowFrame } from "./window-frame";
 import { BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import type { AppearanceSettings } from "@deepwrite/contracts";
@@ -39,6 +40,7 @@ export function createDesktopWindow(
     minWidth: 1120,
     minHeight: 700,
     show: false,
+    ...(process.platform === "linux" ? { frame: false } : {}),
     backgroundColor: resolveNativeBackgroundColor(appearance),
     title: "DeepWrite",
     icon: join(__dirname, "../renderer/app-icon.png"),
@@ -58,6 +60,7 @@ export function createDesktopWindow(
     }
   });
   installTextContextMenu(window);
+  installWindowFrame(window);
 
   applyNativeAppearanceChrome(appearance, [window]);
 

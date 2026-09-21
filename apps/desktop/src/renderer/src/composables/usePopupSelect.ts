@@ -111,7 +111,7 @@ export function usePopupSelect(
     };
   }
 
-  function focusOption(index: number): void {
+  function focusOption(index: number, direction: 1 | -1 = 1): void {
     if (index < 0 || props.options.length === 0) {
       return;
     }
@@ -122,7 +122,8 @@ export function usePopupSelect(
         optionElements.value[candidate]?.focus();
         return;
       }
-      candidate = (candidate + 1 + props.options.length) % props.options.length;
+      candidate =
+        (candidate + direction + props.options.length) % props.options.length;
     }
   }
 
@@ -191,11 +192,25 @@ export function usePopupSelect(
     );
     const baseIndex = currentIndex >= 0 ? currentIndex : selectedEnabledIndex();
     focusOption(
-      (baseIndex + direction + props.options.length) % props.options.length
+      (baseIndex + direction + props.options.length) % props.options.length,
+      direction
     );
   }
 
+  function navigateMenu(event: KeyboardEvent): boolean {
+    if (
+      props.variant !== "menu" ||
+      !["ArrowLeft", "ArrowRight"].includes(event.key)
+    )
+      return false;
+    event.preventDefault();
+    event.stopPropagation();
+    emit("menuNavigate", event.key === "ArrowRight" ? 1 : -1);
+    return true;
+  }
+
   function handleTriggerKeydown(event: KeyboardEvent): void {
+    if (navigateMenu(event)) return;
     if (event.key === "Escape" && open.value) {
       event.preventDefault();
       event.stopPropagation();
@@ -218,6 +233,7 @@ export function usePopupSelect(
   }
 
   function handleMenuKeydown(event: KeyboardEvent): void {
+    if (navigateMenu(event)) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       moveFocus(event.key === "ArrowDown" ? 1 : -1);
@@ -225,7 +241,10 @@ export function usePopupSelect(
     }
     if (event.key === "Home" || event.key === "End") {
       event.preventDefault();
-      focusOption(event.key === "Home" ? 0 : props.options.length - 1);
+      focusOption(
+        event.key === "Home" ? 0 : props.options.length - 1,
+        event.key === "Home" ? 1 : -1
+      );
       return;
     }
     if (event.key === "Escape") {
@@ -260,7 +279,7 @@ export function usePopupSelect(
           return;
         }
       }
-      closeMenu();
+      closeMenu(props.variant === "menu");
     }
   }
 
@@ -305,6 +324,8 @@ export function usePopupSelect(
   });
 
   return {
+    openMenu,
+    closeMenu,
     trigger,
     menu,
     open,

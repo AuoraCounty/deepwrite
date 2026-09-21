@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWorkspaceWindowMenus } from "./composables/useWorkspaceWindowMenus";
 import { useBookAnalysisFeatures } from "./composables/useBookAnalysisFeatures";
 import {
   computed,
@@ -1750,6 +1751,10 @@ async function createCreativeBook(
     )
   );
 }
+async function refreshImportedCatalog(): Promise<void> {
+  await featureHost.loadWorkspaceDirectory();
+  await loadCatalogSnapshot();
+}
 async function handleResourceAction(
   payload: ResourceSectionActionPayload
 ): Promise<void> {
@@ -1839,57 +1844,22 @@ async function handleResourceAction(
     payload.action === "import-legacy-library" &&
     (payload.domain === "material" || payload.domain === "skill")
   ) {
-    if (!window.deepwrite) {
-      uiMessage.warning("浏览器预览不能导入旧版资料库，请使用桌面客户端。");
-      return;
-    }
-    if (catalogMutationPending.value) {
-      return;
-    }
-    catalogMutationPending.value = true;
-    try {
-      const result = await window.deepwrite.catalog.importLegacyLibrary(
-        payload.domain
-      );
-      if (!result) {
-        return;
-      }
-      await featureHost.loadWorkspaceDirectory();
-      await loadCatalogSnapshot();
-      const imported = result.imported.at(-1);
-      const target = documents.value.find(
-        (document) => document.libraryId === imported?.id
-      );
-      if (target) {
-        selectedResourceId.value = target.id;
-        revealTextPane();
-      }
-      const libraryLabel = payload.domain === "material" ? "素材" : "技能";
-      if (result.failures.length === 0) {
-        uiMessage.success(
-          result.imported.length === 1
-            ? `已导入旧版${libraryLabel}库“${result.imported[0]!.title}”并新建资料库`
-            : `已导入 ${result.imported.length} 个旧版${libraryLabel}库并新建资料库`
+    const { importLegacyLibraryAction } =
+      await import("./composables/catalogProjectActions");
+    await importLegacyLibraryAction(payload.domain, {
+      api: window.deepwrite,
+      pending: catalogMutationPending,
+      refresh: refreshImportedCatalog,
+      selectLibrary: (id) => {
+        const target = documents.value.find(
+          (document) => document.libraryId === id
         );
-      } else {
-        const failureSummary = result.failures
-          .map(({ fileName, message }) => `${fileName}：${message}`)
-          .join("；");
-        if (result.imported.length > 0) {
-          uiMessage.warning(
-            `已导入 ${result.imported.length} 个旧版${libraryLabel}库，${result.failures.length} 个失败：${failureSummary}`
-          );
-        } else {
-          uiMessage.error(`导入旧版${libraryLabel}库失败：${failureSummary}`);
+        if (target) {
+          selectedResourceId.value = target.id;
+          revealTextPane();
         }
       }
-    } catch (error: unknown) {
-      uiMessage.error(
-        error instanceof Error ? error.message : "导入旧版资料库失败。"
-      );
-    } finally {
-      catalogMutationPending.value = false;
-    }
+    });
     return;
   }
 
@@ -1900,54 +1870,34 @@ async function handleResourceAction(
   }
 
   if (payload.action === "import") {
-    if (!window.deepwrite) {
-      uiMessage.warning("浏览器预览不能打开本地文件夹，请使用桌面客户端。");
-      return;
-    }
-    if (catalogMutationPending.value) {
-      return;
-    }
-    const domain =
-      payload.domain === "creation"
-        ? "book"
-        : payload.domain === "material"
-          ? "material"
-          : "skill";
-    catalogMutationPending.value = true;
-    try {
-      const opened = await window.deepwrite.catalog.openProject(domain);
-      if (!opened) {
-        return;
-      }
-      await featureHost.loadWorkspaceDirectory();
-      await loadCatalogSnapshot();
-      const targetResourceId =
-        opened.domain === "book"
-          ? resolvePreferredBookResourceId(
-              catalogProjection.value ?? undefined,
-              opened.id
-            )
-          : documents.value.find((document) => document.libraryId === opened.id)
-              ?.id;
-      if (targetResourceId) {
-        const targetNode = findResourceNodeIn(
-          resourceTreeSections.value,
-          targetResourceId
-        );
-        if (targetNode) {
-          await selectResource(targetNode);
+    const { openCatalogProjectAction } =
+      await import("./composables/catalogProjectActions");
+    await openCatalogProjectAction(
+      payload.domain === "creation" ? "book" : payload.domain,
+      {
+        api: window.deepwrite,
+        pending: catalogMutationPending,
+        refresh: refreshImportedCatalog,
+        select: async (opened) => {
+          const targetResourceId =
+            opened.domain === "book"
+              ? resolvePreferredBookResourceId(
+                  catalogProjection.value ?? undefined,
+                  opened.id
+                )
+              : documents.value.find(
+                  (document) => document.libraryId === opened.id
+                )?.id;
+          if (targetResourceId) {
+            const targetNode = findResourceNodeIn(
+              resourceTreeSections.value,
+              targetResourceId
+            );
+            if (targetNode) await selectResource(targetNode);
+          }
         }
       }
-      uiMessage.success(
-        `已打开${opened.domain === "book" ? "书籍" : opened.domain === "material" ? "素材库" : "技能库"}“${opened.title}”`
-      );
-    } catch (error: unknown) {
-      uiMessage.error(
-        error instanceof Error ? error.message : "打开本地项目失败。"
-      );
-    } finally {
-      catalogMutationPending.value = false;
-    }
+    );
     return;
   }
 
@@ -2339,12 +2289,22 @@ function startWorkspaceSystemEvents(): () => void {
   };
 }
 
-function handleGlobalKeydown(event: KeyboardEvent): void {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
-    event.preventDefault();
-    openCreateBookDialog();
-  }
-  if (event.key === "Escape") {
+const handleGlobalKeydown = useWorkspaceWindowMenus({
+  busy: () => catalogMutationPending.value || longMutationPending.value,
+  create: openCreateBookDialog,
+  open: () =>
+    handleResourceAction({ domain: "creation", action: "choose-open-book" }),
+  settings: featureHost.openSettings,
+  leftCollapsed: () => leftCollapsed.value,
+  toggleLeft: () => {
+    leftCollapsed.value = !leftCollapsed.value;
+  },
+  rightCollapsed: () => rightCollapsed.value,
+  toggleRight: () => {
+    rightCollapsed.value = !rightCollapsed.value;
+  },
+  canToggleRight: () => currentView.value === "workspace",
+  escape: () => {
     closeCreateBookDialog();
     bookTransferDialogMode.value = null;
     libraryProjectDialog.value = null;
@@ -2352,11 +2312,9 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
     keepSaveConflictDraft();
     closeBookDialog();
     closeShortStructureDialog();
-    if (currentView.value === "settings") {
-      featureHost.closeSettings();
-    }
+    if (currentView.value === "settings") void featureHost.closeSettings();
   }
-}
+});
 
 async function refreshWorkspaceOnWindowFocus(): Promise<void> {
   if (!window.deepwrite) return;

@@ -19,7 +19,7 @@ export interface PopupSelectProps {
   accessibleLabel: string;
   disabled: boolean;
   placeholder: string;
-  variant: "field" | "compact" | "preset";
+  variant: "field" | "compact" | "preset" | "menu";
   size: "small" | "medium" | "large";
   align: "start" | "end";
   menuMinWidth: number;
@@ -28,6 +28,7 @@ export interface PopupSelectProps {
   selectedValues: readonly PopupSelectValue[];
 }
 export interface PopupSelectEvents {
+  (event: "menuNavigate", direction: 1 | -1): void;
   (event: "update:modelValue", value: PopupSelectValue): void;
   (event: "change", value: PopupSelectValue): void;
   (event: "optionAction", value: PopupSelectValue): void;

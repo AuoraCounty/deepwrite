@@ -10,7 +10,7 @@ const props = withDefaults(
     accessibleLabel: string;
     disabled?: boolean;
     placeholder?: string;
-    variant?: "field" | "compact" | "preset";
+    variant?: "field" | "compact" | "preset" | "menu";
     size?: "small" | "medium" | "large";
     align?: "start" | "end";
     menuMinWidth?: number;
@@ -34,11 +34,14 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: PopupSelectValue];
   change: [value: PopupSelectValue];
+  menuNavigate: [direction: 1 | -1];
   optionAction: [value: PopupSelectValue];
   "update:selectedValues": [values: PopupSelectValue[]];
 }>();
 
 const {
+  openMenu,
+  closeMenu,
   trigger,
   menu,
   open,
@@ -54,6 +57,7 @@ const {
   selectOption,
   runOptionAction
 } = usePopupSelect(props, emit);
+defineExpose({ openMenu, closeMenu, trigger, open });
 </script>
 
 <template>
@@ -69,8 +73,10 @@ const {
       ref="trigger"
       class="popup-select-trigger"
       type="button"
-      role="combobox"
-      :aria-haspopup="$slots.footer ? 'dialog' : 'listbox'"
+      :role="variant === 'menu' ? 'menuitem' : 'combobox'"
+      :aria-haspopup="
+        variant === 'menu' ? 'menu' : $slots.footer ? 'dialog' : 'listbox'
+      "
       :aria-label="accessibleLabel"
       :aria-controls="open ? menuId : undefined"
       :aria-expanded="open"
@@ -89,6 +95,7 @@ const {
         {{ displayLabel }}
       </span>
       <AppIcon
+        v-if="variant !== 'menu'"
         class="popup-select-chevron"
         name="chevron"
         :size="variant === 'compact' ? 11 : 13"
@@ -104,7 +111,9 @@ const {
           class="popup-select-menu"
           :class="{ 'is-compact-menu': variant === 'compact' }"
           :style="menuStyle"
-          :role="$slots.footer ? undefined : 'listbox'"
+          :role="
+            variant === 'menu' ? 'menu' : $slots.footer ? undefined : 'listbox'
+          "
           :aria-label="accessibleLabel"
           :aria-multiselectable="!$slots.footer && multiple ? true : undefined"
           @keydown="handleMenuKeydown"
@@ -131,8 +140,10 @@ const {
                   'has-description': Boolean(option.description)
                 }"
                 type="button"
-                role="option"
-                :aria-selected="isSelected(option.value)"
+                :role="variant === 'menu' ? 'menuitem' : 'option'"
+                :aria-selected="
+                  variant === 'menu' ? undefined : isSelected(option.value)
+                "
                 :disabled="option.disabled"
                 :title="option.title"
                 :style="option.style"

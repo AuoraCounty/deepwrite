@@ -398,3 +398,5 @@ export {
 } from "./marketplace";
 
 export { compareVersions } from "./update-version";
+
+export type { WindowFrameAction, WindowFrameState } from "./window-frame";
