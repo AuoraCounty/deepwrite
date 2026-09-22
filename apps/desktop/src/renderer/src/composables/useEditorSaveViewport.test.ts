@@ -195,6 +195,45 @@ describe("editor save viewport", () => {
     expect(remembered).toHaveBeenLastCalledWith("document-a", 910);
   });
 
+  it("does not copy the previous document scroll onto the next document during render", () => {
+    const { element, setSelectionRange } = createEditor();
+    const documentKey = ref("section-1");
+    element.scrollTop = 880;
+    element.selectionStart = 1200;
+    element.selectionEnd = 1210;
+    element.selectionDirection = "forward";
+    const remembered = vi.fn();
+    const viewport = useEditorSaveViewport({
+      editorInput: ref<HTMLTextAreaElement | null>(element),
+      documentKey,
+      isEditView: () => true,
+      isSaving: () => false,
+      rememberScroll: remembered
+    });
+
+    documentKey.value = "section-2";
+    viewport.captureBeforeRender();
+    viewport.restoreAfterRender();
+
+    expect(element.scrollTop).toBe(880);
+    expect(setSelectionRange).not.toHaveBeenCalled();
+    expect(remembered).not.toHaveBeenCalled();
+
+    element.scrollTop = 40;
+    element.selectionStart = 50;
+    element.selectionEnd = 50;
+    element.selectionDirection = "none";
+    viewport.captureBeforeRender();
+    element.scrollTop = 0;
+    element.selectionStart = 0;
+    element.selectionEnd = 0;
+    viewport.restoreAfterRender();
+
+    expect(element.scrollTop).toBe(40);
+    expect(setSelectionRange).toHaveBeenCalledWith(50, 50, "none");
+    expect(remembered).toHaveBeenCalledWith("section-2", 40);
+  });
+
   it("does not restore a saved viewport into another document", async () => {
     const { element, setSelectionRange } = createEditor();
     element.scrollTop = 480;

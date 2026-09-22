@@ -24,7 +24,6 @@ import type { EditorDraftState, WorkspaceDocument } from "../types/workspace";
 import { resolveEditorTextReferenceRange } from "../utils/editorTextReferences";
 import {
   editorScrollMemoryKey,
-  recalledEditorScrollPosition,
   rememberEditorScrollPosition,
   type EditorScrollView
 } from "../utils/editorScrollMemory";
@@ -43,6 +42,7 @@ import { createTransientScrollbarController } from "../utils/transientScrollbar"
 import { uiMessage } from "../ui-feedback";
 import { useEditorSelectionInsertion } from "../composables/useEditorSelectionInsertion";
 import { useEditorSaveViewport } from "../composables/useEditorSaveViewport";
+import { useLongEditorScrollMemory } from "../composables/useLongEditorScrollMemory";
 import {
   searchLocalEditorEntries,
   useEditorEntrySearch
@@ -173,6 +173,20 @@ let pendingEditorInput: {
 const activeScrollMemoryKey = computed(() =>
   editorScrollMemoryKey(props.document)
 );
+const {
+  handleScroll: rememberDocumentScrollEvent,
+  rememberScroll: rememberCurrentDocumentScroll,
+  restoreScroll: restoreDocumentScroll
+} = useLongEditorScrollMemory({
+  documentKey: () => activeScrollMemoryKey.value,
+  viewMode,
+  editorInput,
+  documentPreview,
+  // This pane remembers the previous section, resets its view mode, then
+  // restores the next section. The shared watcher would run in between and
+  // store the previous offset on the next document.
+  bindIdentityWatch: false
+});
 const documentScrollbar = createTransientScrollbarController();
 const {
   captureBeforeRender: captureEditorViewportBeforeRender,
@@ -547,40 +561,11 @@ function save(): void {
   });
 }
 
-function currentDocumentScroller(
-  view: EditorScrollView
-): HTMLElement | null | undefined {
-  return view === "edit" ? editorInput.value : documentPreview.value;
-}
-
-function rememberCurrentDocumentScroll(
-  key = activeScrollMemoryKey.value
-): void {
-  const scroller = currentDocumentScroller(viewMode.value);
-  if (!scroller) return;
-  rememberEditorScrollPosition(key, viewMode.value, scroller.scrollTop);
-}
-
-async function restoreDocumentScroll(
-  key = activeScrollMemoryKey.value,
-  view = viewMode.value
-): Promise<void> {
-  await nextTick();
-  if (activeScrollMemoryKey.value !== key || viewMode.value !== view) return;
-  const scroller = currentDocumentScroller(view);
-  if (!scroller) return;
-  scroller.scrollTop = recalledEditorScrollPosition(key, view);
-}
-
 function handleDocumentScroll(event: Event): void {
   const scroller = event.currentTarget;
   if (!(scroller instanceof HTMLElement)) return;
   documentScrollbar.reveal(scroller);
-  rememberEditorScrollPosition(
-    activeScrollMemoryKey.value,
-    viewMode.value,
-    scroller.scrollTop
-  );
+  rememberDocumentScrollEvent(event);
   closeSelectionAction();
 }
 

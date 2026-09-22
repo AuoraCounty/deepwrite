@@ -13,6 +13,7 @@ import dialogLayerSource from "./WorkspaceDialogLayer.vue?raw";
 import dialogCoordinatorSource from "../composables/useWorkspaceDialogModuleCoordinator.ts?raw";
 import fixedTitleSource from "../utils/fixedWorkspaceDocumentTitle.ts?raw";
 import saveViewportSource from "../composables/useEditorSaveViewport.ts?raw";
+import scrollMemorySource from "../composables/useLongEditorScrollMemory.ts?raw";
 import textViewModeSource from "../composables/useTextViewMode.ts?raw";
 import selectionInsertionSource from "../composables/useEditorSelectionInsertion.ts?raw";
 
@@ -135,6 +136,8 @@ describe("RightEditorPane expert draft navigation", () => {
 
   it("remembers the scroll position of every section instead of reusing the previous section position", () => {
     expect(source).toContain("editorScrollMemoryKey(props.document)");
+    expect(source).toContain("useLongEditorScrollMemory({");
+    expect(source).toContain("bindIdentityWatch: false");
     expect(source).toContain(
       "rememberCurrentDocumentScroll(previousScrollMemoryKey)"
     );
@@ -142,8 +145,12 @@ describe("RightEditorPane expert draft navigation", () => {
       "restoreDocumentScroll(nextScrollMemoryKey, nextViewMode)"
     );
     expect(source).toContain('@scroll="handleDocumentScroll"');
-    expect(source).toContain(
-      "scroller.scrollTop = recalledEditorScrollPosition(key, view)"
+    expect(scrollMemorySource).toContain(
+      "const scrollTop = recalledEditorScrollPosition(key, view)"
+    );
+    expect(scrollMemorySource).toContain("scroller.scrollTop = scrollTop");
+    expect(saveViewportSource).toContain(
+      "options.documentKey.value !== renderedDocumentKey"
     );
   });
 

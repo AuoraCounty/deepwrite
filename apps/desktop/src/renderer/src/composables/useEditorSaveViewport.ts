@@ -23,12 +23,21 @@ export function useEditorSaveViewport(options: EditorSaveViewportOptions) {
   let pendingSnapshot: EditorViewportSnapshot | null = null;
   let renderSnapshot: EditorViewportSnapshot | null = null;
   let readonlyTransitionRevision = 0;
+  // Props change before the textarea is patched, so the visible scroll still
+  // belongs to the previous document until this render finishes.
+  let renderedDocumentKey = options.documentKey.value;
 
   function capture(): EditorViewportSnapshot | null {
     const input = options.editorInput.value;
-    if (!input || !options.isEditView()) return null;
+    if (
+      !input ||
+      !options.isEditView() ||
+      options.documentKey.value !== renderedDocumentKey
+    ) {
+      return null;
+    }
     return {
-      documentKey: options.documentKey.value,
+      documentKey: renderedDocumentKey,
       scrollTop: input.scrollTop,
       selectionStart: input.selectionStart,
       selectionEnd: input.selectionEnd,
@@ -82,6 +91,7 @@ export function useEditorSaveViewport(options: EditorSaveViewportOptions) {
   function restoreAfterRender(): void {
     const snapshot = renderSnapshot;
     renderSnapshot = null;
+    renderedDocumentKey = options.documentKey.value;
     restoreImmediately(snapshot);
   }
 

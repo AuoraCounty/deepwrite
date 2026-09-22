@@ -59,7 +59,10 @@ describe("long editor scroll memory", () => {
       identity({ fileId: "file-2", worldbuildingItemId: "rule-2" })
     );
     activeKey.value = secondKey;
-    await flushScrollRestore();
+    await nextTick();
+    editor.scrollTop = 640;
+    memory!.handleScroll({ currentTarget: editor } as unknown as Event);
+    await nextTick();
     expect(editor.scrollTop).toBe(0);
 
     editor.scrollTop = 180;
