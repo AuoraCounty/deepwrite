@@ -21,10 +21,14 @@ export {
 } from "./conversationProcessingItems";
 export {
   foldWorkGroups,
-  workGroupLabel,
   type WorkGroupDisplayItem,
   type WorkGroupMemberItem
 } from "./conversationWorkGroups";
+export {
+  subagentPhaseLabel,
+  toolActivityLabel,
+  workGroupActivityLabel
+} from "./conversationActivityLabel";
 export {
   workspaceToolLabel,
   isWriteTool,

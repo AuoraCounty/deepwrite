@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { workGroupActivityLabel } from "./conversationActivityLabel";
 import type { WorkGroupDisplayItem } from "./conversationWorkGroups";
-import { workGroupLabel } from "./conversationWorkGroups";
 import AppIcon from "./AppIcon.vue";
 import ConversationDetails from "./ConversationDetails.vue";
 import ConversationProcessingItem from "./ConversationProcessingItem.vue";
@@ -27,7 +27,7 @@ function detailId(id: string, prefix: string): string {
   >
     <template #summary>
       <span :class="{ 'is-processing-shimmer': item.running }">{{
-        workGroupLabel(item.running)
+        workGroupActivityLabel(item)
       }}</span>
       <AppIcon name="chevron" :size="13" />
     </template>

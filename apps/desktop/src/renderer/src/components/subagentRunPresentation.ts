@@ -3,6 +3,7 @@ import type {
   AgentToolTrace,
   ChatMessage
 } from "../types/conversation";
+import { subagentPhaseLabel } from "./conversationActivityLabel";
 import { isWriteTool } from "./conversationToolPresentation";
 import {
   foldWorkGroups,
@@ -98,8 +99,10 @@ export function subagentProcessingDisplayItems(
   return foldWorkGroups(displayItems, run.status === "running");
 }
 
-const subagentStatusLabels: Record<AgentSubagentRun["status"], string> = {
-  running: "执行中",
+const subagentStatusLabels: Record<
+  Exclude<AgentSubagentRun["status"], "running">,
+  string
+> = {
   completed: "已完成",
   error: "失败",
   stopped: "已停止"
@@ -122,6 +125,7 @@ export function subagentStatusLabel(
   if (run.retry?.state === "scheduled") {
     return `${retryCountdownSeconds(run, now)}s 后重试`;
   }
+  if (run.status === "running") return subagentPhaseLabel(run);
   return subagentStatusLabels[run.status];
 }
 

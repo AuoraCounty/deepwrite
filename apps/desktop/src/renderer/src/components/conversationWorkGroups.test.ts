@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { AgentToolTrace } from "../types/conversation";
 import {
   foldWorkGroups,
-  workGroupLabel,
   type WorkGroupDisplayItem
 } from "./conversationWorkGroups";
+import { workGroupActivityLabel } from "./conversationActivityLabel";
 
 function thinking(
   id: string,
@@ -142,7 +142,19 @@ describe("foldWorkGroups", () => {
       true
     );
     expect((items[0] as WorkGroupDisplayItem).running).toBe(false);
-    expect(workGroupLabel(false)).toBe("处理完成");
-    expect(workGroupLabel(true)).toBe("处理中");
+    expect(workGroupActivityLabel(items[0] as WorkGroupDisplayItem)).toBe(
+      "处理完成"
+    );
+    const running = foldWorkGroups([thinking("t2"), toolGroup("g1")], true);
+    expect(workGroupActivityLabel(running[0] as WorkGroupDisplayItem)).toBe(
+      "读取文件"
+    );
+    const thinkingLast = foldWorkGroups(
+      [toolGroup("g1"), thinking("after")],
+      true
+    );
+    expect(
+      workGroupActivityLabel(thinkingLast[0] as WorkGroupDisplayItem)
+    ).toBe("思考中");
   });
 });

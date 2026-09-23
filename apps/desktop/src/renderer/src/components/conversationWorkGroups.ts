@@ -14,10 +14,6 @@ export type WorkGroupDisplayItem = {
 
 const WORK_MEMBER_TYPES = new Set(["thinking", "tool", "tool-group"]);
 
-export function workGroupLabel(running: boolean): "处理中" | "处理完成" {
-  return running ? "处理中" : "处理完成";
-}
-
 function isEmptyResponse(item: { type: string; content?: string }): boolean {
   return item.type === "response" && !item.content;
 }

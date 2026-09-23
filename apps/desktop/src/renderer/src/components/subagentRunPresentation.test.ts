@@ -55,6 +55,24 @@ describe("subagentRunPresentation", () => {
         Date.parse(startedAt)
       )
     ).toBe("正在重试（第 1/3 次）");
+    expect(subagentStatusLabel(run(), Date.parse(startedAt))).toBe(
+      "安排任务中"
+    );
+    expect(
+      subagentStatusLabel(
+        run({
+          processingSteps: [
+            {
+              id: "think",
+              type: "thinking",
+              content: "先看开场",
+              createdAt: startedAt
+            }
+          ]
+        }),
+        Date.parse(startedAt)
+      )
+    ).toBe("子智能体执行中");
   });
 
   it("prefers pending review over write-call counts", () => {

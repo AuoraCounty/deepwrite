@@ -387,7 +387,7 @@ describe("AgentConversation edit proposal placement", () => {
     expect(subagentSource).toContain('aria-label="子智能体执行过程"');
     expect(subagentSource).toContain("subagentProcessingDisplayItems(run)");
     expect(subagentSource).toContain("<ConversationWorkGroup");
-    expect(workGroupSource).toContain("workGroupLabel(item.running)");
+    expect(workGroupSource).toContain("workGroupActivityLabel(item)");
     expect(workGroupSource).toContain(
       'class="processing-live-item processing-live-thinking processing-work-group"'
     );
