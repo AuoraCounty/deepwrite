@@ -25,6 +25,11 @@ import {
   toModelInput,
   type DraftModel
 } from "../components/modelSettingsDraft";
+import { resolveSavedModelLabel } from "../utils/customModelLabel";
+import {
+  mergeProviderSelectOptions,
+  resolveCustomProviderName
+} from "../utils/customModelProvider";
 import { useRemoteModelListing } from "./useRemoteModelListing";
 
 export interface ModelEditorSavePayload {
@@ -51,14 +56,22 @@ function isValidCustomThinkingLevel(level: string): boolean {
 
 export function useModelEditor(
   initialModel: DraftModel,
-  actions: ModelEditorActions
+  actions: ModelEditorActions,
+  options?: { knownUserProviders?: () => readonly string[] }
 ) {
   const editor = ref(cloneDraftModel(initialModel));
+  const createdUserProviders = ref<string[]>([]);
   const reasoningOptions = BUILT_IN_REASONING_LEVELS.map((value) => ({
     value,
     label: builtInThinkingLabels[value]
   }));
-  const providerOptions = MODEL_PROVIDER_OPTIONS;
+  const providerOptions = computed(() =>
+    mergeProviderSelectOptions(MODEL_PROVIDER_OPTIONS, [
+      ...(options?.knownUserProviders?.() ?? []),
+      ...createdUserProviders.value,
+      editor.value.provider
+    ])
+  );
   const apiOptions: ReadonlyArray<{ value: ModelApi; label: string }> = [
     { value: "openai-completions", label: "OpenAI Completions" },
     { value: "openai-responses", label: "OpenAI Responses" },
@@ -97,6 +110,22 @@ export function useModelEditor(
 
   function applyProviderPreset(provider: string): void {
     applyProviderPresetDefaults(editor.value, provider);
+  }
+
+  function applyCustomProvider(name: string): boolean {
+    const result = resolveCustomProviderName(name, MODEL_PROVIDER_OPTIONS);
+    if (result.status !== "ok") {
+      uiMessage.warning(result.message);
+      return false;
+    }
+    if (!createdUserProviders.value.includes(result.provider)) {
+      createdUserProviders.value = [
+        ...createdUserProviders.value,
+        result.provider
+      ];
+    }
+    applyProviderPresetDefaults(editor.value, result.provider);
+    return true;
   }
 
   function setModelApi(value: string | number): void {
@@ -188,13 +217,8 @@ export function useModelEditor(
       uiMessage.warning("请至少选择一个要保存的模型。");
       return;
     }
-    if (
-      (!remoteListing.canSelectRemoteModel.value &&
-        !editor.value.label.trim()) ||
-      !editor.value.provider.trim() ||
-      !editor.value.modelId.trim()
-    ) {
-      uiMessage.warning("请填写名称、Provider 和模型 ID。");
+    if (!editor.value.provider.trim() || !editor.value.modelId.trim()) {
+      uiMessage.warning("请填写 Provider 和模型 ID。");
       return;
     }
     const customThinkingLevel = editor.value.customThinkingLevel?.trim() ?? "";
@@ -261,15 +285,16 @@ export function useModelEditor(
   }
 
   function test(): void {
-    if (
-      !editor.value.label.trim() ||
-      !editor.value.provider.trim() ||
-      !editor.value.modelId.trim()
-    ) {
-      uiMessage.warning("请先填写名称、Provider 和模型 ID，再测试连接。");
+    if (!editor.value.provider.trim() || !editor.value.modelId.trim()) {
+      uiMessage.warning("请先填写 Provider 和模型 ID，再测试连接。");
       return;
     }
-    actions.test(toModelInput(editor.value));
+    actions.test(
+      toModelInput({
+        ...editor.value,
+        label: resolveSavedModelLabel(editor.value.label, editor.value.modelId)
+      })
+    );
   }
 
   return {
@@ -282,6 +307,7 @@ export function useModelEditor(
     defaultThinkingOptions,
     ...remoteListing,
     applyProviderPreset,
+    applyCustomProvider,
     setModelApi,
     setToolSchemaProfile,
     setDefaultThinkingLevel,

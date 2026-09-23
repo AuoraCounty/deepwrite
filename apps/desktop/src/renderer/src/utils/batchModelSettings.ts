@@ -4,6 +4,14 @@ import {
   type DraftModel
 } from "../components/modelSettingsDraft";
 import type { ModelEditorSavePayload } from "../composables/useModelEditor";
+import { resolveSavedModelLabel } from "./customModelLabel";
+
+function withResolvedLabel(model: DraftModel, selectedCount = 1): DraftModel {
+  return {
+    ...model,
+    label: resolveSavedModelLabel(model.label, model.modelId, selectedCount)
+  };
+}
 
 /** Expand one editor configuration without replacing unselected existing models. */
 export function applyBatchModelSettings(
@@ -13,27 +21,30 @@ export function applyBatchModelSettings(
   const selected = payload.selectedModels;
   const models = [...existing];
   if (!selected) {
+    const model = withResolvedLabel(payload.model);
     const index = models.findIndex(
-      (model) => model.id === (payload.originalId ?? payload.model.id)
+      (candidate) => candidate.id === (payload.originalId ?? model.id)
     );
     if (
       models.some(
-        (model, candidate) =>
-          model.id === payload.model.id && candidate !== index
+        (candidate, candidateIndex) =>
+          candidate.id === model.id && candidateIndex !== index
       )
     ) {
       throw new Error("模型配置 ID 不能重复。");
     }
-    if (index >= 0) models[index] = payload.model;
-    else models.push(payload.model);
+    if (index >= 0) models[index] = model;
+    else models.push(model);
     return models;
   }
   if (!selected.length) throw new Error("请至少选择一个要保存的模型。");
   const source = payload.model;
   const original = existing.find((model) => model.id === payload.originalId);
-  for (const remote of new Map(
-    selected.map((model) => [model.id, model])
-  ).values()) {
+  const uniqueSelected = [
+    ...new Map(selected.map((model) => [model.id, model])).values()
+  ];
+  const selectedCount = uniqueSelected.length;
+  for (const remote of uniqueSelected) {
     const index = models.findIndex(
       (model) =>
         !model.managedBy &&
@@ -43,14 +54,10 @@ export function applyBatchModelSettings(
         model.modelId === remote.id
     );
     const previous = models[index];
-    const preservesOriginal = previous?.id === payload.originalId;
     const model: DraftModel = {
       ...cloneDraftModel(source),
       id: previous?.id ?? createId("model"),
-      label:
-        preservesOriginal && source.label
-          ? source.label
-          : (previous?.label ?? (remote.label || remote.id).slice(0, 120)),
+      label: resolveSavedModelLabel(source.label, remote.id, selectedCount),
       modelId: remote.id,
       hasApiKey: Boolean(
         source.apiKey || (!source.clearApiKey && source.hasApiKey)

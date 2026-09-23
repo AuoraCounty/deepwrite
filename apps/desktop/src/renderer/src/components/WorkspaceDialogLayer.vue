@@ -108,6 +108,7 @@ const emit = defineEmits<WorkspaceDialogLayerEmits>();
       v-else-if="module.kind === 'export-long'"
       open
       :book-title="module.bookTitle"
+      :book-id="module.bookId"
       :submitting="module.submitting"
       @close="emit('closeExportLong')"
       @export="emit('exportLong', $event)"

@@ -698,6 +698,20 @@ describe("useWorkspaceDialogModuleCoordinator", () => {
     expect(module.book).not.toBe(target);
   });
 
+  it("passes the long-form export book id into the export-long module", () => {
+    const harness = createHarness();
+    harness.refs.longExportTarget.value = {
+      bookId: "long-1",
+      title: "长篇测试书"
+    };
+    const module = useWorkspaceDialogModuleCoordinator(harness.options).value;
+    expect(module?.kind).toBe("export-long");
+    if (module?.kind === "export-long") {
+      expect(module.bookTitle).toBe("长篇测试书");
+      expect(module.bookId).toBe("long-1");
+    }
+  });
+
   it("keeps nullable targets and conditional gates compatible with fallback", () => {
     const bindings = createHarness();
     bindings.refs.bindingsMode.value = "skill";

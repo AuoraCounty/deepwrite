@@ -32,6 +32,54 @@ export const OPENAI_RUNTIME_MODELS = [
     maxTokens: 128_000
   } satisfies Model<"openai-responses">,
   {
+    id: "gpt-6-sol",
+    name: "GPT-6 Sol",
+    api: "openai-responses",
+    provider: "openai",
+    baseUrl: "https://api.openai.com/v1",
+    compat: {
+      supportsStrictMode: true
+    },
+    reasoning: true,
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "xhigh",
+      max: "max"
+    },
+    input: ["text", "image"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 272_000,
+    maxTokens: 128_000
+  } satisfies Model<"openai-responses">,
+  {
+    id: "gpt-6-luna",
+    name: "GPT-6 Luna",
+    api: "openai-responses",
+    provider: "openai",
+    baseUrl: "https://api.openai.com/v1",
+    compat: {
+      supportsStrictMode: true
+    },
+    reasoning: true,
+    thinkingLevelMap: {
+      off: null,
+      minimal: null,
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "xhigh",
+      max: "max"
+    },
+    input: ["text", "image"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 272_000,
+    maxTokens: 128_000
+  } satisfies Model<"openai-responses">,
+  {
     id: "gpt-5.6-sol",
     name: "GPT-5.6 Sol",
     api: "openai-responses",

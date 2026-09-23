@@ -31,9 +31,13 @@ function modelConfig(
 describe("GPT-6 Responses compatibility", () => {
   it.each([
     ["openai", "gpt-6-astra"],
+    ["openai", "gpt-6-sol"],
+    ["openai", "gpt-6-luna"],
     ["custom", "gpt-6-astra"],
     ["custom", "gpt-6-astra-routed"],
-    ["custom", "gateway-gpt-6-astra"]
+    ["custom", "gateway-gpt-6-astra"],
+    ["custom", "gpt-6-sol-routed"],
+    ["custom", "gateway-gpt-6-luna"]
   ])("keeps read arguments optional for %s/%s", async (provider, modelId) => {
     const read = toolByName(
       buildShortWorkspaceTools({
@@ -98,21 +102,32 @@ describe("GPT-6 Responses compatibility", () => {
     ).rejects.toThrow("include_all_sections 仅用于 kind=draft、id=draft。");
   });
 
-  it("uses upstream capacity and reasoning metadata while preserving overrides", () => {
-    const config = modelConfig("custom");
-    expect(buildProviderRuntime(config).model).toMatchObject({
-      contextWindow: 272_000,
-      maxTokens: 128_000,
-      input: ["text", "image"],
-      compat: { supportsStrictMode: true },
-      thinkingLevelMap: { off: null, minimal: null, max: "max" }
-    });
-    expect(
-      buildProviderRuntime({
-        ...config,
-        contextWindow: 500_000,
-        maxTokens: 64_000
-      }).model
-    ).toMatchObject({ contextWindow: 500_000, maxTokens: 64_000 });
-  });
+  it.each(["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"])(
+    "uses Astra-equivalent capacity and reasoning metadata for %s while preserving overrides",
+    (modelId) => {
+      const config = modelConfig("custom", modelId);
+      expect(buildProviderRuntime(config).model).toMatchObject({
+        contextWindow: 272_000,
+        maxTokens: 128_000,
+        input: ["text", "image"],
+        compat: { supportsStrictMode: true },
+        thinkingLevelMap: {
+          off: null,
+          minimal: null,
+          low: "low",
+          medium: "medium",
+          high: "high",
+          xhigh: "xhigh",
+          max: "max"
+        }
+      });
+      expect(
+        buildProviderRuntime({
+          ...config,
+          contextWindow: 500_000,
+          maxTokens: 64_000
+        }).model
+      ).toMatchObject({ contextWindow: 500_000, maxTokens: 64_000 });
+    }
+  );
 });

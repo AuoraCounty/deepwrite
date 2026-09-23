@@ -11,6 +11,7 @@ import {
 import type { ThinkingLevel } from "@deepwrite/contracts/renderer";
 import { createId } from "@deepwrite/shared";
 import AppIcon from "./AppIcon.vue";
+import { scrollSelectedIntoView } from "../utils/scrollSelectedIntoView";
 
 type ConfigPage = "main" | "thinking" | "temperature";
 type ConfigValue = string | number;
@@ -165,6 +166,7 @@ async function openMenu(): Promise<void> {
   open.value = true;
   await nextTick();
   positionMenu();
+  revealCurrentSelection();
 }
 
 function closeMenu(returnFocus = false): void {
@@ -179,14 +181,36 @@ function toggleMenu(): void {
   else void openMenu();
 }
 
+function revealCurrentSelection(): void {
+  void nextTick(() => {
+    const selected = menu.value?.querySelector<HTMLElement>(
+      ".conversation-model-config-options > button.is-selected"
+    );
+    const scroller =
+      menu.value?.querySelector<HTMLElement>(
+        ".conversation-model-config-models"
+      ) ??
+      menu.value?.querySelector<HTMLElement>(
+        ".conversation-model-config-options"
+      );
+    scrollSelectedIntoView(scroller, selected);
+  });
+}
+
 function showPage(nextPage: Exclude<ConfigPage, "main">): void {
   page.value = nextPage;
-  nextTick(positionMenu);
+  nextTick(() => {
+    positionMenu();
+    revealCurrentSelection();
+  });
 }
 
 function showMainPage(): void {
   page.value = "main";
-  nextTick(positionMenu);
+  nextTick(() => {
+    positionMenu();
+    revealCurrentSelection();
+  });
 }
 
 function selectOption(value: ConfigValue): void {

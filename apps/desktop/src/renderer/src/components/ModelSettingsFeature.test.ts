@@ -262,6 +262,21 @@ describe("ModelSettingsFeature model draft lifecycle", () => {
   });
 });
 
+describe("ModelSettingsFeature custom providers", () => {
+  it("offers 新建提供商 below 其他兼容服务 and merges known names", () => {
+    expect(editorSource).toContain("新建提供商");
+    expect(editorSource).toContain("CreateCustomProviderDialog");
+    expect(editorSource).toContain("openCreateProvider");
+    expect(editorLogicSource).toContain("applyCustomProvider");
+    expect(editorLogicSource).toContain("mergeProviderSelectOptions");
+    expect(source).toContain("knownUserProviders");
+    expect(source).toContain("collectUserProviderIds");
+    expect(editorSource.indexOf("新建提供商")).toBeGreaterThan(
+      editorSource.indexOf('accessible-label="选择 Provider"')
+    );
+  });
+});
+
 describe("ModelSettingsFeature advanced capacity", () => {
   it("places advanced configuration before delete on custom models only", () => {
     const advancedIndex = featureSource.indexOf("高级配置");

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DraftModel } from "../components/modelSettingsDraft";
 import { applyBatchModelSettings } from "./batchModelSettings";
+import { resolveSavedModelLabel } from "./customModelLabel";
 
 const source: DraftModel = {
   id: "saved",
@@ -33,12 +34,12 @@ describe("batch model configuration", () => {
     expect(models).toHaveLength(2);
     expect(models[0]).toMatchObject({
       id: source.id,
-      label: source.label,
+      label: "我的写作模型（writer）",
       contextWindow: 32000
     });
     expect(models[1]).toMatchObject({
       modelId: "reader",
-      label: "reader",
+      label: "我的写作模型（reader）",
       provider: source.provider,
       baseUrl: source.baseUrl,
       defaultThinkingLevel: "high",
@@ -61,7 +62,7 @@ describe("batch model configuration", () => {
       selectedModels: [{ id: "reader", label: "Reader" }]
     });
     expect(models.slice(0, 2)).toEqual([source, another]);
-    expect(models[2]?.label).toBe("Reader");
+    expect(models[2]?.label).toBe("我的写作模型");
   });
   it("reuses existing ids on retry and preserves their individual capacities", () => {
     const reader = {
@@ -100,5 +101,39 @@ describe("batch model configuration", () => {
     expect(() =>
       applyBatchModelSettings([source], { model: source, selectedModels: [] })
     ).toThrow("至少选择");
+  });
+  it("appends model ids only when saving more than one model with a shared name", () => {
+    const batch = applyBatchModelSettings([], {
+      model: { ...source, label: "写作" },
+      selectedModels: [{ id: "chat" }, { id: "reasoner" }]
+    });
+    expect(batch.map((model) => model.label)).toEqual([
+      "写作（chat）",
+      "写作（reasoner）"
+    ]);
+    const single = applyBatchModelSettings([], {
+      model: { ...source, label: "写作", modelId: "chat" }
+    });
+    expect(single[0]?.label).toBe("写作");
+  });
+  it("defaults an empty name to the model id", () => {
+    const batch = applyBatchModelSettings([], {
+      model: { ...source, label: "  " },
+      selectedModels: [{ id: "chat" }, { id: "reasoner" }]
+    });
+    expect(batch.map((model) => model.label)).toEqual(["chat", "reasoner"]);
+    const single = applyBatchModelSettings([], {
+      model: { ...source, label: "", modelId: "solo-id" }
+    });
+    expect(single[0]?.label).toBe("solo-id");
+  });
+});
+
+describe("custom model labels", () => {
+  it("keeps a filled single name, suffixes batches, and falls back to the model id", () => {
+    expect(resolveSavedModelLabel("写作", "chat")).toBe("写作");
+    expect(resolveSavedModelLabel("写作", "chat", 2)).toBe("写作（chat）");
+    expect(resolveSavedModelLabel("  ", "chat", 2)).toBe("chat");
+    expect(resolveSavedModelLabel("", "solo-id")).toBe("solo-id");
   });
 });

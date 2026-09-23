@@ -12,6 +12,7 @@ import { createId } from "@deepwrite/shared";
 import { useSettingsStore } from "../stores/settingsStore";
 import { uiMessage } from "../ui-feedback";
 import { applyBatchModelSettings } from "../utils/batchModelSettings";
+import { resolveSavedModelLabel } from "../utils/customModelLabel";
 import { mergeCustomModelSettings } from "../utils/customModelSettings";
 import {
   cloneDraftModel,
@@ -180,15 +181,16 @@ export function useModelSettingsDraft(
   }
 
   function testDraftModel(model: DraftModel): void {
-    if (
-      !model.label.trim() ||
-      !model.provider.trim() ||
-      !model.modelId.trim()
-    ) {
-      uiMessage.warning("请先填写名称、Provider 和模型 ID，再测试连接。");
+    if (!model.provider.trim() || !model.modelId.trim()) {
+      uiMessage.warning("请先填写 Provider 和模型 ID，再测试连接。");
       return;
     }
-    actions.testModel(toModelInput(model));
+    actions.testModel(
+      toModelInput({
+        ...model,
+        label: resolveSavedModelLabel(model.label, model.modelId)
+      })
+    );
   }
 
   function removeModel(modelId: string): void {

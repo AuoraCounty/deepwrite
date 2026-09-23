@@ -2,7 +2,6 @@ import type {
   CreateLongBookInput,
   LongImportContinuationInput,
   LongLegacySyncModule,
-  LongManuscriptExportSection,
   LongOpenBookResult
 } from "@deepwrite/contracts";
 import type { Ref } from "vue";
@@ -15,6 +14,7 @@ import {
   type LongStructureMutationCompletion
 } from "../types/longWorkspace";
 import { longNavigationNodeId } from "../utils/longWorkspaceResourceTree";
+import type { LongManuscriptExportRequest } from "../utils/longManuscriptExport";
 
 import type {
   MaybePromise,
@@ -25,6 +25,7 @@ import type {
 } from "./longBookLifecycleTypes";
 export type * from "./longBookLifecycleTypes";
 import { useLongConflictResolution } from "./useLongConflictResolution";
+import { createLongManuscriptExportFlow } from "./useLongManuscriptExportFlow";
 import { disposeLongBookRemovalRuntime } from "./book-removal-runtime";
 
 interface PendingLease {
@@ -547,92 +548,41 @@ export function useLongBookLifecycleCoordinator(
     });
   }
 
+  const exportFlow = createLongManuscriptExportFlow({
+    api: options.api,
+    state,
+    session,
+    manuscript,
+    notifications: uiMessage,
+    isDisposed: () => disposed,
+    beginDialogRequest,
+    markDialogTarget,
+    requestForTarget,
+    dialogRequestIsCurrent,
+    targetIsCurrent,
+    cancelDialogRequests,
+    acquirePendingLease: (lane) => acquirePendingLease(lane),
+    leaseIsCurrent,
+    replaceOwnedLease(lease) {
+      ownedPendingLeases.set(lease.lane, lease);
+    },
+    getOwnedExportLease: () => ownedPendingLeases.get("manuscript-export"),
+    runWithLease,
+    errorMessage
+  });
+
   function openExportDialog(bookId: string, title: string): void {
-    const requestId = beginDialogRequest();
-    if (requestId === null) return;
-    state.exportTarget.value = markDialogTarget({ bookId, title }, requestId);
+    exportFlow.openExportDialog(bookId, title);
   }
 
   function closeLongExportDialog(): void {
-    if (disposed) return;
-    const target = state.exportTarget.value;
-    const ownedLease = ownedPendingLeases.get("manuscript-export");
-    if (
-      target &&
-      ownedLease &&
-      requestForTarget(target) === ownedLease.requestId
-    ) {
-      return;
-    }
-    if (state.manuscriptExportPending.value && !ownedLease) return;
-    cancelDialogRequests();
-    state.exportTarget.value = null;
+    exportFlow.closeLongExportDialog();
   }
 
   function exportLongBookManuscript(
-    sections: LongManuscriptExportSection[]
+    request: LongManuscriptExportRequest
   ): Promise<void> {
-    const api = options.api();
-    const target = state.exportTarget.value;
-    if (!api || !target || !manuscript.available()) return Promise.resolve();
-    const lease = acquirePendingLease("manuscript-export");
-    if (!lease) return Promise.resolve();
-    // Associate this lease with the target without reusing the shared pending ref
-    // as an ownership token.
-    const requestId = requestForTarget(target);
-    const exportLease: PendingLease = {
-      ...lease,
-      requestId
-    };
-    ownedPendingLeases.set("manuscript-export", exportLease);
-    return runWithLease(exportLease, async () => {
-      try {
-        if (
-          state.activeBookId.value === target.bookId &&
-          !(await session.saveActiveEditorChanges())
-        ) {
-          return;
-        }
-        if (
-          !leaseIsCurrent(exportLease) ||
-          !targetIsCurrent(state.exportTarget, target, requestId)
-        ) {
-          return;
-        }
-        const snapshot = await api.getWorkspaceIndex({ bookId: target.bookId });
-        if (
-          !leaseIsCurrent(exportLease) ||
-          !targetIsCurrent(state.exportTarget, target, requestId)
-        ) {
-          return;
-        }
-        const exportInput = await manuscript.createInput({
-          api,
-          bookId: target.bookId,
-          title: target.title,
-          workspace: snapshot.workspaceIndex,
-          sections
-        });
-        if (
-          !leaseIsCurrent(exportLease) ||
-          !targetIsCurrent(state.exportTarget, target, requestId)
-        ) {
-          return;
-        }
-        const result = await manuscript.exportLong(exportInput);
-        if (!leaseIsCurrent(exportLease) || result.status !== "saved") return;
-        if (targetIsCurrent(state.exportTarget, target, requestId)) {
-          state.exportTarget.value = null;
-          uiMessage.success(
-            `已导出“${target.title}”，共生成 ${result.fileCount} 个 TXT 文件`
-          );
-        }
-      } catch (error: unknown) {
-        if (leaseIsCurrent(exportLease) && dialogRequestIsCurrent(requestId)) {
-          uiMessage.error(errorMessage(error, "导出长篇失败。"));
-        }
-      }
-    });
+    return exportFlow.exportLongBookManuscript(request);
   }
 
   function openRenameDialog(bookId: string, title: string): void {

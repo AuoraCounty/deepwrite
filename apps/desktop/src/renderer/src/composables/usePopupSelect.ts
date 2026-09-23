@@ -16,6 +16,7 @@ import type {
   PopupSelectProps,
   PopupSelectEvents
 } from "../types/popupSelect";
+import { scrollSelectedIntoView } from "../utils/scrollSelectedIntoView";
 
 export function usePopupSelect(
   props: PopupSelectProps,
@@ -127,6 +128,13 @@ export function usePopupSelect(
     }
   }
 
+  function revealSelectedOption(): void {
+    scrollSelectedIntoView(
+      menu.value,
+      optionElements.value[selectedEnabledIndex()]
+    );
+  }
+
   async function openMenu(focusSelection = false): Promise<void> {
     if (props.disabled || open.value || firstEnabledIndex() < 0) {
       return;
@@ -135,9 +143,11 @@ export function usePopupSelect(
     open.value = true;
     await nextTick();
     positionMenu();
+    await nextTick();
     if (focusSelection) {
       focusOption(selectedEnabledIndex());
     }
+    revealSelectedOption();
   }
 
   function closeMenu(returnFocus = false): void {

@@ -884,11 +884,6 @@ const {
   },
   manuscript: {
     available: () => Boolean(window.deepwrite),
-    async createInput(input) {
-      const { createLongManuscriptExportInput } =
-        await import("./utils/longManuscriptExport");
-      return createLongManuscriptExportInput(input);
-    },
     exportLong(input) {
       const desktop = window.deepwrite;
       if (!desktop) {

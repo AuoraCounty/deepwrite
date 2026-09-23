@@ -413,6 +413,7 @@ export function useWorkspaceDialogModuleCoordinator(
       return {
         kind: "export-long",
         bookTitle: longExportTarget.title,
+        bookId: longExportTarget.bookId,
         submitting: options.longLifecycle.manuscriptExportPending.value
       };
     }

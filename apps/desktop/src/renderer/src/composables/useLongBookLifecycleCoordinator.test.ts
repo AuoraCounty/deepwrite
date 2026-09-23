@@ -603,6 +603,26 @@ describe("useLongBookLifecycleCoordinator", () => {
     expect(test.state.bookActionPending.value).toBe(false);
   });
 
+  it("forwards selected chapter ids when exporting manuscript", async () => {
+    const test = createHarness();
+
+    await test.coordinator.handleLongBookAction(
+      bookAction("export", BOOK_A, "导出 A")
+    );
+
+    await test.coordinator.exportLongBookManuscript({
+      sections: ["manuscript"],
+      manuscriptChapterCardIds: ["chapter_first"]
+    });
+
+    expect(test.manuscript.createInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sections: ["manuscript"],
+        manuscriptChapterCardIds: ["chapter_first"]
+      })
+    );
+  });
+
   it("does not let an older export completion close or announce a later export target", async () => {
     const pendingExport = deferred<{
       status: "saved";
@@ -616,7 +636,10 @@ describe("useLongBookLifecycleCoordinator", () => {
     await test.coordinator.handleLongBookAction(
       bookAction("export", BOOK_A, "导出 A")
     );
-    const exporting = test.coordinator.exportLongBookManuscript(["manuscript"]);
+    const exporting = test.coordinator.exportLongBookManuscript({
+      sections: ["manuscript"],
+      manuscriptChapterCardIds: []
+    });
     await flushMicrotasks();
     expect(test.manuscript.exportLong).toHaveBeenCalledOnce();
 

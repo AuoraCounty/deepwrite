@@ -5,15 +5,20 @@ import {
   useModelEditor,
   type ModelEditorSavePayload
 } from "../composables/useModelEditor";
+import CreateCustomProviderDialog from "./CreateCustomProviderDialog.vue";
 import type { DraftModel } from "./modelSettingsDraft";
 import PopupSelect from "./PopupSelect.vue";
 
-const props = defineProps<{
-  model: DraftModel;
-  editing: boolean;
-  saving: boolean;
-  testingModelId: string | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    model: DraftModel;
+    editing: boolean;
+    saving: boolean;
+    testingModelId: string | null;
+    knownUserProviders?: readonly string[];
+  }>(),
+  { knownUserProviders: () => [] }
+);
 
 const emit = defineEmits<{
   cancel: [];
@@ -22,6 +27,8 @@ const emit = defineEmits<{
 }>();
 
 const fetchHintConfirmButton = ref<HTMLButtonElement | null>(null);
+const providerSelect = ref<InstanceType<typeof PopupSelect> | null>(null);
+const createProviderOpen = ref(false);
 const {
   editor,
   reasoningOptions,
@@ -39,6 +46,7 @@ const {
   clearRemoteModels,
   fetchRemoteModels,
   applyProviderPreset,
+  applyCustomProvider,
   setModelApi,
   setToolSchemaProfile,
   setDefaultThinkingLevel,
@@ -47,10 +55,23 @@ const {
   updateCustomThinkingLevel,
   save,
   test
-} = useModelEditor(props.model, {
-  save: (payload) => emit("save", payload),
-  test: (model) => emit("test", model)
-});
+} = useModelEditor(
+  props.model,
+  {
+    save: (payload) => emit("save", payload),
+    test: (model) => emit("test", model)
+  },
+  { knownUserProviders: () => props.knownUserProviders }
+);
+
+function openCreateProvider(): void {
+  providerSelect.value?.closeMenu();
+  createProviderOpen.value = true;
+}
+
+function submitCreateProvider(name: string): void {
+  if (applyCustomProvider(name)) createProviderOpen.value = false;
+}
 
 watch(fetchHintDialog, (message) => {
   if (message) void nextTick(() => fetchHintConfirmButton.value?.focus());
@@ -69,17 +90,28 @@ watch(fetchHintDialog, (message) => {
         <input
           v-model="editor.label"
           type="text"
-          placeholder="例如：DeepSeek 写作"
+          placeholder="例如：DeepSeek 写作，留空则使用模型 ID"
         />
       </label>
       <label>
         <span>Provider</span>
         <PopupSelect
+          ref="providerSelect"
           :model-value="editor.provider"
           :options="providerOptions"
           accessible-label="选择 Provider"
           @update:model-value="applyProviderPreset(String($event))"
-        />
+        >
+          <template #footer>
+            <button
+              class="remote-model-manual-button"
+              type="button"
+              @click="openCreateProvider"
+            >
+              新建提供商
+            </button>
+          </template>
+        </PopupSelect>
       </label>
       <label>
         <span>模型 ID</span>
@@ -315,6 +347,12 @@ watch(fetchHintDialog, (message) => {
       </section>
     </div>
   </Teleport>
+
+  <CreateCustomProviderDialog
+    :open="createProviderOpen"
+    @close="createProviderOpen = false"
+    @submit="submitCreateProvider"
+  />
 </template>
 
 <style scoped>

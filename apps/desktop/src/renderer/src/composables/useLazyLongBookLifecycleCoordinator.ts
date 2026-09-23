@@ -36,9 +36,10 @@ export interface LazyLongBookLifecycleCoordinator {
   closeLegacySyncDialog(): void;
   confirmLegacySync(modules: LongLegacySyncModule[]): Promise<void>;
   closeLongExportDialog(): void;
-  exportLongBookManuscript(
-    sections: LongManuscriptExportSection[]
-  ): Promise<void>;
+  exportLongBookManuscript(request: {
+    readonly sections: readonly LongManuscriptExportSection[];
+    readonly manuscriptChapterCardIds: readonly string[];
+  }): Promise<void>;
   closeLongBookRenameDialog(): void;
   renameLongBook(title: string): Promise<void>;
   closeLongBookBindingsDialog(): void;
@@ -214,14 +215,12 @@ export function useLazyLongBookLifecycleCoordinator(
     }
   }
 
-  function exportLongBookManuscript(
-    sections: LongManuscriptExportSection[]
-  ): Promise<void> {
+  function exportLongBookManuscript(request: {
+    readonly sections: readonly LongManuscriptExportSection[];
+    readonly manuscriptChapterCardIds: readonly string[];
+  }): Promise<void> {
     const intent = dialogIntent();
-    return invoke(
-      (loaded) => loaded.exportLongBookManuscript(sections),
-      intent
-    );
+    return invoke((loaded) => loaded.exportLongBookManuscript(request), intent);
   }
 
   function closeLongBookRenameDialog(): void {

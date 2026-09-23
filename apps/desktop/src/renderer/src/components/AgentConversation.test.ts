@@ -554,6 +554,18 @@ describe("AgentConversation edit proposal placement", () => {
       ':disabled="responding || !webSearchAvailable"'
     );
     expect(modelConfigSource).toContain("emit('toggleWebSearch'");
+    expect(modelConfigSource).toContain("function revealCurrentSelection");
+    expect(modelConfigSource).toContain(
+      "scrollSelectedIntoView(scroller, selected)"
+    );
+    const openMenuStart = modelConfigSource.indexOf("async function openMenu");
+    const openMenuEnd = modelConfigSource.indexOf(
+      "function closeMenu",
+      openMenuStart
+    );
+    expect(modelConfigSource.slice(openMenuStart, openMenuEnd)).toContain(
+      "revealCurrentSelection()"
+    );
     expect(conversationSource).toContain(
       "@toggle-web-search=\"emit('toggleWebSearch', $event)\""
     );

@@ -8,7 +8,6 @@ import type {
   LongBookSummary,
   LongChooseContinuationImportSourceResult,
   LongChooseLegacySyncSourceResult,
-  LongManuscriptExportSection,
   LongOpenBookResult,
   LongWorkspaceIndexSnapshot
 } from "@deepwrite/contracts";
@@ -24,6 +23,7 @@ import {
   type LongWorkspaceRendererApi,
   type LongWorkspaceSelection
 } from "../types/longWorkspace";
+import type { LongManuscriptExportRequest } from "../utils/longManuscriptExport";
 
 export type MaybePromise<Value> = Value | Promise<Value>;
 export type PendingLane = "mutation" | "book-action" | "manuscript-export";
@@ -101,12 +101,13 @@ export interface LongBookLifecycleResourcePort {
 
 export interface LongBookLifecycleManuscriptPort {
   available(): boolean;
-  createInput(input: {
+  createInput?(input: {
     readonly api: LongWorkspaceRendererApi;
     readonly bookId: string;
     readonly title: string;
     readonly workspace: LongWorkspaceIndexSnapshot;
-    readonly sections: readonly LongManuscriptExportSection[];
+    readonly sections: LongManuscriptExportRequest["sections"];
+    readonly manuscriptChapterCardIds?: readonly string[];
   }): Promise<ExportLongManuscriptInput>;
   exportLong(
     input: ExportLongManuscriptInput

@@ -18,7 +18,6 @@ import type {
   LongChooseLegacySyncSourceResult,
   LongImportContinuationInput,
   LongLegacySyncModule,
-  LongManuscriptExportSection,
   LongWorkspaceIndexSnapshot,
   LongWorkspaceOperationBatch,
   MaterialLibrary,
@@ -45,6 +44,7 @@ import type {
   LongWorldbuildingSyncRequest
 } from "../types/longWorkspace";
 import type { LongWorldbuildingSyncBookOption } from "../utils/longWorldbuildingSync";
+import type { LongManuscriptExportRequest } from "../utils/longManuscriptExport";
 import type { ShortManuscriptExportTarget } from "../utils/shortManuscriptExport";
 
 export interface DialogMutationCompletion {
@@ -118,6 +118,7 @@ export interface ExportShortDialogModule {
 export interface ExportLongDialogModule {
   kind: "export-long";
   bookTitle: string;
+  bookId: string;
   submitting: boolean;
 }
 
@@ -406,7 +407,7 @@ export interface WorkspaceDialogLayerEmits {
   closeExportShort: [];
   exportShort: [target: ShortManuscriptExportTarget];
   closeExportLong: [];
-  exportLong: [sections: LongManuscriptExportSection[]];
+  exportLong: [request: LongManuscriptExportRequest];
   closeLibraryRemoval: [];
   confirmLibraryRemoval: [];
   closeCreateBook: [];

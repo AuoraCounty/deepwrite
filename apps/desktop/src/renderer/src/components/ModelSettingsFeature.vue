@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import {
   isDeepWriteSiteOfficialModel,
   type ModelConfigInput,
@@ -8,9 +8,14 @@ import {
 } from "@deepwrite/contracts";
 import { useModelProviderGroups } from "../composables/useModelProviderGroups";
 import { useModelSettingsDraft } from "../composables/useModelSettingsDraft";
+import {
+  builtinProviderSets,
+  collectUserProviderIds
+} from "../utils/customModelProvider";
 import AppIcon from "./AppIcon.vue";
 import ModelAdvancedConfigDialog from "./ModelAdvancedConfigDialog.vue";
 import ModelEditorPanel from "./ModelEditorPanel.vue";
+import { MODEL_PROVIDER_OPTIONS } from "./modelProviderPresets";
 import { thinkingLabel } from "./modelSettingsDraft";
 
 const props = withDefaults(
@@ -70,6 +75,14 @@ const {
 });
 const { modelProviderGroups, expandedProviders, toggleProvider } =
   useModelProviderGroups(modelConfigRows);
+const knownUserProviders = computed(() =>
+  collectUserProviderIds(
+    draftModels.value
+      .filter((model) => !model.managedBy)
+      .map((model) => model.provider),
+    builtinProviderSets(MODEL_PROVIDER_OPTIONS).values
+  )
+);
 </script>
 
 <template>
@@ -168,6 +181,7 @@ const { modelProviderGroups, expandedProviders, toggleProvider } =
                   :editing="Boolean(modelEditor.originalId)"
                   :saving="modelSaving"
                   :testing-model-id="testingModelId"
+                  :known-user-providers="knownUserProviders"
                   @cancel="modelEditor = null"
                   @save="saveModelEditor"
                   @test="emit('testModel', $event)"
@@ -276,6 +290,7 @@ const { modelProviderGroups, expandedProviders, toggleProvider } =
             :editing="false"
             :saving="modelSaving"
             :testing-model-id="testingModelId"
+            :known-user-providers="knownUserProviders"
             @cancel="modelEditor = null"
             @save="saveModelEditor"
             @test="emit('testModel', $event)"

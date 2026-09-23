@@ -134,5 +134,9 @@ describe("WorkspaceDialogLayer boundary", () => {
     expect(source).not.toContain("composerDraft");
     expect(source).not.toContain("WritingWorkspaceModule");
     expect(source).not.toContain("LongWorkspaceModule");
+    expect(source).toContain(':book-id="module.bookId"');
+    expect(typesSource).toContain(
+      "exportLong: [request: LongManuscriptExportRequest]"
+    );
   });
 });

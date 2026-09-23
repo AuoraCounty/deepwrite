@@ -2,17 +2,25 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { LongManuscriptExportSection } from "@deepwrite/contracts";
 import type { IconName } from "../types/workspace";
+import type { LongManuscriptExportRequest } from "../utils/longManuscriptExport";
+import {
+  listLongManuscriptExportChapters,
+  type LongManuscriptExportChapterOption
+} from "../utils/longManuscriptExportChapters";
+import { uiMessage } from "../ui-feedback";
 import AppIcon from "./AppIcon.vue";
+import ExportLongManuscriptChapterList from "./ExportLongManuscriptChapterList.vue";
 
 const props = defineProps<{
   open: boolean;
   bookTitle: string;
+  bookId: string;
   submitting?: boolean;
 }>();
 
 const emit = defineEmits<{
   close: [];
-  export: [sections: LongManuscriptExportSection[]];
+  export: [request: LongManuscriptExportRequest];
 }>();
 
 const options: ReadonlyArray<{
@@ -42,7 +50,7 @@ const options: ReadonlyArray<{
   {
     id: "manuscript",
     label: "正文",
-    description: "按章节顺序导出正文",
+    description: "可勾选单章或多章，每章一个 TXT",
     icon: "file"
   }
 ];
@@ -50,15 +58,54 @@ const options: ReadonlyArray<{
 const selected = ref<LongManuscriptExportSection[]>(
   options.map(({ id }) => id)
 );
-const canSubmit = computed(
-  () => selected.value.length > 0 && !props.submitting
+const chapters = ref<LongManuscriptExportChapterOption[]>([]);
+const chaptersLoading = ref(false);
+const selectedChapterIds = ref<string[]>([]);
+let chaptersLoadId = 0;
+const manuscriptSelected = computed(() =>
+  selected.value.includes("manuscript")
 );
+const canSubmit = computed(() => {
+  if (selected.value.length === 0 || props.submitting) return false;
+  if (!manuscriptSelected.value) return true;
+  return !chaptersLoading.value && selectedChapterIds.value.length > 0;
+});
+
+async function loadChapters(): Promise<void> {
+  const loadId = ++chaptersLoadId;
+  chaptersLoading.value = true;
+  try {
+    const snapshot = await window.deepwrite?.long.getWorkspaceIndex({
+      bookId: props.bookId
+    });
+    if (loadId !== chaptersLoadId) return;
+    if (!snapshot) {
+      chapters.value = [];
+      selectedChapterIds.value = [];
+      uiMessage.error("读取正文章节失败。");
+      return;
+    }
+    chapters.value = listLongManuscriptExportChapters(snapshot.workspaceIndex);
+    selectedChapterIds.value = chapters.value.map(({ id }) => id);
+  } catch {
+    if (loadId !== chaptersLoadId) return;
+    chapters.value = [];
+    selectedChapterIds.value = [];
+    uiMessage.error("读取正文章节失败。");
+  } finally {
+    if (loadId === chaptersLoadId) chaptersLoading.value = false;
+  }
+}
 
 watch(
-  () => props.open,
-  (open) => {
-    if (open) selected.value = options.map(({ id }) => id);
-  }
+  () => [props.open, props.bookId] as const,
+  ([open]) => {
+    if (!open) return;
+    selected.value = options.map(({ id }) => id);
+    selectedChapterIds.value = [];
+    void loadChapters();
+  },
+  { immediate: true }
 );
 
 function requestClose(): void {
@@ -66,7 +113,13 @@ function requestClose(): void {
 }
 
 function submit(): void {
-  if (canSubmit.value) emit("export", [...selected.value]);
+  if (!canSubmit.value) return;
+  emit("export", {
+    sections: [...selected.value],
+    manuscriptChapterCardIds: manuscriptSelected.value
+      ? [...selectedChapterIds.value]
+      : []
+  });
 }
 
 function handleKeydown(event: KeyboardEvent): void {
@@ -110,7 +163,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
             <AppIcon name="folder" :size="18" />
             <p>
               所选内容会导出到同一个文件夹，全部使用页面中可见的名称生成 TXT
-              文件，不使用内部 ID。
+              文件，不使用内部 ID。勾选正文后可只导出一章或多章。
             </p>
           </div>
 
@@ -140,6 +193,14 @@ onBeforeUnmount(() => document.removeEventListener("keydown", handleKeydown));
               </label>
             </div>
           </fieldset>
+
+          <ExportLongManuscriptChapterList
+            v-if="manuscriptSelected"
+            v-model:selected-ids="selectedChapterIds"
+            :chapters="chapters"
+            :loading="chaptersLoading"
+            :disabled="submitting"
+          />
 
           <div class="dialog-actions export-long-actions">
             <button

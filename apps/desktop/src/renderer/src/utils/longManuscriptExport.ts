@@ -17,6 +17,11 @@ const CHARACTER_FILE_LABELS = {
   relationships: "人物关系"
 } as const;
 
+export interface LongManuscriptExportRequest {
+  readonly sections: readonly LongManuscriptExportSection[];
+  readonly manuscriptChapterCardIds: readonly string[];
+}
+
 function ordered<T extends { order: number; id: string }>(
   values: readonly T[]
 ): T[] {
@@ -35,6 +40,7 @@ export async function createLongManuscriptExportInput(input: {
   title: string;
   workspace: LongWorkspaceIndexSnapshot;
   sections: readonly LongManuscriptExportSection[];
+  manuscriptChapterCardIds?: readonly string[];
 }): Promise<ExportLongManuscriptInput> {
   const selected = new Set(input.sections);
   const files: LongManuscriptExportFile[] = [];
@@ -256,7 +262,12 @@ export async function createLongManuscriptExportInput(input: {
         left.narrativeOrder - right.narrativeOrder ||
         left.id.localeCompare(right.id)
     );
+    const allowed =
+      input.manuscriptChapterCardIds === undefined
+        ? null
+        : new Set(input.manuscriptChapterCardIds);
     for (const card of cards) {
+      if (allowed && !allowed.has(card.id)) continue;
       const chapter = chapterFiles.get(card.id);
       if (chapter) await add(["正文", card.title], chapter.body);
     }

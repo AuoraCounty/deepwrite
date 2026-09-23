@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { expectSourceToContain } from "../../test-utils/sourceText";
 import appSource from "./App.vue?raw";
 import source from "./WorkspaceShell.vue?raw";
 import catalogLoaderSource from "./composables/useCatalogDocumentLoader.ts?raw";
@@ -11,6 +10,7 @@ import lazyLongBookLifecycleSource from "./composables/useLazyLongBookLifecycleC
 import lazyLongStructureTransactionsSource from "./composables/useLazyLongStructureTransactionsCoordinator.ts?raw";
 import lazyShortBookLifecycleSource from "./composables/useLazyShortBookLifecycleCoordinator.ts?raw";
 import longBookLifecycleSource from "./composables/useLongBookLifecycleCoordinator.ts?raw";
+import longManuscriptExportFlowSource from "./composables/useLongManuscriptExportFlow.ts?raw";
 import longStructureTransactionsSource from "./composables/useLongStructureTransactionsCoordinator.ts?raw";
 import longStructureTransactionsSyncSource from "./composables/long-structure-transactions/sync.ts?raw";
 import resourceNavigationSource from "./composables/useWorkspaceResourceNavigation.ts?raw";
@@ -104,6 +104,10 @@ describe("App performance boundaries", () => {
     expect(longBookLifecycleSource).toContain(
       "function exportLongBookManuscript("
     );
+    expect(longBookLifecycleSource).toContain("createLongManuscriptExportFlow");
+    expect(longManuscriptExportFlowSource).toContain(
+      "function exportLongBookManuscript("
+    );
     expect(longBookLifecycleSource).toContain(
       "function confirmLongBookRemoval("
     );
@@ -187,8 +191,15 @@ describe("App performance boundaries", () => {
     expect(source).toContain(
       "const {\n  createLongBook,\n  openExistingLongBook,"
     );
-    expect(source).toContain("async createInput(input) {");
-    expectSourceToContain(source, 'import("./utils/longManuscriptExport"');
+    expect(source).not.toContain("async createInput(input) {");
+    expect(source).not.toContain('import("./utils/longManuscriptExport"');
+    expect(source).not.toContain("longManuscriptExportChapters");
+    expect(longManuscriptExportFlowSource).toContain(
+      "createLongManuscriptExportInput"
+    );
+    expect(longBookLifecycleSource).not.toContain(
+      "longManuscriptExportChapters"
+    );
     expect(dialogCoordinatorSource).toContain(
       "book: options.shortLifecycle.activeBookTarget.value?.node ?? null"
     );
